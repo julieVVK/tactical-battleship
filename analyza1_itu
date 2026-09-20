@@ -1,0 +1,68 @@
+Tady je úprava do **jednodušší, přirozené češtiny**.
+
+1. Výzkum uživatelských potřeb (User Research)
+
+1.1 Zdokumentování provedeného výzkumu
+
+    Identifikace respondentů:
+        Respondent (vypracovala Yullia): Přítel, student Fakulty podnikatelské (FP), 22 let.
+        Charakteristika: Hraje příležitostně pro zábavu a odpočinek. Hry spouští hlavně během krátkých přestávek, na nudnějších přednáškách nebo při cestování v MHD. Jedna jeho herní pauza trvá většinou kolem 15 minut. Chce hru hned pochopit (systém „co a kam“) a nechtějí se mu učit složitá pravidla. Nesnáší dlouhé čekání na animace nebo na tah soupeře.
+
+     Způsob sběru dat:
+        Výzkum probíhal doma formou krátkého rozhovoru a pozorování, jak respondent hraje stávající webové hry s loděmi.
+        Při pozorování jsem sledovala, jak rychle pochopí ovládání, co ho při hraní štve (např. pomalé animace) a kdy přestává dávat pozor.
+
+    1.2 Formulace konkrétních uživatelských potřeb
+
+1. Potřeba rychlého a plynulého tempa hry: má na hraní málo času (např. 15 minut o přestávce). Potřebuje, aby hra utíkala rychle, protože dlouhé animace a pauzy ho nudí a odvádí jeho pozornost.
+2. Potřeba mít neustálý přehled o bojišti: potřebuje hned vidět, kde má své lodě, kde už vystřelil a co zasáhnul. Nechce si předchozí tahy pamatovat v hlavě.
+3. Potřeba jednoduchého a čistého rozhraní: chce se soustředit na hraní. Zbytečně složitá grafika, blikající efekty nebo skoky kamery ho pletou a ruší.
+4. Potřeba vidět průběžné statistiky a skóre: potřebuje během hry vědět, jak si vede (např. kolik má zásahů nebo jaké je skóre), aby viděl, jestli vyhrává nebo prohrává.
+5. Potřeba snadného ovládání bez chyb: potřebuje snadno a přesně rozestavit své lodě, aby neudělal chybu jen kvůli tomu, že se hra špatně ovládá.
+
+
+     2. Analýza konkurenčních řešení
+
+    2.1 Mapování konkurence na zjištěné potřeby
+
+    Seznam analyzovaných produktů (Yullia):
+1. CBC Battleship (`[https://www.cbc.ca/kids/games/play/battleship](https://www.cbc.ca/kids/games/play/battleship)`)
+2. BattleshipOnline / IDK Battleship** (`[https://www.battleshiponline.org](https://www.battleshiponline.org)`)
+
+
+    Vazba na potřeby z Kapitoly 1:
+        CBC Battleship je super na rychlé pochopení na první pohled, ale je moc pomalá kvůli dlouhým animacím a nemá dobrý přehled o zbývajících lodích.
+        BattleshipOnline má skvělý přehled o lodích a ukazuje statistiky, ale plete uživatele divným přechodem do 3D pohledu a zbytečnými prodlevami.
+
+
+
+ 2.2 Vyhodnocení, Pro/Proti a Ponaučení
+
+     Aplikace 1: CBC Battleship
+
+    Pro (Výhody):
+1. Rychlé pochopení „co a kam“: Díky jednoduché grafice a ukázce hráč hned ví, co má dělat.
+2. Jasná reakce na kliknutí: Hráč okamžitě vidí, jestli zasáhnul, nebo minul.
+3. Dobře drží pozornost: Výrazné barvy pomáhají hráči neusnout u hry.
+
+
+    Proti (Nevýhody):
+1. Špatné otáčení lodí u okrajů: Pokud pro otočení lodě nezbývá místo u okraje mřížky, loď se prostě neotočí a hra nevysvětlí proč.
+2. Zdlouhavá animace raket: Pomalá animace střelby a zvuky zbytečně brzdí tempo hry.
+3. Nepřehledné zbývající lodě: Zobrazení potopených a živých lodí je nepřehledné.
+
+
+    Aplikace 2: BattleshipOnline (IDK Battleship)
+
+    Pro (Výhody):
+1. Jasný přehled o zbývajících lodích: Pěkné ikony ukazují, které lodě ještě žijí a které jsou zničené.
+2. Statistiky a skóre přímo ve hře: Hráč stále vidí svoje i soupeřovo skóre.
+3. Fungující otáčení lodí: Otáčení lodí funguje bez problémů na jakémkoliv místě na ploše.
+
+
+    Proti (Nevýhody):
+1. Matoucí přechod ze 2D do fake-3D: Při výběru cíle se pohled najednou přepne do 3D, což je nepřehledné.
+2. Pomalé vyhodnocení výstřelu: Dlouhé animace dopadu a vyskakující okna zbytečně zdržují.
+3. Rušivé prostředí: Pozadí okolo hry odvádí pozornost od samotné taktiky.
+
+
