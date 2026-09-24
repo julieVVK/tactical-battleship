@@ -1,9 +1,223 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Battleships</title>
+</head>
 <body>
 
-<h1>Battleship</h1>
-<p>Welcome to the Battleship game!</p>
 
+  <!-- Account navigation -->
+  <nav>
+    <h2>Your account</h2>
+    <p>Player profile and preferences</p>
+    <ul>
+      <li><a href="#account">Profile</a></li>
+      <li><a href="#statistics">Statistics</a></li>
+      <li><a href="#matches">Match history</a></li>
+      <li><a href="#settings">Settings</a></li>
+      <li><a href="#rules">Rules</a></li>
+    </ul>
+    <button type="button">Sign out</button>
+  </nav>
+  <!-- Account navigation -->
+
+
+  <main>
+    <!-- Home -->
+    <section id="home">
+      <h1>Battleships</h1>
+      <p>A classic game of hide and seek at sea.</p>
+      <h2>Play</h2>
+      <button type="button">With PC</button>
+      <button type="button" onclick="window.location.href='#lobby'">2 Players</button>
+      <p><a href="#rules">Rules</a></p>
+    </section>
+    <!-- Home -->
+
+    <hr>
+
+    <!-- Lobby -->
+    <section id="lobby">
+      <h2>Lobby</h2>
+      <button type="button" onclick="window.location.href='#join'">Join</button>
+      <button type="button">Create</button>
+    </section>
+    <!-- Lobby -->>
+
+    <!-- Join a lobby -->
+    <section id="join">
+      <h2>Join a lobby</h2>
+      <form>
+        <p>
+          <label for="lobby-code">Lobby code or invitation link</label><br>
+          <input type="text" id="lobby-code" name="lobby-code"
+                 placeholder="ABC123 or paste a lobby link" required>
+        </p>
+        <p>Both formats work. Paste the full invitation link.</p>
+        <button type="button">Join lobby</button>
+      </form>
+    </section>
+
+    <hr>
+
+    <!-- Rules -->
+    <section id="rules">
+      <a href="#home">Home</a>
+      <h2>How to play</h2>
+      <p>Find the enemy fleet. Sink every ship before your opponent sinks yours.</p>
+
+      <h3>01 Your fleet</h3>
+      <p>10 ships · 20 squares · One 10 × 10 board</p>
+      <ul>
+        <li>1 ship of 4 cells</li>
+        <li>2 ships of 3 cells</li>
+        <li>3 ships of 2 cells</li>
+        <li>4 ships of 1 cell</li>
+      </ul>
+
+      <h3>02 Place your ships</h3>
+      <p>Place every ship horizontally or vertically.</p>
+      <p>Keep all ships inside the board. They cannot overlap or touch, even at the corners.</p>
+      <p>Your opponent cannot see your fleet.</p>
+
+      <h3>03 Take your shot</h3>
+      <p>Choose an untried square on the opponent’s board.</p>
+      <p>A hit gives you another shot. A miss passes the turn.</p>
+      <p>A ship sinks when all of its squares have been hit.</p>
+      <ul>
+        <li>Hit: shoot again.</li>
+        <li>Miss: opponent’s turn.</li>
+      </ul>
+
+      <h3>04 Win the battle</h3>
+      <p>Your fleet shows your ships and incoming shots.</p>
+      <p>Opponent shows the results of your own shots.</p>
+      <p><strong>Sink all 10 enemy ships to win.</strong></p>
+
+      <h3>Special abilities</h3>
+      <p>Check an ability’s description before using it. Radar scans and other past uses appear in Used abilities below each board.</p>
+    </section>
+
+    <hr>
+
+    <!-- Statistics: sample data -->
+    <section id="statistics">
+      <a href="#home">Home</a>
+      <h2>Your statistics</h2>
+      <p>Every battle counts. Here is how your fleet is doing.</p>
+      <dl>
+        <dt>Battles won</dt>
+        <dd>48 — Enemy fleets defeated</dd>
+        <dt>Battles lost</dt>
+        <dd>12 — A chance to try a new strategy</dd>
+        <dt>Win rate</dt>
+        <dd>80% — 48 wins out of 60 battles</dd>
+      </dl>
+
+      <h3>Overall results</h3>
+      <p>60 battles played. 4 out of 5 battles end in a victory.</p>
+      <ul>
+        <li>Won: 48 (80%)</li>
+        <li>Lost: 12 (20%)</li>
+      </ul>
+
+      <h3 id="matches">Recent matches</h3>
+      <table>
+        <caption>Sample matches, newest first</caption>
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Result</th>
+            <th scope="col">Moves</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>21 Sep 2026 · 18:42</td><td>Victory</td><td>42</td></tr>
+          <tr><td>21 Sep 2026 · 17:15</td><td>Victory</td><td>38</td></tr>
+          <tr><td>20 Sep 2026 · 21:08</td><td>Defeat</td><td>51</td></tr>
+          <tr><td>20 Sep 2026 · 19:34</td><td>Victory</td><td>35</td></tr>
+          <tr><td>19 Sep 2026 · 22:10</td><td>Victory</td><td>46</td></tr>
+          <tr><td>19 Sep 2026 · 18:56</td><td>Victory</td><td>41</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr>
+
+    <!-- Settings: controls only; add functionality later -->
+    <section id="settings">
+      <a href="#home">Home</a>
+      <h2>Settings</h2>
+      <p>Make yourself at home. Manage your profile and game preferences.</p>
+
+      <form>
+        <fieldset>
+          <legend>Appearance</legend>
+          <label><input type="radio" name="appearance" value="light" checked> Light</label>
+          <label><input type="radio" name="appearance" value="dark"> Dark</label>
+          <label><input type="radio" name="appearance" value="system"> System</label>
+          <p>Choose how Battleships looks.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Sound</legend>
+          <label><input type="radio" name="sound" value="mute" checked> Mute</label>
+          <label><input type="radio" name="sound" value="unmute"> Unmute</label>
+          <p>Music and battle sound effects.</p>
+        </fieldset>
+
+        <p>
+          <label for="language">Language</label><br>
+          <select id="language" name="language">
+            <option value="en">English</option>
+          </select>
+        </p>
+      </form>
+
+      <h3 id="account">Account</h3>
+      <form>
+        <p>
+          <label for="username">Username</label><br>
+          <input type="text" id="username" name="username" value="Captain" autocomplete="nickname">
+        </p>
+        <p>
+          <label for="email">Email</label><br>
+          <input type="email" id="email" name="email" value="captain@example.com" autocomplete="email">
+        </p>
+        <p>
+          <label for="country">Country</label><br>
+          <select id="country" name="country">
+            <option value="CZ">Czechia</option>
+            <option value="UA">Ukraine</option>
+            <option value="SK">Slovakia</option>
+            <option value="PL">Poland</option>
+          </select>
+        </p>
+        <button type="button">Save changes</button>
+        <p>Your name and country appear in your profile.</p>
+      </form>
+
+      <h3>Change password</h3>
+      <p>Keep your account secure.</p>
+      <form>
+        <p>
+          <label for="current-password">Current password</label><br>
+          <input type="password" id="current-password" autocomplete="current-password">
+        </p>
+        <p>
+          <label for="new-password">New password</label><br>
+          <input type="password" id="new-password" placeholder="Enter a new password" autocomplete="new-password">
+        </p>
+        <p>
+          <label for="confirm-password">Confirm new password</label><br>
+          <input type="password" id="confirm-password" placeholder="Repeat the new password" autocomplete="new-password">
+        </p>
+        <button type="button">Update password</button>
+        <p>Use a password you do not use elsewhere.</p>
+      </form>
+    </section>
+  </main>
 </body>
 </html>
