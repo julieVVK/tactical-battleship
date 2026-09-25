@@ -1,0 +1,20 @@
+/*
+color codes:
+#243E59 - basic font and buttons fillout
+#EEE9DF - background
+#E4EDF0 - fill out figures + waves
+#C56A4D - sign out font, crosses during game
+#FFFFFF - grid fill and some text
+#375F76 - ships fill out
+#386E7A - victory text
+#DEE3DD - victory tint
+#386E7A - positive statistics
+#EDE3DA - defeat tint
+#B2705C - defeat text
+#B2705C - negative statistics
+*/
+
+body {
+    background-color: #EEE9DF;
+    color: #243E59; /*font color*/
+}

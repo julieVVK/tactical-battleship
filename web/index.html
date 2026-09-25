@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
   <title>Battleships</title>
 </head>
 <body>
@@ -44,7 +45,7 @@
       <button type="button" onclick="window.location.href='#join'">Join</button>
       <button type="button">Create</button>
     </section>
-    <!-- Lobby -->>
+    <!-- Lobby -->
 
     <!-- Join a lobby -->
     <section id="join">
@@ -153,25 +154,18 @@
       <p>Make yourself at home. Manage your profile and game preferences.</p>
 
       <form>
-        <fieldset>
-          <legend>Appearance</legend>
-          <label><input type="radio" name="appearance" value="light" checked> Light</label>
-          <label><input type="radio" name="appearance" value="dark"> Dark</label>
-          <label><input type="radio" name="appearance" value="system"> System</label>
-          <p>Choose how Battleships looks.</p>
-        </fieldset>
 
         <fieldset>
           <legend>Sound</legend>
-          <label><input type="radio" name="sound" value="mute" checked> Mute</label>
-          <label><input type="radio" name="sound" value="unmute"> Unmute</label>
-          <p>Music and battle sound effects.</p>
+          <label><input type="checkbox" name="sound" value="mute" checked> Mute music</label>
+          <label><input type="checkbox" name="sound" value="mute" checked> Mute sound effects</label>
         </fieldset>
 
         <p>
           <label for="language">Language</label><br>
           <select id="language" name="language">
             <option value="en">English</option>
+            <option value="cz">Czech</option>
           </select>
         </p>
       </form>
