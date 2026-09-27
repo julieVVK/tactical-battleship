@@ -1,0 +1,49 @@
+/*
+
+
+File was created by Vladyslav Doroshenko
+
+
+color codes:
+#243E59 - basic font and buttons fillout
+
+#EEE9DF - background darker
+#F5F3EB - background lighter
+
+#E4EDF0 - fill out figures + waves
+#C56A4D - sign out font, crosses during game
+#FFFFFF - grid fill and some text
+#375F76 - ships stroke (border color)
+#A9C6D2 - ships fill out REAL
+#386E7A - victory text
+#DEE3DD - victory tint
+#386E7A - positive statistics
+#EDE3DA - defeat tint
+#B2705C - defeat text
+#B2705C - negative statistics
+*/
+
+.button {
+    margin: 1vh;
+    padding: 1.0vh 1.5vw;
+    font-weight: normal;
+    font-size: 1.2rem;
+    cursor: pointer;
+    background-color: #243E59;
+    color: #FFF;
+    border: solid 1px black;
+    border-radius: 3px;
+}
+
+.button:hover {
+    background-color: #284866;
+    color: #f0eee5;
+    transition:
+            background-color 0.3s ease,
+            color 0.3s ease,
+            transform 0.1s ease;
+}
+
+.button:active {
+    transform: scale(0.98);
+}

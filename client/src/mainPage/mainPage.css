@@ -1,12 +1,20 @@
 /*
-File was created by Maria Pindorova
+
+
+File was created by Vladyslav Doroshenko, Marie Pindorova
+
+
 color codes:
 #243E59 - basic font and buttons fillout
-#EEE9DF - background
+
+#EEE9DF - background darker
+#F5F3EB - background lighter
+
 #E4EDF0 - fill out figures + waves
 #C56A4D - sign out font, crosses during game
 #FFFFFF - grid fill and some text
-#375F76 - ships fill out
+#375F76 - ships stroke (border color)
+#A9C6D2 - ships fill out REAL
 #386E7A - victory text
 #DEE3DD - victory tint
 #386E7A - positive statistics
@@ -15,7 +23,49 @@ color codes:
 #B2705C - negative statistics
 */
 
+* {
+    font-size: 1.2rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     background-color: #EEE9DF;
     color: #243E59; /*font color*/
+}
+
+.mainPageh1{
+    width: 100%;
+    height: 35%;
+
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    padding-top: 5%;
+}
+
+.main-page-button-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    width: 100%;
+    height: 70%;
+}
+
+.main-page-dialogue {
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    width: 25vw;
+    height: 18vh;
+
+    border: solid 1px #243E59;
+    border-radius: 4px;
+    background-color: #F5F3EB;
 }
