@@ -1,0 +1,17 @@
+<svg width="370" height="285" viewBox="0 0 370 285" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M34 129L288 178L322 158L71 111L34 129Z" fill="#E4EDF0" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M34 129L69 204L271 246L288 178L34 129Z" fill="#D1DFE3" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M288 178L322 158L301 225L271 246L288 178Z" fill="#A7BFC9" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M87 67V119C87 132 126 137 126 125V73" fill="#F5F3EB"/>
+    <path d="M87 67V119C87 132 126 137 126 125V73" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M106.5 77C117.546 77 126.5 73.4183 126.5 69C126.5 64.5817 117.546 61 106.5 61C95.4543 61 86.5 64.5817 86.5 69C86.5 73.4183 95.4543 77 106.5 77Z" fill="#F5F3EB" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M150 86V132C150 146 189 152 189 139V94" fill="#F5F3EB"/>
+    <path d="M150 86V132C150 146 189 152 189 139V94" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M169.5 98C180.546 98 189.5 94.4183 189.5 90C189.5 85.5817 180.546 82 169.5 82C158.454 82 149.5 85.5817 149.5 90C149.5 94.4183 158.454 98 169.5 98Z" fill="#F5F3EB" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M213 105V146C213 158 252 165 252 154V113" fill="#F5F3EB"/>
+    <path d="M213 105V146C213 158 252 165 252 154V113" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M232.5 117C243.546 117 252.5 113.418 252.5 109C252.5 104.582 243.546 101 232.5 101C221.454 101 212.5 104.582 212.5 109C212.5 113.418 221.454 117 232.5 117Z" fill="#F5F3EB" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M42 134L45 74L42 134ZM45 80L66 87L45 93" fill="#F5F3EB"/>
+    <path d="M42 134L45 74M45 80L66 87L45 93" stroke="#243E59" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M82 21C56 29 122 37 100 51M147 34C127 43 175 53 162 67M209 54C190 63 233 73 228 84" stroke="#A3B5BC" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>
