@@ -1,4 +1,4 @@
-import MainPage from "./mainPage/MainPage.jsx";
+import MainPage from "./components/mainPage/MainPage.jsx";
 
 
 function App() {
@@ -6,9 +6,7 @@ function App() {
 
     return (
         <>
-            <div style={{display: "flex", justifyContent: "center", alignItems: "center", height: "100vh"}}>
-                <MainPage />
-            </div>
+            <MainPage />
         </>
     )
 }

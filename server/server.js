@@ -20,6 +20,11 @@ app.get('/api/ping', (req, res) => {
     res.json({message: "pong"} )
 })
 
+//TODO: replace this plug with proper DB communication
+app.get('/api/signout', (req, res) => {
+    res.json({message: "Successfully signed out"} )
+})
+
 
 io.on("connection", (socket) => {
     console.log(`User with id "${socket.id}" connected`)

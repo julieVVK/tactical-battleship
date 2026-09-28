@@ -1,0 +1,70 @@
+/*
+File was created by Vladyslav Doroshenko
+
+
+color codes:
+
+color codes:
+--text-btn-color, #243E59 - basic font and buttons fillout
+Figma: Game title, Copy code, dialogue borders.
+
+--signout-bg, #EEE9DF - background darker
+Figma: Sign out background.
+
+--page-bg, #F5F3EB - background lighter
+Figma: Screen, dialogue and input backgrounds.
+
+--avatar-bg, #E4EDF0 - fill out figures + waves
+Figma: Avatar, Special abilities and ship detail backgrounds.
+
+--hit-mark, #C56A4D - sign out font, crosses during game
+Figma: Sign out label, Hit label and hit marks.
+
+--input-bg, #FFFFFF - grid fill and some text
+Figma: Code display, Code or URL input.
+
+--ship-border, #375F76 - ships stroke (border color)
+Figma: Fleet silhouettes, Fleet and Radar icon outlines.
+
+--ship-bg, #A9C6D2 - ships fill out REAL
+Figma: Fleet silhouettes, Fleet and Last scanned area fills.
+
+--win-text, #386E7A - victory text, positive statistics
+Figma: Victory labels, Won, Wins bar and win count.
+
+--win-bg, #DEE3DD - victory tint
+Figma: Victory rows, Column labels and System control.
+
+--loss-bg, #EDE3DA - defeat tint
+Figma: Defeat row backgrounds.
+
+--loss-text, #B2705C - defeat text, negative statistics
+Figma: Lost label, Losses bar and loss count.
+
+--btn-border, #000000 - button border
+Figma: Playing page grid and shot marker vector fills.
+
+--btn-hover-bg, #284866 - button hover fill
+Figma: Not used in the checked design.
+
+--btn-hover-text, #F0EEE5 - button hover text
+Figma: Not used in the checked design.
+*/
+
+:root {
+    --text-btn-color: #243E59;
+    --signout-bg: #EEE9DF;
+    --page-bg: #F5F3EB;
+    --avatar-bg: #E4EDF0;
+    --hit-mark: #C56A4D;
+    --input-bg: #FFFFFF;
+    --btn-border: #000000;
+    --ship-border: #375F76;
+    --ship-bg: #A9C6D2;
+    --win-text: #386E7A;
+    --win-bg: #DEE3DD;
+    --loss-bg: #EDE3DA;
+    --loss-text: #B2705C;
+    --btn-hover-bg: #284866;
+    --btn-hover-text: #F0EEE5;
+}
