@@ -1,0 +1,70 @@
+/*
+File was created by Vladyslav Doroshenko
+*/
+
+.ship {
+    display: grid;
+    pointer-events: none;
+}
+
+.ship-image{
+    z-index: 1;
+}
+
+.ship-image,
+.ship-waves {
+    grid-area: 1 / 1;
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.ship-waves {
+    --wave-step-x: 20%;
+    --wave-step-y: 6.7%; /*67676767*/
+    --wave-duration: 3s;
+    position: relative;
+    transform: translateX(-21%) translateY(-1%);
+    overflow: hidden;
+    clip-path: inset(75% 0 0);
+    mask-image:
+        linear-gradient(to bottom, transparent 75%, black 80%, black 95%, transparent 100%),
+        linear-gradient(to right, transparent 0%, black 12%, black 82%, transparent 100%);
+    mask-composite: intersect;
+}
+
+.ship-waves-track {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    animation: ship-waves-flow var(--wave-duration) linear infinite;
+}
+
+.ship-waves-layer {
+    position: absolute;
+    left: calc(var(--wave-copy) * var(--wave-step-x));
+    top: calc(var(--wave-copy) * var(--wave-step-y));
+    width: 100%;
+    height: 100%;
+}
+
+.ship-waves-back {
+    --wave-step-x: 28%;
+    --wave-step-y: 9.3333333%;
+    --wave-duration: 4.2s;
+    transform: translateX(2%) translateY(-20%);
+}
+
+.ship-waves-back .ship-waves-track {
+    left: 15%;
+}
+
+@keyframes ship-waves-flow {
+    from {
+        transform: translate(-30%, -20%);
+    }
+    to {
+        transform: translate(calc(-30% + var(--wave-step-x)), calc(-20% + var(--wave-step-y)));
+    }
+}
