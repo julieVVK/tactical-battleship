@@ -1,0 +1,11 @@
+#homeButton{
+     width: 132px;
+              height: 56px;
+              font-weight: 500;
+              font-size:  18px;
+              background-color: rgba(245, 243, 235, 1);
+}
+.headerDiv{display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          padding: 24px;}
