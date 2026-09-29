@@ -1,0 +1,30 @@
+/**
+ * @file header.css
+ * @description Header layout styles and home button interaction states.
+ * Uses a balanced 3-column CSS grid to keep the title centered regardless of left/right actions.
+ * @author xhaziyh00
+ */
+.headerDiv {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 24px;
+}
+
+#homeButton {
+  width: 132px;
+  height: 56px;
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--text-btn-color);
+  background-color: var(--page-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+#homeButton:hover {
+  background-color: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
+}
