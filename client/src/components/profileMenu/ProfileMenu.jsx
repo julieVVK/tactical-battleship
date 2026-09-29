@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
 
-function ProfileMenu() {
+function ProfileMenu({ onNavigateSettings }) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
     const buttonRef = useRef(null);
@@ -78,18 +78,33 @@ function ProfileMenu() {
             >
                 <img src={profileLogo} alt="" />
             </button>
+
+
             <section className="profile-menu-panel" hidden={!isOpen}>
                 <header className="profile-menu-header">
                     <h2>Your account</h2>
                     <p>Player profile and preferences</p>
                 </header>
+
                 <div className="profile-menu-items">
 
-                    {Object.entries(menu_items).map( ([label, href]) => (
-                        <a className="profile-menu-item" href={href} key={label}>
+                    {Object.entries(menu_items).map( ([label, href]) => {
+                     return (   
+                       // <a className="profile-menu-item" href={href} key={label}> {label} </a>
+                        <button
+                            type="button"
+                            className="profile-menu-item"
+                            key={label}
+                            onClick={() => {
+                                setIsOpen(false);
+                                if (onNavigateSettings) onNavigateSettings(); 
+                            }}
+
+                        >
                             {label}
-                        </a>
-                    ))}
+                        </button>
+                     );
+                    })}
 
                     <button type="button" onClick={() => signOut()} className="profile-menu-item profile-menu-signout">
                         Sign out

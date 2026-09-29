@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Button from '../button/Button';
 import './settings.css'; 
 
-export default function Settings() {
+export default function Settings({ onNavigateMain }) {
 
   const [muteMusic, setMuteMusic] = useState(true);
   const [muteSoundEffects, setMuteSoundEffects] = useState(false);
@@ -35,7 +35,13 @@ export default function Settings() {
     <section id="settings" className="settings-container">
 
       <div className="settings-top-nav">
-        <a href="/" className="home-back-button"> Home</a>
+        <button 
+          type="button" 
+          className="home-back-button"
+          onClick={onNavigateMain}
+        >
+           Home
+        </button>
       </div>
 
       <header className="settings-header">
