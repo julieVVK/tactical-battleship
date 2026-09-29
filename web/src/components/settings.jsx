@@ -34,14 +34,11 @@ export default function Settings() {
     <section id="settings" className="settings-container">
 
       <div className="settings-top-nav">
-        <a href="#home" className="back-link"> Home</a>
+        <a href="/" className="home-back-button"> Home</a>
       </div>
 
       <header className="settings-header">
         <h2 className="settings-title">Settings</h2>
-        <p className="settings-subtitle">
-          Make yourself at home. Manage your profile and game preferences.
-        </p>
       </header>
 
       <div className="settings-grid">
@@ -51,43 +48,39 @@ export default function Settings() {
 
         {/*MUSIC AND SOUND EFFECTS*/}
 
-        <fieldset className="settings-sound"> 
+        <div className="settings-sound"> 
 
           <legend className="sound-title">Sound</legend>
 
           <div className="button-group">
 
-            <label className={`toggle-button ${muteMusic ? 'active' : ''}`}>
+            <label className={`sound-toggle-button ${muteMusic ? 'active' : ''}`}>
               <input 
-                type="checkbox" 
-                name="muteMusic" 
-                checked={muteMusic} 
-                onChange={(event) => setMuteMusic(event.target.checked)} 
-                className="checkbox-input"
+                type="button" 
+                className={`sound-toggle-button ${muteMusic ? 'active' : ''}`}
+                onClick={() => setMuteMusic(!muteMusic)}
               />
               Mute music
             </label>
-
-            <label className={`toggle-button ${muteSoundEffects ? 'active' : ''}`}>
+    
+            <label className={`sound-toggle-button ${muteSoundEffects ? 'active' : ''}`}>
               <input 
-                type="checkbox" 
-                name="muteSoundEffects" 
-                checked={muteSoundEffects} 
-                onChange={(event) => setMuteSoundEffects(event.target.checked)} 
-                className="checkbox-input"
+                type="button" 
+                className={`sound-toggle-button ${muteSoundEffects ? 'active' : ''}`}
+                onClick={() => setMuteSoundEffects(!muteSoundEffects)}
               />
               Mute sound effects
             </label>
 
           </div>
-        </fieldset>
+        </div>
 
         {/*MUSIC AND SOUND EFFECTS*/}
 
 
         {/*LANGUAGE*/}
 
-        <fieldset className="settings-language">
+        <div className="settings-language">
 
           <legend className="language-title">Language</legend>
 
@@ -104,17 +97,14 @@ export default function Settings() {
               <option value="en">English</option>
               <option value="cz">Czech</option>
             </select>
-
-            <p className="language-description">Language used across the game.</p>
-
           </div>
-        </fieldset>
+        </div>
 
         {/*LANGUAGE*/}
 
 
         {/*ACCOUNT*/}
-        <fieldset className="settings-account">
+        <div className="settings-account">
           <legend className="account-title">Account</legend>
 
           <form onSubmit={handleSaveProfile} className="account-form">
@@ -167,27 +157,24 @@ export default function Settings() {
             <div className="profile-picture-section">
               <p className="form-label">Profile picture</p>
               <div className="avatar-placeholder"></div>
-              <button type="button" className="button-avatar">Change picture</button>
+              <button type="button" className="change-picture-button">Change picture</button>
               <p className="field-hint">JPG or PNG · Up to 2 MB</p>
             </div>
 
             <div className="form-actions">
-              <button type="submit" className="button-submit">Save changes</button>
-              <span className="field-hint">Your name will appear in your profile.</span>
+              <button type="button" className="save-account-button">Save changes</button>
             </div>
 
           </form>
-        </fieldset>
+        </div>
 
         {/*ACCOUNT*/}
 
 
         {/*PASSWORD*/}
 
-        <fieldset className="settings-password">
+        <div className="settings-password">
           <legend className="password-title">Change password</legend>
-          <p className="password-subtitle">Keep your account secure.</p>
-
           <form onSubmit={handleUpdatePassword} className="password-form">
 
             <div className="form-group">
@@ -230,10 +217,9 @@ export default function Settings() {
 
             <div className="form-actions">
               <button type="submit" className="button-submit">Update password</button>
-              <span className="field-hint">Use a password you do not use elsewhere.</span>
             </div>
           </form>
-        </fieldset>
+        </div>
 
         {/*PASSWORD*/}
 
