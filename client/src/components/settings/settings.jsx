@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Button from '../button/Button';
 import './settings.css'; 
 
 export default function Settings() {
