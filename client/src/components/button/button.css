@@ -1,0 +1,55 @@
+/*
+File was created by Vladyslav Doroshenko
+*/
+.main-page-button-container .button{
+    padding: 0.75rem 1.5rem;
+    width: 12rem;
+    min-width: 8rem;
+}
+
+
+.button{
+    margin: 0;
+    padding: 0.75rem 1rem;
+    width: fit-content;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    font-weight: normal;
+    font-size: 1.2rem;
+
+    cursor: pointer;
+    border: solid 1px var(--btn-border);
+    border-radius: 3px;
+
+    transition:
+            background-color 0.3s ease,
+            color 0.3s ease,
+            transform 0.1s ease;
+}
+
+
+.button:active {
+    transform: scale(0.98);
+}
+
+.dark{
+    background-color: var(--text-btn-color);
+    color: var(--input-bg);
+}
+
+.dark:hover {
+    background-color: var(--page-bg);
+    color: var(--text-btn-color);
+}
+
+.light{
+    background-color: var(--page-bg);
+    color: var(--text-btn-color);
+}
+
+.light:hover {
+    background-color: var(--btn-hover-bg);
+    color: var(--btn-hover-text);
+}
