@@ -1,0 +1,65 @@
+﻿1. Výzkum uživatelských potřeb (User Research)
+
+
+1.1 Zdokumentování provedeného výzkumu
+
+
+Identifikace respondentů: 
+        Respondent (vzpracovala Marie): spolubydlící, studentka FIT. 
+        Charakteristika: hraje “Námořní bitvu” občas, pro zábavu.
+Způsob sběru dat:
+        Výzkum probíhal doma formou krátkého rozhovoru.
+
+
+1.2 Formulace konkrétních uživatelských potřeb
+
+
+1. Jasné vyznačení toho, kdo je na řadě (čí je následující tah).
+2. Umístění všech nastavení v jednom místě a jejich jasné vyznačení.
+3. Moderní, jednoduchý a příjemný design.
+        
+
+
+2. Analýza konkurenčních řešení
+
+
+        2.1 Mapování konkurence na zjištěné potřeby
+
+
+            Seznam analyzovaných produktů (Marie):
+
+
+
+
+1. Námořní bitva (online hra pro dvojice) - Battleship (https://battleship-game.org/cs/)
+2. Battleship game od Paper Games (https://papergames.io/en/battleship)
+
+
+        Vazba na potřeby z Kapitoly 1:
+        “Námořní bitva” je na první pohled neintuitivní: není jasné, kdo je na řadě. Tato hra by nebyla vhodná například pro začátečníky.
+        “Battleship game” má rozsáhlé rozhraní, hodně ruzných nastavení a i návod.
+
+
+        2.2 Vyhodnocení, Pro/Proti a Ponaučení
+
+
+        Aplikace č. 1:
+Pro (Výhody):
+1. Možnost výběru z více než 20 jazyků.
+2. Nepřítomnost zbytečných tlačítek na obrazovce. 
+3. Možnost hrát s kamarády - pozvat známého soupeře. 
+Proti (Nevýhody): 
+1. Absence návodu a vysvětlení k symbolům, které se používají ve hře: není jasné, co znamená každý symbol, který se objevuje na hracím poli. 
+2. V průběhu hry není možné se podívat do návodu a tím pádem rychle reagovat na tahy soupeře. 
+3. Po ukončení hry chybí tlačítko, které by umožnilo návrat na hlavní obrazovku nebo jakékoliv jiné, kromě “Hrát ještě jednou”.
+
+
+Aplikace č. 2:
+Výhody: 
+1. Přítomnost žebříčku, tj. možnosti závodit. 
+2. Možnost organizovat turnaje. 
+3. Hra obsahuje další funkce, např. limitovaná možnost zasáhnout několik políček naráz.
+Nevýhody: 
+1. Velké množství reklam, které není možné skrýt. 
+2. Při spuštění hry začíná hrát hudba a není jasné, jak ji vypnout. 
+3. Přítomnost placených služeb, např. možnost zakoupení herních mincí za dolary.
