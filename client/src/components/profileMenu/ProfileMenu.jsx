@@ -1,20 +1,19 @@
-//File was created by Vladyslav Doroshenko
+// File was created by Vladyslav Doroshenko
+
 import { useEffect, useRef, useState } from "react";
 
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
 
-function ProfileMenu({ onNavigateSettings }) {
+function ProfileMenu() {
     const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef(null);
-    const buttonRef = useRef(null);
+    const containerRef =  useRef(null);
 
-    //TODO: add routing (React Router or (more likely)Express Router???) to this
+    //TODO: connect React Router to this
     const menu_items = {
         "Profile" : "#Profile",
         "Statistics": "#Statistics",
         "Match history": "#MatchHistory",
-        "Settings": "#Settings",
     }
 
     useEffect(() => {
@@ -73,14 +72,16 @@ function ProfileMenu({ onNavigateSettings }) {
             <button
                 className="profile-menu-toggle"
                 type="button"
-                ref={buttonRef}
+                aria-label="Account menu"
+                aria-expanded={isOpen}
+                aria-controls="profile-menu-panel"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <img src={profileLogo} alt="" />
             </button>
 
 
-            <section className="profile-menu-panel" hidden={!isOpen}>
+            <section id="profile-menu-panel" className="profile-menu-panel" hidden={!isOpen}>
                 <header className="profile-menu-header">
                     <h2>Your account</h2>
                     <p>Player profile and preferences</p>
@@ -88,25 +89,23 @@ function ProfileMenu({ onNavigateSettings }) {
 
                 <div className="profile-menu-items">
 
-                    {Object.entries(menu_items).map( ([label, href]) => {
-                     return (   
-                       // <a className="profile-menu-item" href={href} key={label}> {label} </a>
+                    {Object.entries(menu_items).map( ([label]) => {
+                     return (
                         <button
                             type="button"
                             className="profile-menu-item"
                             key={label}
-                            onClick={() => {
-                                setIsOpen(false);
-                                if (onNavigateSettings) onNavigateSettings(); 
-                            }}
-
+                            onClick={ () => {setIsOpen(false)} }
                         >
                             {label}
                         </button>
                      );
                     })}
 
-                    <button type="button" onClick={() => signOut()} className="profile-menu-item profile-menu-signout">
+                    <button
+                        type="button"
+                        onClick={() => signOut()}
+                        className="profile-menu-item profile-menu-signout">
                         Sign out
                     </button>
                 </div>
