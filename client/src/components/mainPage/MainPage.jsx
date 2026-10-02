@@ -1,4 +1,5 @@
 // File was created by Vladyslav Doroshenko
+
 import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
 import Button from "../button/Button.jsx";
@@ -9,7 +10,7 @@ function MainPage({ onNavigateSettings }) {
         <>
             <div className="main-page">
                 <Ship />
-                <ProfileMenu onNavigateSettings={onNavigateSettings} />
+                <ProfileMenu />
                 <div className="main-page-content">
                     <h1 className="main-page-title">Battleships</h1>
                     <div className="main-page-dialogue">
@@ -19,8 +20,11 @@ function MainPage({ onNavigateSettings }) {
                             <Button variant="dark">2 Players</Button>
                         </div>
                     </div>
-                    <Button className="main-page-rules">Rules</Button>
-                    <Button variant="light" onClick={onNavigateSettings}>Settings</Button>
+
+                    <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem"}}>
+                        <Button className="main-page-rules">Rules</Button>
+                        <Button className="main-page-rules" variant="light" onClick={onNavigateSettings}>Settings</Button>
+                    </div>
                 </div>
             </div>
         </>

@@ -1,24 +1,43 @@
-import React, { useState } from 'react';
+// File was created by Yuliia Vovk
+
+// Later modified by Vladyslav Doroshenko
+
+import { useState } from 'react';
 import Button from '../button/Button';
-import './settings.css'; 
+import './settings.css';
 
 export default function Settings({ onNavigateMain }) {
 
-  const [muteMusic, setMuteMusic] = useState(true);
+  const [muteMusic,        setMuteMusic] =        useState(true);
   const [muteSoundEffects, setMuteSoundEffects] = useState(false);
+
   const [language, setLanguage] = useState('en');
-  const [username, setUsername] = useState('Captain');
-  const [email, setEmail] = useState('captain@example.com');
-  const [country, setCountry] = useState('CZ');
+  const [username, setUsername] = useState('');   // was Captain
+  const [email,    setEmail] =    useState('');   // was captain@example.com
+  const [country,  setCountry] =  useState('CZ');
+
   const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [newPassword,     setNewPassword] =     useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+
+  /* TODO: add DB communication:
+   *   1. Check if username and email are valid
+   *   2. Check if username and email are unique
+   *   3. Update the user's profile in the database
+   *   4. Save the updated profile
+   * */
   const handleSaveProfile = (event) => {
     event.preventDefault();
     alert(`Profile saved: ${username} (${email}, ${country})`);
   };
 
+
+  /* TODO: add DB communication:
+   *   1. Check if current password is correct
+   *   2. Update the user's password in the database
+   *   3. Save the updated password
+   * */
   const handleUpdatePassword = (event) => {
     event.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -31,17 +50,21 @@ export default function Settings({ onNavigateMain }) {
 
 
 
+  /* TODO: add DB communication:
+   *   1. Fetch user profile information from the database
+   *   2. Initialize state variables with fetched data
+   * */
   return (
     <section id="settings" className="settings-container">
 
       <div className="settings-top-nav">
-        <button 
-          type="button" 
+        <Button
+          type="button"
           className="home-back-button"
           onClick={onNavigateMain}
         >
            Home
-        </button>
+        </Button>
       </div>
 
       <header className="settings-header">
@@ -54,30 +77,35 @@ export default function Settings({ onNavigateMain }) {
 
 
         {/*MUSIC AND SOUND EFFECTS*/}
+        {/*TODO: add correct logic to this section
+                 add proper DB communication:
+                  1. Fetch user sound settings from the database
+                  2. Update user sound settings in the database
+        */}
+        <div className="settings-sound">
 
-        <div className="settings-sound"> 
-
-          <legend className="sound-title">Sound</legend>
+          <h3 className="sound-title">Sound</h3>
 
           <div className="button-group">
 
-            <label className={`sound-toggle-button ${muteMusic ? 'active' : ''}`}>
-              <input 
-                type="button" 
-                className={`sound-toggle-button ${muteMusic ? 'active' : ''}`}
-                onClick={() => setMuteMusic(!muteMusic)}
-              />
+            {/*TODO: implement logic to toggle muteMusic*/}
+            <Button
+              variant={muteMusic ? 'dark' : 'light'}
+              className={"sound-toggle-button"}
+              aria-pressed={muteMusic}
+              onClick={() => setMuteMusic(!muteMusic)}
+            >
               Mute music
-            </label>
-    
-            <label className={`sound-toggle-button ${muteSoundEffects ? 'active' : ''}`}>
-              <input 
-                type="button" 
-                className={`sound-toggle-button ${muteSoundEffects ? 'active' : ''}`}
-                onClick={() => setMuteSoundEffects(!muteSoundEffects)}
-              />
+            </Button>
+
+            <Button
+              variant={muteSoundEffects ? 'dark' : 'light'}
+              className={"sound-toggle-button"}
+              aria-pressed={muteSoundEffects}
+              onClick={() => setMuteSoundEffects(!muteSoundEffects)}
+            >
               Mute sound effects
-            </label>
+            </Button>
 
           </div>
         </div>
@@ -89,18 +117,24 @@ export default function Settings({ onNavigateMain }) {
 
         <div className="settings-language">
 
-          <legend className="language-title">Language</legend>
+          <h3 className="language-title">Language</h3>
 
           <div className="form-group">
 
             <label htmlFor="language" className="form-label">Language</label>
 
-            <select 
-              id="language" 
-              value={language} 
+            <select
+              id="language"
+              value={language}
               onChange={(event) => setLanguage(event.target.value)}
               className="language-select"
             >
+              {/* TODO: implement map function to map
+                          all supported countries and languages
+                          from a separate dedicated file */}
+              {/*TODO: add proper DB communication:
+                  1. Fetch user language settings from the database
+                  2. Update user language settings in the database */}
               <option value="en">English</option>
               <option value="cz">Czech</option>
             </select>
@@ -111,8 +145,10 @@ export default function Settings({ onNavigateMain }) {
 
 
         {/*ACCOUNT*/}
+        {/* TODO: maybe refactor this whole section to a separate window or smth???
+                  so the user know EXACTLY where to change things */}
         <div className="settings-account">
-          <legend className="account-title">Account</legend>
+          <h3 className="account-title">Account</h3>
 
           <form onSubmit={handleSaveProfile} className="account-form">
 
@@ -120,12 +156,13 @@ export default function Settings({ onNavigateMain }) {
 
               <label htmlFor="username" className="form-label">Username</label>
 
-              <input 
-                type="text" 
-                id="username" 
-                value={username} 
-                onChange={(event) => setUsername(event.target.value)} 
-                autoComplete="nickname" 
+              <input
+                type="text"
+                id="username"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                autoComplete="nickname"
                 className="form-input"
               />
             </div>
@@ -134,12 +171,13 @@ export default function Settings({ onNavigateMain }) {
 
               <label htmlFor="email" className="form-label">Email</label>
 
-              <input 
-                type="email" 
-                id="email" 
-                value={email} 
-                onChange={(event) => setEmail(event.target.value)} 
-                autoComplete="email" 
+              <input
+                type="email"
+                id="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
                 className="form-input"
               />
             </div>
@@ -148,12 +186,15 @@ export default function Settings({ onNavigateMain }) {
 
               <label htmlFor="country" className="form-label">Country</label>
 
-              <select 
-                id="country" 
-                value={country} 
+              <select
+                id="country"
+                value={country}
                 onChange={(event) => setCountry(event.target.value)}
                 className="form-select"
               >
+                {/* TODO: implement map function to map
+                          all supported countries and languages
+                          from a separate dedicated file */}
                 <option value="CZ"> Czechia</option>
                 <option value="UA"> Ukraine</option>
                 <option value="SK"> Slovakia</option>
@@ -161,15 +202,24 @@ export default function Settings({ onNavigateMain }) {
               </select>
             </div>
 
+            {/* TODO: add change profile handler */}
             <div className="profile-picture-section">
               <p className="form-label">Profile picture</p>
               <div className="avatar-placeholder"></div>
-              <button type="button" className="change-picture-button">Change picture</button>
+              <Button type="button" className="change-picture-button">Change picture</Button>
               <p className="field-hint">JPG or PNG · Up to 2 MB</p>
             </div>
 
             <div className="form-actions">
-              <button type="button" className="save-account-button">Save changes</button>
+              {/* TODO: disable Save until values differ from the saved profile */}
+              <Button
+                  type="submit"
+                  variant="dark"
+                  className="save-account-button"
+                  disabled
+              >
+                Save changes
+              </Button>
             </div>
 
           </form>
@@ -179,51 +229,55 @@ export default function Settings({ onNavigateMain }) {
 
 
         {/*PASSWORD*/}
+        {/*TODO: add correct logic to this section
+                 check if fields are filled and filled correctly
+                 check handleUpdatePassword() to\do for further work */}
 
         <div className="settings-password">
-          <legend className="password-title">Change password</legend>
+          <h3 className="password-title">Change password</h3>
           <form onSubmit={handleUpdatePassword} className="password-form">
 
             <div className="form-group">
               <label htmlFor="current-password" className="form-label">Current password</label>
-              <input 
-                type="password" 
-                id="current-password" 
-                value={currentPassword} 
-                onChange={(event) => setCurrentPassword(event.target.value)} 
-                autoComplete="current-password" 
+              <input
+                type="password"
+                id="current-password"
+                value={currentPassword}
+                placeholder="Enter your current password"
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                autoComplete="current-password"
                 className="form-input"
               />
             </div>
 
             <div className="form-group">
               <label htmlFor="new-password" className="form-label">New password</label>
-              <input 
-                type="password" 
-                id="new-password" 
-                placeholder="Enter a new password" 
-                value={newPassword} 
-                onChange={(event) => setNewPassword(event.target.value)} 
-                autoComplete="new-password" 
+              <input
+                type="password"
+                id="new-password"
+                placeholder="Enter a new password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                autoComplete="new-password"
                 className="form-input"
               />
             </div>
 
             <div className="form-group">
               <label htmlFor="confirm-password" className="form-label">Confirm new password</label>
-              <input 
-                type="password" 
-                id="confirm-password" 
-                placeholder="Repeat the new password" 
-                value={confirmPassword} 
-                onChange={(event) => setConfirmPassword(event.target.value)} 
-                autoComplete="new-password" 
+              <input
+                type="password"
+                id="confirm-password"
+                placeholder="Repeat the new password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
                 className="form-input"
               />
             </div>
 
             <div className="form-actions">
-              <button type="submit" className="button-submit">Update password</button>
+              <Button type="submit" variant="dark" className="button-submit">Update password</Button>
             </div>
           </form>
         </div>
