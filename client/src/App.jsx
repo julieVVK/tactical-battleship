@@ -2,7 +2,7 @@ import MainPage from "./components/mainPage/MainPage.jsx";
 import BattleshipGame from "./components/battleshipGame/battleshipGame.jsx";
 import { useState } from "react";
 function App() {
-  const [screen, setScreen] = useState("menu");
+  const [screen, setScreen] = useState("game");
 
   // author:xhaziyh00 - Screen routing & State Lifting mechanism:
   // 1. Conditional Rendering: Acts as a lightweight client-side router without React Router.
