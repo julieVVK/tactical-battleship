@@ -1,0 +1,2217 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-10-05T17:16:59.822545+00:00",
+  "__export_source": "battleships-http-sessions",
+  "resources": [
+    {
+      "_id": "__WORKSPACE_ID__",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Battleships: HTTP с сессиями",
+      "scope": "collection",
+      "description": "Импортируй JSON через Import > File. Запусти сервер командой npm start из main/server.\nВ Collection Runner выбери все запросы и сохрани порядок папок и запросов. Первый Ping генерирует новые ID для каждого полного запуска. Токены и game_id сохраняются автоматически. Можно выполнить несколько последовательных итераций.\nВсе игровые запросы передают Authorization: Bearer <token>. GET не использует тело или userId в query. Коды ошибок проверяются в подходящей стадии игры. Первый ход случайный, current_player_token обновляется из ответа сервера.\nПосле промаха следующий игрок потапливает все десять кораблей. Затем проверяется завершение матча и настоящий signout.\nЭта коллекция проверяет HTTP. Для Socket.IO нужны socket.io-client и game:subscribe, примеры находятся в server/docs/socket.md. Автоматическая проверка HTTP и Socket.IO запускается через npm test из server.\nDebug маршрут не включён. Данные исчезают при перезапуске сервера.\nФормат скриптов: https://developer.konghq.com/insomnia/scripts/"
+    },
+    {
+      "_id": "__BASE_ENVIRONMENT_ID__",
+      "_type": "environment",
+      "parentId": "__WORKSPACE_ID__",
+      "name": "Base environment",
+      "data": {
+        "base_url": "http://127.0.0.1:3000",
+        "alice_id": "",
+        "bob_id": "",
+        "outsider_id": "",
+        "alice_token": "",
+        "bob_token": "",
+        "outsider_token": "",
+        "game_id": "",
+        "game_id_lower": "",
+        "current_player_id": "",
+        "other_player_id": "",
+        "current_player_token": "",
+        "other_player_token": ""
+      },
+      "dataPropertyOrder": null
+    },
+    {
+      "_id": "__request_group_1__",
+      "_type": "request_group",
+      "parentId": "__WORKSPACE_ID__",
+      "name": "01. Пользователи и токены",
+      "description": "Выполняй запросы по порядку.",
+      "environment": {},
+      "metaSortKey": 1,
+      "environmentPropertyOrder": null
+    },
+    {
+      "_id": "__request_1__",
+      "_type": "request",
+      "parentId": "__request_group_1__",
+      "name": "01. Ping и новые ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/ping",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 1,
+      "preRequestScript": "const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);\nfor (const name of [\"alice\", \"bob\", \"outsider\"]) {\n    insomnia.environment.set(name + \"_id\", \"insomnia_\" + name + \"_\" + suffix);\n    insomnia.environment.set(name + \"_token\", \"\");\n}\nfor (const key of [\"game_id\", \"game_id_lower\", \"current_player_id\", \"other_player_id\", \"current_player_token\", \"other_player_token\"]) insomnia.environment.set(key, \"\");",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"pong\", () => insomnia.expect(data.message).to.eql(\"pong\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_2__",
+      "_type": "request",
+      "parentId": "__request_group_1__",
+      "name": "02. Создать alice",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createUser",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"{{ _.alice_id }}\",\n  \"userName\": \"Alice\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 2,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) insomnia.environment.set(\"alice_token\", data.token);\ninsomnia.test(\"ID\", () => insomnia.expect(data.id).to.eql(insomnia.environment.get(\"alice_id\")));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_3__",
+      "_type": "request",
+      "parentId": "__request_group_1__",
+      "name": "03. Создать bob",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createUser",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"{{ _.bob_id }}\",\n  \"userName\": \"Bob\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 3,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) insomnia.environment.set(\"bob_token\", data.token);\ninsomnia.test(\"ID\", () => insomnia.expect(data.id).to.eql(insomnia.environment.get(\"bob_id\")));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_4__",
+      "_type": "request",
+      "parentId": "__request_group_1__",
+      "name": "04. Создать outsider",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createUser",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"{{ _.outsider_id }}\",\n  \"userName\": \"Outsider\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 4,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) insomnia.environment.set(\"outsider_token\", data.token);\ninsomnia.test(\"ID\", () => insomnia.expect(data.id).to.eql(insomnia.environment.get(\"outsider_id\")));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_5__",
+      "_type": "request",
+      "parentId": "__request_group_1__",
+      "name": "05. Повторный ID",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createUser",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"{{ _.alice_id }}\",\n  \"userName\": \"Duplicate\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код USER_ALREADY_EXISTS.",
+      "metaSortKey": 5,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"USER_ALREADY_EXISTS\", () => insomnia.expect(data.error.code).to.eql(\"USER_ALREADY_EXISTS\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_6__",
+      "_type": "request",
+      "parentId": "__request_group_1__",
+      "name": "06. Без тела",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createUser",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 400. Код INVALID_REQUEST_BODY.",
+      "metaSortKey": 6,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_REQUEST_BODY\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_REQUEST_BODY\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_7__",
+      "_type": "request",
+      "parentId": "__request_group_1__",
+      "name": "07. Пустое имя",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createUser",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"new-id\",\n  \"userName\": \" \"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 400. Код INVALID_USER_NAME.",
+      "metaSortKey": 7,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_USER_NAME\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_USER_NAME\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_8__",
+      "_type": "request",
+      "parentId": "__request_group_1__",
+      "name": "08. Невалидный JSON",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createUser",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\"userId\":"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 400. Код INVALID_JSON.",
+      "metaSortKey": 8,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_JSON\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_JSON\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_group_2__",
+      "_type": "request_group",
+      "parentId": "__WORKSPACE_ID__",
+      "name": "02. Создание и вход",
+      "description": "Выполняй запросы по порядку.",
+      "environment": {},
+      "metaSortKey": 2,
+      "environmentPropertyOrder": null
+    },
+    {
+      "_id": "__request_9__",
+      "_type": "request",
+      "parentId": "__request_group_2__",
+      "name": "01. Без токена",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createGames",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 401. Код SESSION_NOT_FOUND.",
+      "metaSortKey": 1,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 401\", () => insomnia.expect(status).to.eql(401));\ninsomnia.test(\"SESSION_NOT_FOUND\", () => insomnia.expect(data.error.code).to.eql(\"SESSION_NOT_FOUND\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_10__",
+      "_type": "request",
+      "parentId": "__request_group_2__",
+      "name": "02. Создать игру Alice",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/createGames",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 2,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) {\n    insomnia.environment.set(\"game_id\", data.id);\n    insomnia.environment.set(\"game_id_lower\", data.id.toLowerCase());\n}\ninsomnia.test(\"waiting\", () => insomnia.expect(data.phase).to.eql(\"waiting\"));\ninsomnia.test(\"Нет соперника\", () => insomnia.expect(data.players.opponent).to.eql(null));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_11__",
+      "_type": "request",
+      "parentId": "__request_group_2__",
+      "name": "03. GET Alice",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 3,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_12__",
+      "_type": "request",
+      "parentId": "__request_group_2__",
+      "name": "04. GET постороннего",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.outsider_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 403. Код PLAYER_NOT_IN_GAME.",
+      "metaSortKey": 4,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 403\", () => insomnia.expect(status).to.eql(403));\ninsomnia.test(\"PLAYER_NOT_IN_GAME\", () => insomnia.expect(data.error.code).to.eql(\"PLAYER_NOT_IN_GAME\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_13__",
+      "_type": "request",
+      "parentId": "__request_group_2__",
+      "name": "05. Повторный Join Alice",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/join",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код PLAYER_ALREADY_JOINED.",
+      "metaSortKey": 5,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"PLAYER_ALREADY_JOINED\", () => insomnia.expect(data.error.code).to.eql(\"PLAYER_ALREADY_JOINED\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_14__",
+      "_type": "request",
+      "parentId": "__request_group_2__",
+      "name": "06. Join Bob с lowercase ID",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id_lower }}/join",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.bob_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 6,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"placement\", () => insomnia.expect(data.phase).to.eql(\"placement\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_15__",
+      "_type": "request",
+      "parentId": "__request_group_2__",
+      "name": "07. Третий игрок",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/join",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.outsider_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код GAME_JOIN_CLOSED.",
+      "metaSortKey": 7,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"GAME_JOIN_CLOSED\", () => insomnia.expect(data.error.code).to.eql(\"GAME_JOIN_CLOSED\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_16__",
+      "_type": "request",
+      "parentId": "__request_group_2__",
+      "name": "08. Неверный код",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/games/bad",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 400. Код INVALID_GAME_ID.",
+      "metaSortKey": 8,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_GAME_ID\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_GAME_ID\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_group_3__",
+      "_type": "request_group",
+      "parentId": "__WORKSPACE_ID__",
+      "name": "03. Расстановка и ошибки до battle",
+      "description": "Выполняй запросы по порядку.",
+      "environment": {},
+      "metaSortKey": 3,
+      "environmentPropertyOrder": null
+    },
+    {
+      "_id": "__request_17__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "01. Неверный флот",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/ready",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"board\": []\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 400. Код INVALID_FLEET.",
+      "metaSortKey": 1,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_FLEET\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_FLEET\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_18__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "02. Ready без тела",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/ready",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 400. Код INVALID_REQUEST_BODY.",
+      "metaSortKey": 2,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_REQUEST_BODY\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_REQUEST_BODY\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_19__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "03. Ready Alice",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/ready",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"board\": [\n    [\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      null,\n      null,\n      \"ship-1\",\n      \"ship-1\",\n      \"ship-1\",\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-2\",\n      \"ship-2\",\n      \"ship-2\",\n      null,\n      null,\n      null,\n      \"ship-3\",\n      \"ship-3\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-4\",\n      \"ship-4\",\n      null,\n      null,\n      null,\n      null,\n      \"ship-5\",\n      \"ship-5\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-6\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-7\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-8\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-9\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ]\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 3,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Ready\", () => insomnia.expect(data.players.you.ready).to.eql(true));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_20__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "04. Повторный Ready Alice",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/ready",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"board\": [\n    [\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      null,\n      null,\n      \"ship-1\",\n      \"ship-1\",\n      \"ship-1\",\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-2\",\n      \"ship-2\",\n      \"ship-2\",\n      null,\n      null,\n      null,\n      \"ship-3\",\n      \"ship-3\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-4\",\n      \"ship-4\",\n      null,\n      null,\n      null,\n      null,\n      \"ship-5\",\n      \"ship-5\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-6\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-7\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-8\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-9\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ]\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код PLAYER_ALREADY_READY.",
+      "metaSortKey": 4,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"PLAYER_ALREADY_READY\", () => insomnia.expect(data.error.code).to.eql(\"PLAYER_ALREADY_READY\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_21__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "05. Ready постороннего",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/ready",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"board\": [\n    [\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      null,\n      null,\n      \"ship-1\",\n      \"ship-1\",\n      \"ship-1\",\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-2\",\n      \"ship-2\",\n      \"ship-2\",\n      null,\n      null,\n      null,\n      \"ship-3\",\n      \"ship-3\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-4\",\n      \"ship-4\",\n      null,\n      null,\n      null,\n      null,\n      \"ship-5\",\n      \"ship-5\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-6\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-7\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-8\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-9\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ]\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.outsider_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 403. Код PLAYER_NOT_IN_GAME.",
+      "metaSortKey": 5,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 403\", () => insomnia.expect(status).to.eql(403));\ninsomnia.test(\"PLAYER_NOT_IN_GAME\", () => insomnia.expect(data.error.code).to.eql(\"PLAYER_NOT_IN_GAME\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_22__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "06. Unready Alice",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/unready",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 6,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Unready\", () => insomnia.expect(data.players.you.ready).to.eql(false));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_23__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "07. Снова Ready Alice",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/ready",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"board\": [\n    [\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      null,\n      null,\n      \"ship-1\",\n      \"ship-1\",\n      \"ship-1\",\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-2\",\n      \"ship-2\",\n      \"ship-2\",\n      null,\n      null,\n      null,\n      \"ship-3\",\n      \"ship-3\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-4\",\n      \"ship-4\",\n      null,\n      null,\n      null,\n      null,\n      \"ship-5\",\n      \"ship-5\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-6\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-7\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-8\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-9\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ]\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 7,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_24__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "08. Выстрел до battle",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код BATTLE_NOT_ACTIVE.",
+      "metaSortKey": 8,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"BATTLE_NOT_ACTIVE\", () => insomnia.expect(data.error.code).to.eql(\"BATTLE_NOT_ACTIVE\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_25__",
+      "_type": "request",
+      "parentId": "__request_group_3__",
+      "name": "09. Ready Bob",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/ready",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"board\": [\n    [\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      \"ship-0\",\n      null,\n      null,\n      \"ship-1\",\n      \"ship-1\",\n      \"ship-1\",\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-2\",\n      \"ship-2\",\n      \"ship-2\",\n      null,\n      null,\n      null,\n      \"ship-3\",\n      \"ship-3\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-4\",\n      \"ship-4\",\n      null,\n      null,\n      null,\n      null,\n      \"ship-5\",\n      \"ship-5\",\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-6\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-7\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ],\n    [\n      \"ship-8\",\n      null,\n      null,\n      null,\n      null,\n      null,\n      \"ship-9\",\n      null,\n      null,\n      null\n    ],\n    [\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null,\n      null\n    ]\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.bob_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 9,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"battle\", () => insomnia.expect(data.phase).to.eql(\"battle\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_group_4__",
+      "_type": "request_group",
+      "parentId": "__WORKSPACE_ID__",
+      "name": "04. Выстрелы и ошибки в battle",
+      "description": "Выполняй запросы по порядку.",
+      "environment": {},
+      "metaSortKey": 4,
+      "environmentPropertyOrder": null
+    },
+    {
+      "_id": "__request_26__",
+      "_type": "request",
+      "parentId": "__request_group_4__",
+      "name": "01. Не свой ход",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.other_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код TURN_MISMATCH.",
+      "metaSortKey": 1,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"TURN_MISMATCH\", () => insomnia.expect(data.error.code).to.eql(\"TURN_MISMATCH\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_27__",
+      "_type": "request",
+      "parentId": "__request_group_4__",
+      "name": "02. Координаты вне поля",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 10,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 400. Код INVALID_SHOT_COORDINATES.",
+      "metaSortKey": 2,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_SHOT_COORDINATES\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_SHOT_COORDINATES\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_28__",
+      "_type": "request",
+      "parentId": "__request_group_4__",
+      "name": "03. Выстрел без тела",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 400. Код INVALID_REQUEST_BODY.",
+      "metaSortKey": 3,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_REQUEST_BODY\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_REQUEST_BODY\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_29__",
+      "_type": "request",
+      "parentId": "__request_group_4__",
+      "name": "04. Unready после старта",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/unready",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код SHIP_PLACEMENT_CLOSED.",
+      "metaSortKey": 4,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"SHIP_PLACEMENT_CLOSED\", () => insomnia.expect(data.error.code).to.eql(\"SHIP_PLACEMENT_CLOSED\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_30__",
+      "_type": "request",
+      "parentId": "__request_group_4__",
+      "name": "05. Промах и передача хода",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 9,\n  \"col\": 9\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 5,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"miss\", () => insomnia.expect(data.result).to.eql(\"miss\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_31__",
+      "_type": "request",
+      "parentId": "__request_group_4__",
+      "name": "06. Попадание 0,0",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 6,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"hit\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_32__",
+      "_type": "request",
+      "parentId": "__request_group_4__",
+      "name": "07. Повторный выстрел 0,0",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код SHOT_DUPLICATE.",
+      "metaSortKey": 7,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"SHOT_DUPLICATE\", () => insomnia.expect(data.error.code).to.eql(\"SHOT_DUPLICATE\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_group_5__",
+      "_type": "request_group",
+      "parentId": "__WORKSPACE_ID__",
+      "name": "05. Потопить все корабли",
+      "description": "Выполняй запросы по порядку.",
+      "environment": {},
+      "metaSortKey": 5,
+      "environmentPropertyOrder": null
+    },
+    {
+      "_id": "__request_33__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "01. Выстрел 0,1",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 1\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 1,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_34__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "02. Выстрел 0,2",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 2\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 2,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_35__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "03. Выстрел 0,3",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 3\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 3,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_36__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "04. Выстрел 0,6",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 6\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 4,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_37__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "05. Выстрел 0,7",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 7\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 5,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_38__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "06. Выстрел 0,8",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 0,\n  \"col\": 8\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 6,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_39__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "07. Выстрел 2,0",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 2,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 7,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_40__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "08. Выстрел 2,1",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 2,\n  \"col\": 1\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 8,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_41__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "09. Выстрел 2,2",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 2,\n  \"col\": 2\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 9,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_42__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "10. Выстрел 2,6",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 2,\n  \"col\": 6\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 10,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_43__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "11. Выстрел 2,7",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 2,\n  \"col\": 7\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 11,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_44__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "12. Выстрел 4,0",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 4,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 12,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_45__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "13. Выстрел 4,1",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 4,\n  \"col\": 1\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 13,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_46__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "14. Выстрел 4,6",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 4,\n  \"col\": 6\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 14,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_47__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "15. Выстрел 4,7",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 4,\n  \"col\": 7\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 15,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_48__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "16. Выстрел 6,0",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 6,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 16,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_49__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "17. Выстрел 6,6",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 6,\n  \"col\": 6\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 17,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_50__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "18. Выстрел 8,0",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 8,\n  \"col\": 0\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 18,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_51__",
+      "_type": "request",
+      "parentId": "__request_group_5__",
+      "name": "19. Выстрел 8,6",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 8,\n  \"col\": 6\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 19,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));\ninsomnia.test(\"Ход завершён\", () => insomnia.expect(data.turnPlayerId).to.eql(null));\ninsomnia.test(\"Победитель\", () => insomnia.expect(data.winnerPlayerId).to.eql(insomnia.environment.get(\"current_player_id\")));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_group_6__",
+      "_type": "request_group",
+      "parentId": "__WORKSPACE_ID__",
+      "name": "06. Завершение и signout",
+      "description": "Выполняй запросы по порядку.",
+      "environment": {},
+      "metaSortKey": 6,
+      "environmentPropertyOrder": null
+    },
+    {
+      "_id": "__request_52__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "01. GET Alice после победы",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 1,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_53__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "02. GET Bob после победы",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.bob_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 2,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_54__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "03. Выстрел после победы",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}/shots",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"row\": 9,\n  \"col\": 8\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.current_player_token }}",
+          "disabled": false
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 409. Код BATTLE_NOT_ACTIVE.",
+      "metaSortKey": 3,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"BATTLE_NOT_ACTIVE\", () => insomnia.expect(data.error.code).to.eql(\"BATTLE_NOT_ACTIVE\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_55__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "04. Signout Alice",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/signout",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 4,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Выход\", () => insomnia.expect(data.message).to.eql(\"Successfully signed out\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_56__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "05. GET с удалённым токеном",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 401. Код SESSION_NOT_FOUND.",
+      "metaSortKey": 5,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 401\", () => insomnia.expect(status).to.eql(401));\ninsomnia.test(\"SESSION_NOT_FOUND\", () => insomnia.expect(data.error.code).to.eql(\"SESSION_NOT_FOUND\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_57__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "06. Повторный signout",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/signout",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.alice_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 401. Код SESSION_NOT_FOUND.",
+      "metaSortKey": 6,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 401\", () => insomnia.expect(status).to.eql(401));\ninsomnia.test(\"SESSION_NOT_FOUND\", () => insomnia.expect(data.error.code).to.eql(\"SESSION_NOT_FOUND\"));",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_58__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "07. Bob продолжает работать",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.bob_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 7,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_59__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "08. Signout Bob",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/signout",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.bob_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 8,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    },
+    {
+      "_id": "__request_60__",
+      "_type": "request",
+      "parentId": "__request_group_6__",
+      "name": "09. Signout outsider",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/signout",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json",
+          "disabled": false
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.outsider_token }}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "description": "Ожидаемый HTTP статус 200.",
+      "metaSortKey": 9,
+      "preRequestScript": "",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
+      "settingRenderRequestBody": true,
+      "settingEncodeUrl": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true
+    }
+  ]
+}

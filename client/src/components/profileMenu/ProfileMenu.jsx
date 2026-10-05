@@ -6,6 +6,7 @@ import "./profileMenu.css";
 
 function ProfileMenu() {
     const [isOpen, setIsOpen] = useState(false);
+    const [isSigningOut, setIsSigningOut] = useState(false);
     const containerRef = useRef(null);
     const buttonRef = useRef(null);
 
@@ -51,18 +52,37 @@ function ProfileMenu() {
 
 
 
-    //TODO: edit this after API endpoint for this is implemented
-    const signOut = () => {
-        fetch('/api/signout', {
-            method: 'GET',
-        }).then(res => res.json())
-            .then(() => {
-                alert("Successfully signed out");
-                // force reload for backend to update user data, which after this will be NULL => no profile menu
-                location.reload()
-            }).catch((error) => {
-            alert("Error 521: Failed to sign out \n Error message: " + error);
-        })
+    // Save the token under localStorage.token after user creation.
+    const signOut = async () => {
+        if (isSigningOut) return;
+
+        setIsSigningOut(true);
+        try {
+            const token = localStorage.getItem("token");
+            if (token) {
+                const response = await fetch('/api/signout', {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await response.json();
+                const sessionMissing =
+                    response.status === 401 &&
+                    data.error?.code === "SESSION_NOT_FOUND";
+
+                if (!response.ok && !sessionMissing) {
+                    throw new Error(data.error?.message || "The server could not sign you out.");
+                }
+            }
+
+            localStorage.removeItem("token");
+            localStorage.removeItem("gameId");
+            alert("Successfully signed out");
+            location.reload();
+        } catch (error) {
+            alert("Failed to sign out\n" + error.message);
+        } finally {
+            setIsSigningOut(false);
+        }
     }
 
 
@@ -91,7 +111,7 @@ function ProfileMenu() {
                         </a>
                     ))}
 
-                    <button type="button" onClick={() => signOut()} className="profile-menu-item profile-menu-signout">
+                    <button type="button" disabled={isSigningOut} onClick={() => signOut()} className="profile-menu-item profile-menu-signout">
                         Sign out
                     </button>
                 </div>
