@@ -12,6 +12,7 @@ import Battlefield from "../battlefield/battlefield.jsx";
 import Battleship from "../battleship/battleShip"; 
 import EnemyShipsList from "./EnemyShipsList.jsx"; //xslobok00: component of enemies
 import { SHIPS_CONFIG } from "../../constants.js";
+import "./battleshipGame.css";
 
 /**
  * BatlleshipGame class component.
@@ -22,6 +23,7 @@ import { SHIPS_CONFIG } from "../../constants.js";
  * @property {Object} state - Component internal state.
  * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
+
 class BatlleshipGame extends React.Component {
   
   constructor(props) {
@@ -242,6 +244,7 @@ class BatlleshipGame extends React.Component {
         console.log("ship turned");
       }
     }
+
   };
 
   
@@ -320,11 +323,14 @@ class BatlleshipGame extends React.Component {
         </div>
 
         {/* author:xhaziyh00 - Side-by-side arena container: player's fleet on the left, opponent's grid on the right */}
-        <div style={{ display: "flex", justifyContent: "space-around", alignItems: "flex-start" }}>
+
+        <div className="battleContainer">
+
           {/* Player's board displaying own ship positions and reserve setup dock */}
           <Battlefield
             title="Your fleet"
             isOpponent={false}
+            isGetReadyScrn={false}
             ships={this.state.myShips}
             boardData={this.state.boardData}
             onShipDragStart={this.handleShipDragStart}

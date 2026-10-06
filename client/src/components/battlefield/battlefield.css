@@ -4,9 +4,22 @@
  * coordinate alignment markers, and the reserve ship placement dock.
  * @author xhaziyh00
  */
+:root{
+  --cell-size: 37px;
+}
+
+ @media (max-width: 450px) {
+  :root {
+    --cell-size: 27px;
+  }
+  
+}
+
+
+
 .mainField {
-  width: 420px;
-  height: 650px;
+  width: 440px;
+  height: fit-content;
   display: flex;
   flex-direction: column;
 }
@@ -19,8 +32,8 @@
 }
 
 .coords {
-  width: 37px;
-  height: 37px;
+  width: var(--cell-size);
+  height: var(--cell-size);
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -34,8 +47,8 @@
   width: fit-content;
   height: fit-content;
   display: grid;
-  grid-template-columns: repeat(10, 37px);
-  grid-template-rows: repeat(10, 37px);
+  grid-template-columns: repeat(10, var(--cell-size));
+  grid-template-rows: repeat(10, var(--cell-size));
   border: 2px solid var(--ship-border);
   border-radius: 8px;
   box-sizing: border-box;
@@ -43,8 +56,8 @@
 }
 
 .cell {
-  width: 37px;
-  height: 37px;
+  width: var(--cell-size);
+  height: var(--cell-size);
   border: 1px solid var(--avatar-bg);
   display: flex;
   align-items: center;
@@ -52,7 +65,22 @@
   box-sizing: border-box;
   background-color: var(--page-bg);
 }
+@media (max-width: 450px) {
+  .cell,.coords{
+    width: var(--cell-size);
+    height: var(--cell-size);
 
+  }
+  .grid-container{
+
+  grid-template-columns: repeat(10, var(--cell-size));
+  grid-template-rows: repeat(10, var(--cell-size));
+  }
+  .mainField{
+    width: 330px;
+    height: fit-content;
+  }
+}
 .info {
   margin-top: 10px;
   width: 100%;
@@ -67,6 +95,7 @@
   align-items: center;
   align-content: flex-start;
   background-color: var(--page-bg);
+  min-height: 130px;
 }
 
 .info > * {
@@ -83,3 +112,23 @@
 .ship-wrapper:active {
   cursor: grabbing;
 }
+@media (max-width: 320px) {
+  :root {
+    --cell-size: 24px;
+  }
+  .mainField{
+    
+  width: 290px;
+  height: fit-content;
+  }
+  }
+  @media (max-height: 620px) {
+  :root {
+    --cell-size: 24px;
+  }
+  .mainField{
+    
+  width: 290px;
+  height: fit-content;
+  }
+  }

@@ -33,13 +33,13 @@ class Header extends React.Component {
   render() {
     return (
       <div className="headerDiv">
-        <div style={{ border: "3px", padding: "24px", justifySelf: "start" }}>
+        <div className="buttonContainer">
           {/* author:xhaziyh00 - Navigation section: button to return home */}
           <button id="homeButton" onClick={this.props.onGoHome}>
             Home
           </button>
         </div>
-        <div style={{ padding: "24px", textAlign: "center" }}>
+        <div className="textContainer">
           {/* author:xhaziyh00 - Information section: title and dynamic turn status text */}
           <h1>Battleships</h1>
           <p>{TURN_MESSAGES[this.state.turnStatus]}</p>

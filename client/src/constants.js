@@ -16,8 +16,9 @@ export const SHIPS_CONFIG = [
 export const GADGETS = [
     {id: 'radar', name: 'radar (3x3)', icon: '', desc: 'scans square 3x3'},
     {id: 'mine', name: 'mine', icon: '', desc: 'damages opponent when got hit'},
-    {id: 'airstrike', name: 'airstrike', icon: '', desc: 'damages random places'},
+    {id: 'relocate', name: 'relocate', icon: '', desc: 'relocates ship to another position'},
 ];
+
 export const TURN_MESSAGES = {
     my_turn: 'Your turn · Choose a square on the opponent\'s board',
     opponent_turn: 'Enemy\'s turn · Please wait for the opponent to make a move',
