@@ -25,6 +25,7 @@ class Battleship extends React.Component {
     // author:xhaziyh00 - Local state to manage hover border styling
     this.state = {
       isHovered: false,
+      cellSize: 37,
     };
   }
   /**
@@ -34,8 +35,28 @@ class Battleship extends React.Component {
    * @returns {JSX.Element} Draggable or static styled ship element.
    */
 
+  componentDidMount() {
+    this.updateCellSize();
+    window.addEventListener("resize", this.updateCellSize);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.updateCellSize);
+  }
+
+  updateCellSize = () => {
+    const rootStyles = window.getComputedStyle(document.documentElement);
+    const rawSize = rootStyles.getPropertyValue("--cell-size");
+    const parsedSize = parseInt(rawSize, 10);
+
+    if (!isNaN(parsedSize) && parsedSize !== this.state.cellSize) {
+      this.setState({ cellSize: parsedSize });
+    }
+  };
   render() {
     const { size, isVertical, isDraggable = false, onDragStart } = this.props;
+    const { isHovered, cellSize } = this.state;
+
     // author:xhaziyh00 - Sanitize size input and ensure a fallback to 1 deck
     const sizeNum = Number(size) || 1;
     // author:xhaziyh00 - Normalize orientation check to accept both boolean and string values
@@ -43,9 +64,9 @@ class Battleship extends React.Component {
     // author:xhaziyh00 - Compute dimensions matching the 37px grid cell scale
     // If vertical: width is 1 cell (37px), height spans (37 * size) px
     // If horizontal: width spans (37 * size) px, height is 1 cell (37px)
-    const shipWidth = vertical ? 37 : 37 * sizeNum;
-    const shipHeight = vertical ? 37 * sizeNum : 37;
-    const { isHovered } = this.state;
+
+    const shipWidth = vertical ? cellSize : cellSize * sizeNum;
+    const shipHeight = vertical ? cellSize * sizeNum : cellSize;
     return (
       // author:xhaziyh00 - Outer wrapper managing layout flow and native HTML5 drag events
       <div

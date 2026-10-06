@@ -1,17 +1,29 @@
 import MainPage from "./components/mainPage/MainPage.jsx";
+import GetReady from "./components/battleshipGame/battleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/battleshipGame.jsx";
 import { useState } from "react";
 function App() {
-  const [screen, setScreen] = useState("menu");
+  const [screen, setScreen] = useState("ready");
 
-  // author:xhaziyh00 - Screen routing & State Lifting mechanism:
-  // 1. Conditional Rendering: Acts as a lightweight client-side router without React Router.
-  //    If 'screen' equals 'menu', unmount the match view and render the main lobby (MainPage).
-  // 2. State Lifting & Callback passing:
-  //    Passes an inline callback (onGoHome) down to BattleshipGame (and further to Header).
-  //    When triggered, it updates the root 'screen' state to 'menu', forcing App to re-render
-  //    and display MainPage instantly.
-  if (screen === "menu") return <MainPage />;
-  return <BattleshipGame onGoHome={() => setScreen("menu")} />;
+  // author:xhaziyh00 - Declarative client-side screen switcher
+  switch (screen) {
+    case "menu":
+      return <MainPage onStartGame={() => setScreen("ready")} />;
+
+    case "ready":
+      return (
+        <GetReady
+          onGoHome={() => setScreen("menu")}
+          onStartBattle={() => setScreen("battle")}
+        />
+      );
+
+    case "battle":
+      return <BattleshipGame onGoHome={() => setScreen("menu")} />;
+
+    default:
+      // author:xhaziyh00 - Fallback to main menu if unknown screen state is passed
+      return <MainPage onStartGame={() => setScreen("ready")} />;
+  }
 }
 export default App;

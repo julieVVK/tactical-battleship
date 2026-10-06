@@ -1,0 +1,23 @@
+/**
+ * @file battleshipGame.css
+ * @description Responsive layout for the duel arena grids.
+ * @author xhaziyh00
+ */
+
+/* author:xhaziyh00 - Default horizontal desktop arena: player left, opponent right */
+.battleContainer {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+  margin-left: 5px;
+}
+
+/* author:xhaziyh00 - Mobile & narrow screen breakpoint: stack vertically with enemy on top */
+@media (max-width: 860px) {
+  .battleContainer {
+    flex-direction: column-reverse; 
+    align-items: center;
+  }
+}

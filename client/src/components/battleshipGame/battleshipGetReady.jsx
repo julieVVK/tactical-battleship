@@ -10,7 +10,6 @@ import React from "react";
 import Header from "../header/header.jsx";
 import Battlefield from "../battlefield/battlefield.jsx";
 import { SHIPS_CONFIG } from "../../constants.js";
-import "./battleshipGame.css";
 
 /**
  * BatlleshipGame class component.
@@ -21,7 +20,7 @@ import "./battleshipGame.css";
  * @property {Object} state - Component internal state.
  * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
-class BattleshipGame extends React.Component {
+class GetReady extends React.Component {
   // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
   state = {
     myShips: SHIPS_CONFIG.map((ship) => ({
@@ -39,26 +38,34 @@ class BattleshipGame extends React.Component {
    */
   render() {
     return (
-      <div>
+      <>
         {/* author:xhaziyh00 - Top navigation bar with return-to-home callback forwarding */}
         <Header onGoHome={this.props.onGoHome} />
 
         {/* author:xhaziyh00 - Side-by-side arena container: player's fleet on the left, opponent's grid on the right */}
-        <div className="battleContainer">
+        <div style={{ display: "flex", justifyContent: "space-around" }}>
           {/* Player's board displaying own ship positions and reserve setup dock */}
           <Battlefield
             title="Your fleet"
             isOpponent={false}
-            isGetReadyScrn={false}
+            isGetReadyScrn={true}
             ships={this.state.myShips}
           />
-
-          {/* Opponent's board with hidden ship positions, ready for targeting clicks */}
-          <Battlefield title="Opponent" isOpponent={true} />
+          <button
+            onClick={this.props.onStartBattle}
+            style={{
+              padding: "16px 32px",
+              fontSize: "18px",
+              fontWeight: "600",
+              cursor: "pointer",
+            }}
+          >
+            gogogo
+          </button>
         </div>
-      </div>
+      </>
     );
   }
 }
 
-export default BattleshipGame;
+export default GetReady;

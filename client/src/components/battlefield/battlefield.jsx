@@ -26,6 +26,45 @@ import "./battlefield.css";
  */
 class Battlefield extends React.Component {
   /**
+   * Handles keyboard arrow navigation across the 10x10 opponent grid.
+   *
+   * @author xhaziyh00
+   * @param {KeyboardEvent} e - Native keyboard event.
+   * @param {number} rowIndex - Current row index (0-9).
+   * @param {number} colIndex - Current column index (0-9).
+   */
+  handleCellKeyDown = (e, rowIndex, colIndex) => {
+    const { isOpponent } = this.props;
+    if (!isOpponent) return;
+
+    let nextRow = rowIndex;
+    let nextCol = colIndex;
+
+    switch (e.key) {
+      case "ArrowUp":
+        nextRow = Math.max(0, rowIndex - 1);
+        break;
+      case "ArrowDown":
+        nextRow = Math.min(9, rowIndex + 1);
+        break;
+      case "ArrowLeft":
+        nextCol = Math.max(0, colIndex - 1);
+        break;
+      case "ArrowRight":
+        nextCol = Math.min(9, colIndex + 1);
+        break;
+      default:
+        return;
+    }
+
+    e.preventDefault();
+
+    const targetButton = document.getElementById(`cell-${nextRow}-${nextCol}`);
+    if (targetButton) {
+      targetButton.focus();
+    }
+  };
+  /**
    * Handles user click on a cell (e.g., firing a shot).
    *
    * @author xhaziyh00
@@ -81,6 +120,10 @@ class Battlefield extends React.Component {
     if (onShipDragStart) onShipDragStart(e, ship);
   };
 
+  state = {
+    activeTarget: null, // { rowIndex, colIndex } | null
+  };
+
   /**
    * Renders coordinate axes, 10x10 cell grid, and available ship reserve dock.
    *
@@ -88,7 +131,15 @@ class Battlefield extends React.Component {
    * @returns {JSX.Element} Grid board element.
    */
   render() {
-    const { title, isOpponent, boardData, ships = [] } = this.props;
+    const {
+      title,
+      isOpponent,
+      isGetReadyScrn,
+      boardData,
+      ships = [],
+    } = this.props;
+
+    const CellTag = isOpponent ? "button" : "div";
 
     return (
       <div className="mainField">
@@ -97,7 +148,8 @@ class Battlefield extends React.Component {
 
         {/* author:xhaziyh00 - Top horizontal coordinate axis (Numbers 1-10) with 37x37px corner spacer */}
         <div style={{ display: "flex", marginTop: "18px" }}>
-          <div style={{ width: "37px", height: "37px" }}></div>
+          {/* author:xhaziyh00 empty div for correct possition of coords*/}
+          <div className="coords"></div>{" "}
           {NUMBERS.map((num) => (
             <div className="coords" key={num}>
               {num}
@@ -121,21 +173,26 @@ class Battlefield extends React.Component {
             {LETTERS.map((letter, rowIndex) =>
               NUMBERS.map((num, colIndex) => {
                 const cell = boardData ? boardData[rowIndex][colIndex] : null;
-
                 // author:xhaziyh00 - Ships are visible on player's board, but hidden on opponent's unless hit
                 const isShipVisible =
                   (!isOpponent && cell?.hasShip) ||
                   (isOpponent && cell?.hasShip && cell?.hit);
 
                 return (
-                  <div
+                  <CellTag
                     className="cell"
+                    id={isOpponent ? `cell-${rowIndex}-${colIndex}` : undefined}
                     key={`${letter}-${num}`}
                     onClick={() => this.handleCellClick(rowIndex, colIndex)}
                     onDragOver={(e) =>
                       this.handleDragOver(e, rowIndex, colIndex)
                     }
                     onDrop={(e) => this.handleDrop(e, rowIndex, colIndex)}
+                    onKeyDown={
+                      isOpponent
+                        ? (e) => this.handleCellKeyDown(e, rowIndex, colIndex)
+                        : undefined
+                    }
                     style={{
                       backgroundColor: isShipVisible
                         ? "var(--ship-bg)"
@@ -167,7 +224,7 @@ class Battlefield extends React.Component {
                         •
                       </span>
                     )}
-                  </div>
+                  </CellTag>
                 );
               }),
             )}
@@ -177,17 +234,18 @@ class Battlefield extends React.Component {
         {/* author:xhaziyh00 - Dock container for unplaced ships during setup phase (own fleet only) */}
         {!isOpponent && (
           <div className="info">
-            {ships
-              .filter((ship) => !ship.isPlaced)
-              .map((ship) => (
-                <Battleship
-                  key={ship.id}
-                  size={ship.size}
-                  isVertical={ship.isVertical}
-                  isDraggable={true}
-                  onDragStart={(e) => this.handleShipDragStart(e, ship)}
-                />
-              ))}
+            {isGetReadyScrn &&
+              ships
+                .filter((ship) => !ship.isPlaced)
+                .map((ship) => (
+                  <Battleship
+                    key={ship.id}
+                    size={ship.size}
+                    isVertical={ship.isVertical}
+                    isDraggable={true}
+                    onDragStart={(e) => this.handleShipDragStart(e, ship)}
+                  />
+                ))}
           </div>
         )}
       </div>
