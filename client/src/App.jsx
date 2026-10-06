@@ -3,6 +3,7 @@ import GetReady from "./components/battleshipGame/battleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/battleshipGame.jsx";
 import { useState } from "react";
 function App() {
+
   const [screen, setScreen] = useState("ready");
 
   // author:xhaziyh00 - Declarative client-side screen switcher

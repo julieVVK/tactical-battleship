@@ -78,6 +78,7 @@ class Battleship extends React.Component {
           width: "fit-content",
           height: "fit-content",
           cursor: isDraggable ? "grab" : "default",
+          pointerEvents: isDraggable ? "auto" : "none" ,
         }}
       >
         {/* 
@@ -90,14 +91,15 @@ class Battleship extends React.Component {
           onMouseEnter={() => this.setState({ isHovered: true })}
           onMouseLeave={() => this.setState({ isHovered: false })}
           style={{
-            width: `${shipWidth - 6}px`,
-            height: `${shipHeight - 6}px`,
-            backgroundColor: "var(--ship-bg)",
-            border: isHovered
-              ? "1px solid var(--ship-border)"
-              : "1px solid transparent",
+            width: `${shipWidth}px`, //xslobok: мне пришлось коечто поменять по что что изза этого были баги с размещением
+            height: `${shipHeight}px`,
             borderRadius: "5px",
-            flexShrink: 0,
+            border: "3px solid transparent", 
+            boxSizing: "border-box",
+            backgroundColor: "var(--ship-bg)",
+            outline: isHovered ? "1px solid var(--ship-border)" : "none",
+            outlineOffset: "-3px",
+            
           }}
         ></div>
       </div>
