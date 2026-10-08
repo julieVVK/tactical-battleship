@@ -1,0 +1,39 @@
+.enemy-ships-tracker {
+  background-color: var(--ship-bg, #eef2f3);
+  padding: 15px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 150px;
+  box-sizing: border-box;
+  margin-top: 130px; 
+  /*margin-top: 190px; */
+}
+.enemy-ships-tracker h3 {
+  margin-top: 0;
+  font-size: 16px;
+  text-align: center;
+}
+.ship-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.ship-status-row.all-dead {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+.ship-preview {
+  display: flex;
+  gap: 2px;
+}
+.ship-cube {
+  width: 14px;
+  height: 14px;
+  background-color: var(--text-btn-color, #333);
+  border: 1px solid #000;
+}
+.ship-count {
+  font-weight: bold;
+  font-size: 14px;
+}
