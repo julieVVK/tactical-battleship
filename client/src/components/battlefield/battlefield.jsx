@@ -119,7 +119,8 @@ class Battlefield extends React.Component {
     const { onShipDragStart } = this.props;
 
     const img = new Image();
-    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    img.src =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
     e.dataTransfer.setDragImage(img, 0, 0);
 
     if (onShipDragStart) onShipDragStart(e, ship);
@@ -189,12 +190,11 @@ class Battlefield extends React.Component {
                     id={isOpponent ? `cell-${rowIndex}-${colIndex}` : undefined}
                     key={`${letter}-${num}`}
                     onClick={() => this.handleCellClick(rowIndex, colIndex)}
-                    /*onDragOver={(e) =>
+                    onDragOver={(e) =>
                       this.handleDragOver(e, rowIndex, colIndex)
-                    }*/
-
+                    }
                     onMouseEnter={(e) => {
-                    // xslobok00:coords with dragging
+                      // xslobok00:coords with dragging
                       if (this.props.onCellDragOver) {
                         this.props.onCellDragOver(e, rowIndex, colIndex);
                       }
@@ -211,8 +211,12 @@ class Battlefield extends React.Component {
                     onMouseDown={(e) => {
                       if (!isOpponent && cell?.hasShip) {
                         e.preventDefault();
-                      if (this.props.onPlacedShipDragStart) {
-                        this.props.onPlacedShipDragStart(e, rowIndex, colIndex);
+                        if (this.props.onPlacedShipDragStart) {
+                          this.props.onPlacedShipDragStart(
+                            e,
+                            rowIndex,
+                            colIndex,
+                          );
                         }
                       }
                     }}
