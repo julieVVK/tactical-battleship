@@ -1,23 +1,11 @@
-/**
- * @file App.jsx
- * @description Root application router component. Coordinates the top-level application
- * state machine, handles navigation between game stages (Main Menu, Fleet Setup, Active Match),
- * and propagates player fleet layout matrices between setup and battlefield views.
- * @author xhaziyh00
- */
 import MainPage from "./components/mainPage/MainPage.jsx";
 import Settings from "./components/settings/settings.jsx";
+import Rules from "./components/rulesPage/rules.jsx";
 import GetReady from "./components/battleshipGame/battleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/battleshipGame.jsx";
 import { useState } from "react";
-/**
- * Root App functional component.
- *
- * @author xhaziyh00
- * @returns {JSX.Element} The active view corresponding to current navigation state.
- */
+
 function App() {
-  // author:xhaziyh00 - Active screen view indicator ('menu' | 'settings' | 'ready' | 'battle')
   const [screen, setScreen] = useState("menu");
 
   // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
@@ -54,11 +42,15 @@ function App() {
         <MainPage
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
+          onNavigateRules={() => setScreen("rules")}
         />
       );
 
     case "settings":
       return <Settings onNavigateMain={() => setScreen("menu")} />;
+
+    case "rules":
+      return <Rules onNavigateMain={() => setScreen("menu")} />;
 
     case "ready":
       return (
@@ -83,6 +75,7 @@ function App() {
         <MainPage
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
+          onNavigateRules={() => setScreen("rules")}
         />
       );
   }

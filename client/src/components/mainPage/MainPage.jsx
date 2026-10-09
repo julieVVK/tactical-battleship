@@ -4,7 +4,7 @@ import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
 import Button from "../button/Button.jsx";
 import "./mainPage.css";
-function MainPage({ onNavigateSettings, onStartGame }) {
+function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
 
     return (
         <>
@@ -22,7 +22,7 @@ function MainPage({ onNavigateSettings, onStartGame }) {
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem"}}>
-                        <Button className="main-page-rules">Rules</Button>
+                        <Button className="main-page-rules" onClick={onNavigateRules}>Rules</Button>
                         <Button className="main-page-rules" variant="light" onClick={onNavigateSettings}>Settings</Button>
                     </div>
                 </div>
