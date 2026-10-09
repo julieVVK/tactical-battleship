@@ -1,0 +1,134 @@
+/**
+ * @file battlefield.css
+ * @description Layout and dimensional constraints for the 10x10 Battleship grid,
+ * coordinate alignment markers, and the reserve ship placement dock.
+ * @author xhaziyh00
+ */
+:root{
+  --cell-size: 37px;
+}
+
+ @media (max-width: 450px) {
+  :root {
+    --cell-size: 27px;
+  }
+  
+}
+
+
+
+.mainField {
+  width: 440px;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+}
+
+.owner {
+  margin: 0;
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--text-btn-color);
+}
+
+.coords {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+  color: var(--text-btn-color);
+}
+
+.grid-container {
+  width: fit-content;
+  height: fit-content;
+  display: grid;
+  grid-template-columns: repeat(10, var(--cell-size));
+  grid-template-rows: repeat(10, var(--cell-size));
+  border: 2px solid var(--ship-border);
+  border-radius: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  border: 1px solid var(--avatar-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background-color: var(--page-bg);
+}
+@media (max-width: 450px) {
+  .cell,.coords{
+    width: var(--cell-size);
+    height: var(--cell-size);
+
+  }
+  .grid-container{
+
+  grid-template-columns: repeat(10, var(--cell-size));
+  grid-template-rows: repeat(10, var(--cell-size));
+  }
+  .mainField{
+    width: 330px;
+    height: fit-content;
+  }
+}
+.info {
+  margin-top: 10px;
+  width: 100%;
+  flex: 1;
+  box-sizing: border-box;
+  border: 2px solid var(--ship-border);
+  border-radius: 8px;
+  padding: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  align-content: flex-start;
+  background-color: var(--page-bg);
+  min-height: 130px;
+}
+
+.info > * {
+  margin: 3px;
+}
+
+.ship-wrapper {
+  display: inline-block;
+  width: fit-content;
+  height: fit-content;
+  cursor: grab;
+}
+
+.ship-wrapper:active {
+  cursor: grabbing;
+}
+@media (max-width: 320px) {
+  :root {
+    --cell-size: 24px;
+  }
+  .mainField{
+    
+  width: 290px;
+  height: fit-content;
+  }
+  }
+  @media (max-height: 620px) {
+  :root {
+    --cell-size: 24px;
+  }
+  .mainField{
+    
+  width: 290px;
+  height: fit-content;
+  }
+  }

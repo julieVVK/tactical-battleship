@@ -1,30 +1,3 @@
-:root {
-    --text-btn-color: #243E59;
-    --signout-bg: #EEE9DF;
-    --page-bg: #F5F3EB;
-    --avatar-bg: #E4EDF0;
-    --hit-mark: #C56A4D;
-    --input-bg: #FFFFFF;
-    --btn-border: #000000;
-    --ship-border: #375F76;
-    --ship-bg: #A9C6D2;
-    --win-text: #386E7A;
-    --win-bg: #DEE3DD;
-    --loss-bg: #EDE3DA;
-    --loss-text: #B2705C;
-    --btn-hover-bg: #284866;
-    --btn-hover-text: #F0EEE5;
-}
-
-
-body {
-  background-color: var(--page-bg);
-  color: var(--text-btn-color);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
 .settings-container {
   max-width: 1080px;
   margin: 0 auto;
@@ -45,15 +18,10 @@ body {
   padding: 8px 16px;
   border: 1px solid var(--text-btn-color);
   border-radius: 6px;
-  color: var(--text-btn-color);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.9rem;
   transition: background-color 0.2s ease;
-}
-
-.home-back-button:hover {
-  background-color: var(--btn-border);
 }
 
 .settings-header {
@@ -67,34 +35,17 @@ body {
   color: var(--text-btn-color);
 }
 
-.settings-subtitle {
-  margin: 0;
-  color: var(--text-btn-color);
-  opacity: 0.75;
-  font-size: 0.95rem;
-}
-
 .settings-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
 
-
-fieldset {
-  border: 1px solid var(--text-btn-color);
-  border-radius: 8px;
-  padding: 24px;
-  margin: 0;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
 .settings-sound,
 .settings-language,
 .settings-account,
 .settings-password {
-  background-color: var(--avatar-bg);
+  background-color: var(--page-bg);
   border: 1px solid var(--text-btn-color);
   border-radius: 8px;
   padding: 24px;
@@ -109,8 +60,7 @@ fieldset {
   grid-column: 1 / -1;
 }
 
-legend {
-  float: left;
+.settings-grid h3 {
   display: table;
   font-size: 1.25rem;
   font-weight: 700;
@@ -119,17 +69,6 @@ legend {
   margin-bottom: 20px;
   float: none;
   width: auto;
-  
-}
-
-.password-subtitle {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-btn-color);
-  opacity: 0.75;
 }
 
 .form-group {
@@ -168,7 +107,6 @@ legend {
   box-shadow: 0 0 0 2px var(--text-btn-color);
 }
 
-.language-description,
 .field-hint {
   font-size: 0.8rem;
   color: var(--text-btn-color);
@@ -182,10 +120,6 @@ legend {
   flex-wrap: wrap;
 }
 
-.sound-toggle-button input {
-  display: none;
-}
-
 .sound-toggle-button {
   display: inline-flex;
   align-items: center;
@@ -193,8 +127,6 @@ legend {
   padding: 10px 18px;
   border: 1px solid var(--text-btn-color);
   border-radius: 6px;
-  background-color: transparent;
-  color: var(--text-btn-color);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -202,9 +134,14 @@ legend {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.sound-toggle-button.active {
+.settings-sound .sound-toggle-button.light:hover {
+  background-color: var(--page-bg);
+  color: var(--text-btn-color);
+}
+
+.settings-sound .sound-toggle-button.dark:hover {
   background-color: var(--text-btn-color);
-  color: var(--btn-hover-text);
+  color: var(--input-bg);
 }
 
 .account-form {
@@ -261,16 +198,10 @@ legend {
   padding: 8px 16px;
   border: 1px solid var(--text-btn-color);
   border-radius: 6px;
-  background-color: transparent;
-  color: var(--text-btn-color);
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
-}
-
-.change-picture-button:hover {
-  background-color: var(--ship-bg);
 }
 
 .password-form {
@@ -290,18 +221,8 @@ legend {
 .save-account-button,
 .button-submit {
   padding: 10px 22px;
-  border: none;
   border-radius: 6px;
-  background-color: var(--text-btn-color);
-  color: var(--btn-hover-text);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: opacity 0.2s ease;
 }
-
-.save-account-button:hover,
-.button-submit:hover {
-  opacity: 0.9;
-}
-

@@ -1,9 +1,10 @@
 // File was created by Vladyslav Doroshenko
+
 import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
 import Button from "../button/Button.jsx";
 import "./mainPage.css";
-function MainPage(){
+function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
 
     return (
         <>
@@ -16,10 +17,14 @@ function MainPage(){
                         <h2 className="mainPageh1">Play</h2>
                         <div className="main-page-button-container">
                             <Button variant="light">With PC</Button>
-                            <Button variant="dark">2 Players</Button>
+                            <Button variant="dark" onClick={onStartGame}>2 Players</Button>
                         </div>
                     </div>
-                    <Button className="main-page-rules">Rules</Button>
+
+                    <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem"}}>
+                        <Button className="main-page-rules" onClick={onNavigateRules}>Rules</Button>
+                        <Button className="main-page-rules" variant="light" onClick={onNavigateSettings}>Settings</Button>
+                    </div>
                 </div>
             </div>
         </>
