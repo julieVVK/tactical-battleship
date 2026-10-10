@@ -1,47 +1,19 @@
-async function request(path, options = {}) {
-    const response = await fetch(`/api${path}`, options);
-    const data = await response.json().catch(() => {
-        throw new Error("The server returned an invalid response. Try again.");
-    });
+// File was created by Vladyslav Doroshenko
 
-    if (!response.ok) {
-        const error = new Error(data.error?.message || "The request failed. Try again.");
-        error.code = data.error?.code;
-        throw error;
-    }
-
-    return data;
-}
-
-async function createGuestSession() {
-    const userId = crypto.randomUUID();
-    const user = await request("/createUser", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, userName: `Guest ${userId.slice(0, 4)}` }),
-    });
-    localStorage.setItem("token", user.token);
-    return user.token;
-}
+import request from "./request.js";
+import { clearSession, ensureSession, getSessionToken } from "./session.js";
 
 async function lobbyRequest(path) {
-    let token = localStorage.getItem("token") || await createGuestSession();
+    let token = await ensureSession();
 
     try {
-        return await request(path, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        return await request(path, { method: "POST", token });
     } catch (error) {
         if (error.code !== "SESSION_NOT_FOUND") throw error;
 
-        localStorage.removeItem("token");
-        localStorage.removeItem("gameId");
-        token = await createGuestSession();
-        return request(path, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        clearSession();
+        token = await ensureSession();
+        return request(path, { method: "POST", token });
     }
 }
 
@@ -49,7 +21,12 @@ export function parseLobbyCode(input) {
     let code = input.trim();
 
     if (/^https?:\/\//i.test(code)) {
-        const link = new URL(code);
+        let link;
+        try {
+            link = new URL(code);
+        } catch {
+            throw new Error("Enter a valid lobby link or a six-character code.");
+        }
         code = link.searchParams.get("gameId") || link.pathname.split("/").filter(Boolean).pop() || "";
     }
 
@@ -71,4 +48,14 @@ export async function joinLobby(input) {
     const game = await lobbyRequest(`/games/${gameId}/join`);
     localStorage.setItem("gameId", game.id);
     return game;
+}
+
+export async function getLobby(gameId, options = {}) {
+    const token = getSessionToken();
+    if (!token) {
+        const error = new Error("Your session expired. Create or join a lobby again.");
+        error.code = "SESSION_NOT_FOUND";
+        throw error;
+    }
+    return request(`/games/${encodeURIComponent(gameId)}`, { ...options, token });
 }

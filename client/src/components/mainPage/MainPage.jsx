@@ -1,7 +1,6 @@
 // File was created by Vladyslav Doroshenko
 
-import { useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
+import { useRef, useState } from "react";
 import { createLobby, joinLobby } from "../../api/lobby.js";
 import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
@@ -18,77 +17,26 @@ const dialogTitles = {
 };
 
 
-function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
-    const [dialogView, setDialogView] = useState("play");
+function MainPage({
+    onNavigateSettings, onNavigateRules, onStartGame, onResumeGame,
+    game, isRestoring, gameError, canRestore, onRestoreGame, connection,
+}) {
+    const [dialogView, setDialogView] = useState(game?.phase === "waiting" ? "create" : "play");
     const [lobbyInput, setLobbyInput] = useState("");
     const [copyStatus, setCopyStatus] = useState("");
-    const [lobbyGame, setLobbyGame] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [lobbyError, setLobbyError] = useState("");
     const requestPending = useRef(false);
-
-    useEffect(() => {
-        if (dialogView !== "create" || !lobbyGame?.id) return;
-
-        const socket = io({
-            auth: { token: localStorage.getItem("token") },
-            autoConnect: false,
-        });
-
-        socket.on("connect", () => {
-            setLobbyError("");
-            socket.timeout(5000).emit("game:subscribe", { gameId: lobbyGame.id }, (error, reply) => {
-                if (error || !reply?.ok) {
-                    setLobbyError(reply?.error?.message || "Couldn't subscribe to the lobby. Try opening it again.");
-                }
-            });
-        });
-
-        socket.on("game:state", (game) => {
-            setLobbyGame(game);
-            if (game.phase === "placement" && game.players.opponent) {
-                onStartGame(game);
-            }
-        });
-
-        socket.on("connect_error", (error) => {
-            if (error.data?.code === "SESSION_NOT_FOUND") {
-                localStorage.removeItem("token");
-                localStorage.removeItem("gameId");
-                setLobbyGame(null);
-                setDialogView("lobby");
-                setLobbyError("Your session expired. Create or join a lobby again.");
-            } else {
-                setLobbyError("Couldn't connect to the lobby. Reconnecting...");
-            }
-        });
-
-        socket.on("disconnect", (reason) => {
-            if (reason === "io server disconnect") {
-                localStorage.removeItem("token");
-                localStorage.removeItem("gameId");
-                setLobbyGame(null);
-                setDialogView("lobby");
-                setLobbyError("Your session ended. Create or join a lobby again.");
-            } else {
-                setLobbyError("Connection lost. Reconnecting...");
-            }
-        });
-
-        socket.connect();
-        return () => {
-            socket.removeAllListeners();
-            socket.disconnect();
-        };
-    }, [dialogView, lobbyGame?.id, onStartGame]);
-
+    const busy = isSubmitting || isRestoring;
+    const errorMessage = lobbyError || gameError || connection.error;
+    const currentView = dialogView === "create" && !game ? "lobby" : dialogView;
 
     async function handleCreateLobby() {
-        if (requestPending.current) return;
+        if (requestPending.current || isRestoring) return;
         setLobbyError("");
         setCopyStatus("");
 
-        if (lobbyGame) {
+        if (game?.phase === "waiting") {
             setDialogView("create");
             return;
         }
@@ -96,9 +44,8 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
         requestPending.current = true;
         setIsSubmitting(true);
         try {
-            const game = await createLobby();
-            setLobbyGame(game);
-            setDialogView("create");
+            const createdGame = await createLobby();
+            onStartGame(createdGame);
         } catch (error) {
             setLobbyError(error.message);
         } finally {
@@ -110,14 +57,14 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
 
     async function handleJoinLobby(event) {
         event.preventDefault();
-        if (requestPending.current) return;
+        if (requestPending.current || isRestoring) return;
 
         requestPending.current = true;
         setIsSubmitting(true);
         setLobbyError("");
         try {
-            const game = await joinLobby(lobbyInput);
-            onStartGame(game);
+            const joinedGame = await joinLobby(lobbyInput);
+            onStartGame(joinedGame);
         } catch (error) {
             setLobbyError(error.message);
         } finally {
@@ -129,7 +76,7 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
 
     async function copyLobbyCode() {
         try {
-            await navigator.clipboard.writeText(lobbyGame.id);
+            await navigator.clipboard.writeText(game.id);
             setCopyStatus("Copied!");
         } catch {
             setCopyStatus("Couldn't copy. Select and copy the code above.");
@@ -138,7 +85,7 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
 
 
     function goBack() {
-        setDialogView(dialogView === "lobby" ? "play" : "lobby");
+        setDialogView(currentView === "lobby" ? "play" : "lobby");
         setCopyStatus("");
         setLobbyError("");
     }
@@ -152,29 +99,29 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
                 <div className="main-page-content">
                     <h1 className="main-page-title">Battleships</h1>
                     <DialogWindow
-                        title={dialogTitles[dialogView]}
-                        className={dialogView === "lobby" ? "main-page-lobby-dialog" : ""}
+                        title={dialogTitles[currentView]}
+                        className={currentView === "lobby" ? "main-page-lobby-dialog" : ""}
                     >
-                        {dialogView === "play" && (
+                        {currentView === "play" && (
                             <div className="main-page-button-container">
-                                <Button variant="light">With PC</Button>
-                                <Button variant="dark" onClick={() => setDialogView("lobby")}>2 Players</Button>
+                                <Button variant="light" disabled={busy}>With PC</Button>
+                                <Button variant="dark" disabled={busy} onClick={() => setDialogView("lobby")}>2 Players</Button>
                             </div>
                         )}
 
-                        {dialogView === "lobby" && (
+                        {currentView === "lobby" && (
                             <div className="main-page-lobby-actions">
-                                <Button variant="light" disabled={isSubmitting} onClick={() => {
+                                <Button variant="light" disabled={busy} onClick={() => {
                                     setLobbyError("");
                                     setDialogView("join");
                                 }}>Join</Button>
-                                <Button variant="dark" disabled={isSubmitting} onClick={handleCreateLobby}>
-                                    {isSubmitting ? "Creating..." : "Create"}
+                                <Button variant="dark" disabled={busy} onClick={handleCreateLobby}>
+                                    {isSubmitting ? "Creating..." : game?.phase === "waiting" ? "Return to lobby" : "Create"}
                                 </Button>
                             </div>
                         )}
 
-                        {dialogView === "join" && (
+                        {currentView === "join" && (
                             <form className="main-page-lobby-fields" onSubmit={handleJoinLobby}>
                                 <div className="main-page-lobby-field">
                                     <label htmlFor="lobby-invitation">Lobby code or invitation link</label>
@@ -183,43 +130,50 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
                                         className="main-page-lobby-input"
                                         placeholder="ABC123 or paste a lobby link"
                                         value={lobbyInput}
-                                        disabled={isSubmitting}
+                                        disabled={busy}
                                         onChange={(event) => setLobbyInput(event.target.value)}
-                                        aria-describedby={lobbyError ? "lobby-error" : undefined}
+                                        aria-describedby={errorMessage ? "lobby-error" : undefined}
                                     />
                                 </div>
-                                <Button variant="dark" type="submit" disabled={isSubmitting || !lobbyInput.trim()}>
+                                <Button variant="dark" type="submit" disabled={busy || !lobbyInput.trim()}>
                                     {isSubmitting ? "Joining..." : "Join lobby"}
                                 </Button>
                             </form>
                         )}
 
-                        {dialogView === "create" && (
+                        {currentView === "create" && (
                             <div className="main-page-lobby-fields">
                                 <div className="main-page-lobby-field">
                                     <label htmlFor="created-lobby-code">Your lobby code</label>
                                     <input
                                         id="created-lobby-code"
                                         className="main-page-lobby-input main-page-lobby-code"
-                                        value={lobbyGame?.id || ""}
+                                        value={game?.id || ""}
                                         readOnly
                                     />
                                 </div>
                                 <Button variant="dark" onClick={copyLobbyCode}>Copy code</Button>
                                 {copyStatus && <p className="main-page-lobby-hint" role="status">{copyStatus}</p>}
                                 <p className="main-page-lobby-waiting">Waiting for another player...</p>
+                                <p className="main-page-lobby-hint">Back keeps this lobby open.</p>
                             </div>
                         )}
-                        {lobbyError && <p id="lobby-error" className="main-page-lobby-hint" role="alert">{lobbyError}</p>}
+                        {isRestoring && <p role="status">Restoring your lobby...</p>}
+                        {game && game.phase !== "waiting" && (
+                            <Button variant="dark" disabled={busy} onClick={onResumeGame}>Resume game</Button>
+                        )}
+                        {errorMessage && <p id="lobby-error" className="main-page-lobby-hint" role="alert">{errorMessage}</p>}
+                        {connection.error && <Button disabled={busy} onClick={connection.reconnect}>Reconnect</Button>}
+                        {canRestore && !isRestoring && <Button disabled={busy} onClick={onRestoreGame}>Restore lobby</Button>}
                     </DialogWindow>
 
-                    {dialogView !== "play" && (
-                        <Button className="main-page-back" variant="light" disabled={isSubmitting} onClick={goBack}>Back</Button>
+                    {currentView !== "play" && (
+                        <Button className="main-page-back" variant="light" disabled={busy} onClick={goBack}>Back</Button>
                     )}
 
                     <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem"}}>
-                        <Button className="main-page-rules" disabled={isSubmitting} onClick={onNavigateRules}>Rules</Button>
-                        <Button className="main-page-rules" variant="light" disabled={isSubmitting} onClick={onNavigateSettings}>Settings</Button>
+                        <Button className="main-page-rules" disabled={busy} onClick={onNavigateRules}>Rules</Button>
+                        <Button className="main-page-rules" variant="light" disabled={busy} onClick={onNavigateSettings}>Settings</Button>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 // File was created by Vladyslav Doroshenko
 
 import { useEffect, useRef, useState } from "react";
+import { signOutSession } from "../../api/session.js";
 
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
@@ -57,24 +58,7 @@ function ProfileMenu() {
 
         setIsSigningOut(true);
         try {
-            const token = localStorage.getItem("token");
-            if (token) {
-                const response = await fetch('/api/signout', {
-                    method: 'GET',
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const data = await response.json();
-                const sessionMissing =
-                    response.status === 401 &&
-                    data.error?.code === "SESSION_NOT_FOUND";
-
-                if (!response.ok && !sessionMissing) {
-                    throw new Error(data.error?.message || "The server could not sign you out.");
-                }
-            }
-
-            localStorage.removeItem("token");
-            localStorage.removeItem("gameId");
+            await signOutSession();
             alert("Successfully signed out");
             location.reload();
         } catch (error) {
