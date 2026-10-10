@@ -1,0 +1,36 @@
+/*File was created by Vladyslav Doroshenko*/
+
+.dialog-window {
+    padding: 1.5rem 2rem;
+    gap: 1.5rem;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    width: 100%;
+    height: auto;
+    min-height: 12rem;
+
+    border: solid 2px var(--text-btn-color);
+    border-radius: 4px;
+    background-color: var(--page-bg);
+
+    position: relative;
+    z-index: 1;
+
+    box-sizing: border-box;
+}
+
+.dialog-window-title {
+    width: 100%;
+    height: auto;
+
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}

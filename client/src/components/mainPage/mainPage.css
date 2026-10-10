@@ -80,40 +80,6 @@ body {
     border-color: var(--text-btn-color);
 }
 
-.mainPageh1{
-    width: 100%;
-    height: auto;
-
-    font-size: 2rem;
-    font-weight: bold;
-    text-align: center;
-    padding: 0;
-}
-
-.main-page-dialogue {
-    padding: 1.5rem 2rem;
-    gap: 1.5rem;
-
-    display: flex;
-    flex-direction: column;
-
-    justify-content: center;
-    align-items: center;
-
-    width: 100%;
-    height: auto;
-    min-height: 12rem;
-
-    border: solid 2px var(--text-btn-color);
-    border-radius: 4px;
-    background-color: var(--page-bg);
-
-    position: relative;
-    z-index: 1;
-
-    box-sizing: border-box;
-}
-
 .main-page-button-container{
     display: flex;
     flex-direction: row;
@@ -123,4 +89,92 @@ body {
     width: 100%;
     height: auto;
     gap: 1rem;
+}
+
+.main-page-subtitle {
+    margin-top: -1.5rem;
+    color: var(--ship-border);
+    text-align: center;
+}
+
+.main-page-lobby-dialog {
+    width: 18rem;
+    max-width: 100%;
+    min-height: 17rem;
+    justify-content: flex-start;
+    padding: 1.5rem;
+}
+
+.main-page-lobby-actions,
+.main-page-lobby-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.main-page-lobby-actions .button,
+.main-page-lobby-fields .button {
+    width: 100%;
+    border-color: var(--text-btn-color);
+}
+
+.main-page-lobby-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.main-page-lobby-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.875rem 1rem;
+    border: 2px solid var(--text-btn-color);
+    border-radius: 3px;
+    background-color: var(--input-bg);
+    color: var(--text-btn-color);
+    font-size: 1.2rem;
+    min-width: 0;
+}
+
+.main-page-lobby-input::placeholder {
+    color: var(--ship-border);
+    opacity: 0.7;
+}
+
+.main-page-lobby-code {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+}
+
+.main-page-lobby-waiting {
+    color: var(--ship-border);
+    font-size: 0.875rem;
+}
+
+.main-page-lobby-waiting {
+    text-align: center;
+}
+
+.main-page-lobby-waiting::before {
+    content: "";
+    display: inline-block;
+    width: 0.375rem;
+    height: 0.375rem;
+    margin-right: 0.5rem;
+    border-radius: 50%;
+    background-color: currentColor;
+    vertical-align: middle;
+}
+
+.main-page-lobby-fields .button:disabled {
+    cursor: not-allowed;
+}
+
+.main-page-back {
+    font-size: 1rem;
+    border-color: var(--text-btn-color);
 }
