@@ -1,5 +1,5 @@
 /**
- * @file battleshipGame.jsx
+ * @file BattleshipGame.jsx
  * @description Main gameplay controller component. Manages the dual-board arena layout,
  * initializes player fleet state from SHIPS_CONFIG, and coordinates communication
  * between the navigation Header and both Battlefield grids.
@@ -7,8 +7,8 @@
  */
 
 import React from "react";
-import Header from "../header/header.jsx";
-import Battlefield from "../battlefield/battlefield.jsx";
+import Header from "../header/Header.jsx";
+import Battlefield from "../battlefield/Battlefield.jsx";
 import EnemyShipsList from "./EnemyShipsList.jsx"; //xslobok00: component of enemies
 import { SHIPS_CONFIG } from "../../constants.js";
 import "./battleshipGame.css";

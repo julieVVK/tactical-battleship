@@ -1,6 +1,6 @@
 /**
- * @file header.jsx
- * @description Header component for the Battleship game screen.
+ * @file Header.jsx
+ * @description Header component for the BattleShip game screen.
  * Displays navigation controls to return to the main menu and shows the current turn status.
  * @author xhaziyh00
  */

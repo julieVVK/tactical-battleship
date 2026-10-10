@@ -25,19 +25,19 @@
     2.1 Mapování konkurence na zjištěné potřeby
 
     Seznam analyzovaných produktů (Yullia):
-1. CBC Battleship (`[https://www.cbc.ca/kids/games/play/battleship](https://www.cbc.ca/kids/games/play/battleship)`)
-2. BattleshipOnline / IDK Battleship** (`[https://www.battleshiponline.org](https://www.battleshiponline.org)`)
+1. CBC BattleShip (`[https://www.cbc.ca/kids/games/play/battleship](https://www.cbc.ca/kids/games/play/battleship)`)
+2. BattleshipOnline / IDK BattleShip** (`[https://www.battleshiponline.org](https://www.battleshiponline.org)`)
 
 
     Vazba na potřeby z Kapitoly 1:
-        CBC Battleship je super na rychlé pochopení na první pohled, ale je moc pomalá kvůli dlouhým animacím a nemá dobrý přehled o zbývajících lodích.
+        CBC BattleShip je super na rychlé pochopení na první pohled, ale je moc pomalá kvůli dlouhým animacím a nemá dobrý přehled o zbývajících lodích.
         BattleshipOnline má skvělý přehled o lodích a ukazuje statistiky, ale plete uživatele divným přechodem do 3D pohledu a zbytečnými prodlevami.
 
 
 
  2.2 Vyhodnocení, Pro/Proti a Ponaučení
 
-     Aplikace 1: CBC Battleship
+     Aplikace 1: CBC BattleShip
 
     Pro (Výhody):
 1. Rychlé pochopení „co a kam“: Díky jednoduché grafice a ukázce hráč hned ví, co má dělat.
@@ -51,7 +51,7 @@
 3. Nepřehledné zbývající lodě: Zobrazení potopených a živých lodí je nepřehledné.
 
 
-    Aplikace 2: BattleshipOnline (IDK Battleship)
+    Aplikace 2: BattleshipOnline (IDK BattleShip)
 
     Pro (Výhody):
 1. Jasný přehled o zbývajících lodích: Pěkné ikony ukazují, které lodě ještě žijí a které jsou zničené.

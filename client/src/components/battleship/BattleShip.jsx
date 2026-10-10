@@ -1,5 +1,5 @@
 /**
- * @file battleShip.jsx
+ * @file BattleShip.jsx
  * @description Ship component representing an individual vessel on the grid or in the reserve container.
  * Handles drag-and-drop initiation, orientation (horizontal/vertical), hover highlighting,
  * and proportional dimension calculation based on cell size (37px).
@@ -8,7 +8,7 @@
 import React from "react";
 
 /**
- * Battleship class component.
+ * BattleShip class component.
  *
  * @author xhaziyh00
  * @property {Object} props - Component properties.
@@ -19,7 +19,7 @@ import React from "react";
  * @property {Object} state - Component state.
  * @property {boolean} state.isHovered - Tracks mouse hover status for border highlighting.
  */
-class Battleship extends React.Component {
+class BattleShip extends React.Component {
   constructor(props) {
     super(props);
     // author:xhaziyh00 - Local state to manage hover border styling
@@ -107,4 +107,4 @@ class Battleship extends React.Component {
   }
 }
 
-export default Battleship;
+export default BattleShip;

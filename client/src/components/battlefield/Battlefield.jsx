@@ -1,5 +1,5 @@
 /**
- * @file battlefield.jsx
+ * @file Battlefield.jsx
  * @description Renders the 10x10 game board, axis labels (A-J, 1-10), cell click/drop handlers,
  * hit/miss visual markers, and the reserve ship dock for the fleet preparation phase.
  * @author xhaziyh00
@@ -7,7 +7,7 @@
 
 import React from "react";
 import { LETTERS, NUMBERS } from "../../constants";
-import Battleship from "../battleship/battleShip";
+import BattleShip from "../battleship/BattleShip.jsx";
 import "./battlefield.css";
 
 /**
@@ -271,7 +271,7 @@ class Battlefield extends React.Component {
               ships
                 .filter((ship) => !ship.isPlaced)
                 .map((ship) => (
-                  <Battleship
+                  <BattleShip
                     key={ship.id}
                     size={ship.size}
                     isVertical={ship.isVertical}

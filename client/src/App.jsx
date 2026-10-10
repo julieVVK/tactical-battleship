@@ -1,8 +1,8 @@
 import MainPage from "./components/mainPage/MainPage.jsx";
-import Settings from "./components/settings/settings.jsx";
-import Rules from "./components/rulesPage/rules.jsx";
-import GetReady from "./components/battleshipGame/battleshipGetReady.jsx";
-import BattleshipGame from "./components/battleshipGame/battleshipGame.jsx";
+import Settings from "./components/settings/Settings.jsx";
+import Rules from "./components/rulesPage/Rules.jsx";
+import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
+import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
 import { useState } from "react";
 
 function App() {

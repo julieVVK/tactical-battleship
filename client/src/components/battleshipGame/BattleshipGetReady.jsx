@@ -1,5 +1,5 @@
 /**
- * @file battleshipGame.jsx
+ * @file BattleshipGame.jsx
  * @description Main gameplay controller component. Manages the dual-board arena layout,
  * initializes player fleet state from SHIPS_CONFIG, and coordinates communication
  * between the navigation Header and both Battlefield grids.
@@ -7,9 +7,9 @@
  */
 
 import React from "react";
-import Header from "../header/header.jsx";
-import Battlefield from "../battlefield/battlefield.jsx";
-import Battleship from "../battleship/battleShip";
+import Header from "../header/Header.jsx";
+import Battlefield from "../battlefield/Battlefield.jsx";
+import BattleShip from "../battleship/BattleShip.jsx";
 import {SHIPS_CONFIG} from "../../constants.js";
 
 /**
@@ -352,7 +352,7 @@ class GetReady extends React.Component {
                                 zIndex: 9999,
                             }}
                         >
-                            <Battleship
+                            <BattleShip
                                 size={draggingShip.size}
                                 isVertical={draggingShip.isVertical}
                                 isDraggable={false}
