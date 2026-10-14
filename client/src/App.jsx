@@ -3,6 +3,7 @@ import Settings from "./components/settings/Settings.jsx";
 import Rules from "./components/rulesPage/Rules.jsx";
 import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
+import StatisticsPage from "./components/statistics/Statistics.jsx";
 import { useState } from "react";
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
           onNavigateRules={() => setScreen("rules")}
+          onNavigateStatistics={() => setScreen("statistics")}
         />
       );
 
@@ -69,6 +71,14 @@ function App() {
         />
       );
 
+    case "statistics":
+      return (
+        <StatisticsPage
+          onHome={() => setScreen("menu")}
+          onProfile={() => setScreen("profile")}
+        />
+      );
+
     default:
       // author:xhaziyh00 - Fallback to main menu if unknown screen state is passed
       return (
@@ -76,6 +86,7 @@ function App() {
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
           onNavigateRules={() => setScreen("rules")}
+          onNavigateStatistics={() => setScreen("statistics")}
         />
       );
   }
