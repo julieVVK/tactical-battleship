@@ -14,6 +14,7 @@ function App() {
   // author:xhaziyh00 - Persisted player ships registry holding orientation and placement states
   const [playerShips, setPlayerShips] = useState(null);
 
+  const [serverBoardData, setServerBoardData] = useState(null);
   /**
    * Transition callback from preparation dock to active combat arena.
    * Caches finalized fleet configuration and triggers battle screen mount.
@@ -23,17 +24,18 @@ function App() {
    * @param {Array<Object>} ships - List of configured ship entities.
    */
 
-  const handleStartBattle = (boardData, ships) => {
+  const handleStartBattle = (boardData, ships, serverBoard) => {
     setPlayerBoardData(boardData);
     setPlayerShips(ships);
+    setServerBoardData(serverBoard);
     setScreen("battle");
   };
 
   //TODO: Implement React Router
   /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-  *       sound and language will be stored in `const localStorage`.
-  *       Add isDirty, savedProfile, draftProfile
-  * */
+   *       sound and language will be stored in `const localStorage`.
+   *       Add isDirty, savedProfile, draftProfile
+   * */
 
   // author:xhaziyh00 - Declarative client-side screen switcher
   switch (screen) {
@@ -66,6 +68,7 @@ function App() {
           onGoHome={() => setScreen("menu")}
           initialBoardData={playerBoardData}
           initialShips={playerShips}
+          serverBoard={serverBoardData}
         />
       );
 

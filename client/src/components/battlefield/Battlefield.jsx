@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { LETTERS, NUMBERS } from "../../constants";
+import { LETTERS, NUMBERS, GADGETS } from "../../constants";
 import BattleShip from "../battleship/BattleShip.jsx";
 import "./battlefield.css";
 
@@ -146,6 +146,8 @@ class Battlefield extends React.Component {
     } = this.props;
 
     const CellTag = isOpponent ? "button" : "div";
+    const unplacedShips = ships.filter((ship) => !ship.isPlaced);
+    const allPlaced = ships.length > 0 && unplacedShips.length === 0;
 
     return (
       <div className="mainField">
@@ -200,14 +202,6 @@ class Battlefield extends React.Component {
                       }
                     }}
                     draggable={!isOpponent && cell?.hasShip}
-                    /*onDragStart={(e) => {
-                      if (!isOpponent && cell?.hasShip) {
-
-                        if (this.props.onPlacedShipDragStart) {
-                          this.props.onPlacedShipDragStart(e, rowIndex, colIndex);
-                        }
-                      }
-                    }}*/
                     onMouseDown={(e) => {
                       if (!isOpponent && cell?.hasShip) {
                         e.preventDefault();
@@ -265,22 +259,82 @@ class Battlefield extends React.Component {
         </div>
 
         {/* author:xhaziyh00 - Dock container for unplaced ships during setup phase (own fleet only) */}
-        {!isOpponent && (
-          <div className="info">
+        {
+          <div
+            className="info"
+            style={
+              !isGetReadyScrn && !isOpponent
+                ? {
+                    backgroundColor: "transparent",
+                    border: "none",
+                    boxShadow: "none",
+                  }
+                : undefined
+            }
+          >
             {isGetReadyScrn &&
-              ships
-                .filter((ship) => !ship.isPlaced)
-                .map((ship) => (
-                  <BattleShip
-                    key={ship.id}
-                    size={ship.size}
-                    isVertical={ship.isVertical}
-                    isDraggable={true}
-                    onDragStart={(e) => this.handleShipDragStart(e, ship)}
-                  />
-                ))}
+              (!allPlaced ? (
+                ships
+                  .filter((ship) => !ship.isPlaced)
+                  .map((ship) => (
+                    <BattleShip
+                      key={ship.id}
+                      size={ship.size}
+                      isVertical={ship.isVertical}
+                      isDraggable={true}
+                      onDragStart={(e) => this.handleShipDragStart(e, ship)}
+                    />
+                  ))
+              ) : (
+                <button
+                  onClick={() => {
+                    if (this.props.onStartBattle) {
+                      this.props.onStartBattle(boardData, ships);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    flex: 1,
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Ready to go
+                </button>
+              ))}
+
+            {!isGetReadyScrn &&
+              !isOpponent &&
+              GADGETS.map((gadget) => (
+                <button
+                  key={gadget.id}
+                  title={`${gadget.name}:\n${gadget.desc}`}
+                  onClick={() =>
+                    this.props.onSelectAbility &&
+                    this.props.onSelectAbility(gadget.id)
+                  }
+                  style={{
+                    flex: 1,
+                    cursor: "pointer",
+                    padding: "8px",
+                    borderRadius: "100px",
+                    height: "80px",
+                  }}
+                >
+                  {gadget.icon}
+                </button>
+              ))}
+
+            {!isGetReadyScrn && isOpponent && (
+              <div>
+                {/*                 
+                  //code for alive ship
+ */}
+              </div>
+            )}
           </div>
-        )}
+        }
       </div>
     );
   }
