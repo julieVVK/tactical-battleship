@@ -1,20 +1,22 @@
 // File was created by Vladyslav Doroshenko
 
+import { useLanguage } from '../../i18n/useLanguage.js';
 import { useEffect, useRef, useState } from "react";
 
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
 
 function ProfileMenu() {
+    const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const containerRef = useRef(null);
 
     //TODO: connect React Router to this
     const menu_items = {
-        "Profile" : "#Profile",
-        "Statistics": "#Statistics",
-        "Match history": "#MatchHistory",
+        "account.profile" : "#Profile",
+        "account.statistics": "#Statistics",
+        "account.matchHistory": "#MatchHistory",
     }
 
     useEffect(() => {
@@ -69,16 +71,20 @@ function ProfileMenu() {
                     data.error?.code === "SESSION_NOT_FOUND";
 
                 if (!response.ok && !sessionMissing) {
-                    throw new Error(data.error?.message || "The server could not sign you out.");
+                    throw new Error('account.signOutServerError');
                 }
             }
 
             localStorage.removeItem("token");
             localStorage.removeItem("gameId");
-            alert("Successfully signed out");
+            alert(t('account.signedOut'));
             location.reload();
         } catch (error) {
-            alert("Failed to sign out\n" + error.message);
+            alert(t('account.signOutFailed') + '\n' + t(
+                error.message === 'account.signOutServerError'
+                    ? 'account.signOutServerError'
+                    : 'account.networkError',
+            ));
         } finally {
             setIsSigningOut(false);
         }
@@ -92,7 +98,7 @@ function ProfileMenu() {
             <button
                 className="profile-menu-toggle"
                 type="button"
-                aria-label="Account menu"
+                aria-label={t('account.menu')}
                 aria-expanded={isOpen}
                 aria-controls="profile-menu-panel"
                 onClick={() => setIsOpen(!isOpen)}
@@ -103,8 +109,8 @@ function ProfileMenu() {
 
             <section id="profile-menu-panel" className="profile-menu-panel" hidden={!isOpen}>
                 <header className="profile-menu-header">
-                    <h2>Your account</h2>
-                    <p>Player profile and preferences</p>
+                    <h2>{t('account.title')}</h2>
+                    <p>{t('account.subtitle')}</p>
                 </header>
 
                 <div className="profile-menu-items">
@@ -117,7 +123,7 @@ function ProfileMenu() {
                             key={label}
                             onClick={ () => {setIsOpen(false)} }
                         >
-                            {label}
+                            {t(label)}
                         </button>
                      );
                     })}
@@ -127,7 +133,7 @@ function ProfileMenu() {
                         disabled={isSigningOut}
                         onClick={() => signOut()}
                         className="profile-menu-item profile-menu-signout">
-                        Sign out
+                        {t('account.signOut')}
                     </button>
                 </div>
             </section>

@@ -2,16 +2,19 @@
 
 // Later modified by Vladyslav Doroshenko
 
+import { LANGUAGES } from '../../i18n/translation.js';
+import { useLanguage } from '../../i18n/useLanguage.js';
 import { useState } from 'react';
 import Button from '../button/Button';
 import './settings.css';
 
 export default function Settings({ onNavigateMain }) {
+  // importing context from LanguageProvider.jsx using "custom" useLanguage hook
+  const { language, setLanguage, t } = useLanguage();
 
   const [muteMusic,        setMuteMusic] =        useState(true);
   const [muteSoundEffects, setMuteSoundEffects] = useState(false);
 
-  const [language, setLanguage] = useState('en');
   const [username, setUsername] = useState('');   // was Captain
   const [email,    setEmail] =    useState('');   // was captain@example.com
   const [country,  setCountry] =  useState('CZ');
@@ -29,7 +32,7 @@ export default function Settings({ onNavigateMain }) {
    * */
   const handleSaveProfile = (event) => {
     event.preventDefault();
-    alert(`Profile saved: ${username} (${email}, ${country})`);
+    alert(t('settings.saved', { username, email, country: t(`country.${country}`) }));
   };
 
 
@@ -41,10 +44,10 @@ export default function Settings({ onNavigateMain }) {
   const handleUpdatePassword = (event) => {
     event.preventDefault();
     if (newPassword !== confirmPassword) {
-      alert('New passwords do not match!');
+      alert(t('password.mismatch'));
       return;
     }
-    alert('Password updated successfully!');
+    alert(t('password.updated'));
   };
 
 
@@ -63,12 +66,12 @@ export default function Settings({ onNavigateMain }) {
           className="home-back-button"
           onClick={onNavigateMain}
         >
-           Home
+           {t('nav.home')}
         </Button>
       </div>
 
       <header className="settings-header">
-        <h2 className="settings-title">Settings</h2>
+        <h2 className="settings-title">{t('nav.settings')}</h2>
       </header>
 
       <div className="settings-grid">
@@ -84,7 +87,7 @@ export default function Settings({ onNavigateMain }) {
         */}
         <div className="settings-sound">
 
-          <h3 className="sound-title">Sound</h3>
+          <h3 className="sound-title">{t('settings.sound')}</h3>
 
           <div className="button-group">
 
@@ -95,7 +98,7 @@ export default function Settings({ onNavigateMain }) {
               aria-pressed={muteMusic}
               onClick={() => setMuteMusic(!muteMusic)}
             >
-              Mute music
+              {t('settings.muteMusic')}
             </Button>
 
             <Button
@@ -104,7 +107,7 @@ export default function Settings({ onNavigateMain }) {
               aria-pressed={muteSoundEffects}
               onClick={() => setMuteSoundEffects(!muteSoundEffects)}
             >
-              Mute sound effects
+              {t('settings.muteEffects')}
             </Button>
 
           </div>
@@ -117,11 +120,11 @@ export default function Settings({ onNavigateMain }) {
 
         <div className="settings-language">
 
-          <h3 className="language-title">Language</h3>
+          <h3 className="language-title">{t('settings.language')}</h3>
 
           <div className="form-group">
 
-            <label htmlFor="language" className="form-label">Language</label>
+            <label htmlFor="language" className="form-label">{t('settings.language')}</label>
 
             <select
               id="language"
@@ -129,14 +132,9 @@ export default function Settings({ onNavigateMain }) {
               onChange={(event) => setLanguage(event.target.value)}
               className="language-select"
             >
-              {/* TODO: implement map function to map
-                          all supported countries and languages
-                          from a separate dedicated file */}
-              {/*TODO: add proper DB communication:
-                  1. Fetch user language settings from the database
-                  2. Update user language settings in the database */}
-              <option value="en">English</option>
-              <option value="cz">Czech</option>
+              {LANGUAGES.map( ({code, name}) => (
+                <option key={code} value={code} lang={code}> {name} </option>
+              ))}
             </select>
           </div>
         </div>
@@ -148,18 +146,18 @@ export default function Settings({ onNavigateMain }) {
         {/* TODO: maybe refactor this whole section to a separate window or smth???
                   so the user know EXACTLY where to change things */}
         <div className="settings-account">
-          <h3 className="account-title">Account</h3>
+          <h3 className="account-title">{t('settings.account')}</h3>
 
           <form onSubmit={handleSaveProfile} className="account-form">
 
             <div className="form-group">
 
-              <label htmlFor="username" className="form-label">Username</label>
+              <label htmlFor="username" className="form-label">{t('settings.username')}</label>
 
               <input
                 type="text"
                 id="username"
-                placeholder="Enter your username"
+                placeholder={t('settings.usernamePlaceholder')}
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="nickname"
@@ -169,12 +167,12 @@ export default function Settings({ onNavigateMain }) {
 
             <div className="form-group">
 
-              <label htmlFor="email" className="form-label">Email</label>
+              <label htmlFor="email" className="form-label">{t('settings.email')}</label>
 
               <input
                 type="email"
                 id="email"
-                placeholder="Enter your email"
+                placeholder={t('settings.emailPlaceholder')}
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 autoComplete="email"
@@ -184,7 +182,7 @@ export default function Settings({ onNavigateMain }) {
 
             <div className="form-group">
 
-              <label htmlFor="country" className="form-label">Country</label>
+              <label htmlFor="country" className="form-label">{t('settings.country')}</label>
 
               <select
                 id="country"
@@ -195,19 +193,19 @@ export default function Settings({ onNavigateMain }) {
                 {/* TODO: implement map function to map
                           all supported countries and languages
                           from a separate dedicated file */}
-                <option value="CZ"> Czechia</option>
-                <option value="UA"> Ukraine</option>
-                <option value="SK"> Slovakia</option>
-                <option value="PL"> Poland</option>
+                <option value="CZ"> {t('country.CZ')}</option>
+                <option value="UA"> {t('country.UA')}</option>
+                <option value="SK"> {t('country.SK')}</option>
+                <option value="PL"> {t('country.PL')}</option>
               </select>
             </div>
 
             {/* TODO: add change profile handler */}
             <div className="profile-picture-section">
-              <p className="form-label">Profile picture</p>
+              <p className="form-label">{t('settings.picture')}</p>
               <div className="avatar-placeholder"></div>
-              <Button type="button" className="change-picture-button">Change picture</Button>
-              <p className="field-hint">JPG or PNG · Up to 2 MB</p>
+              <Button type="button" className="change-picture-button">{t('settings.changePicture')}</Button>
+              <p className="field-hint">{t('settings.pictureHint')}</p>
             </div>
 
             <div className="form-actions">
@@ -218,7 +216,7 @@ export default function Settings({ onNavigateMain }) {
                   className="save-account-button"
                   disabled
               >
-                Save changes
+                {t('settings.save')}
               </Button>
             </div>
 
@@ -234,16 +232,16 @@ export default function Settings({ onNavigateMain }) {
                  check handleUpdatePassword() to\do for further work */}
 
         <div className="settings-password">
-          <h3 className="password-title">Change password</h3>
+          <h3 className="password-title">{t('password.title')}</h3>
           <form onSubmit={handleUpdatePassword} className="password-form">
 
             <div className="form-group">
-              <label htmlFor="current-password" className="form-label">Current password</label>
+              <label htmlFor="current-password" className="form-label">{t('password.current')}</label>
               <input
                 type="password"
                 id="current-password"
                 value={currentPassword}
-                placeholder="Enter your current password"
+                placeholder={t('password.currentPlaceholder')}
                 onChange={(event) => setCurrentPassword(event.target.value)}
                 autoComplete="current-password"
                 className="form-input"
@@ -251,11 +249,11 @@ export default function Settings({ onNavigateMain }) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="new-password" className="form-label">New password</label>
+              <label htmlFor="new-password" className="form-label">{t('password.new')}</label>
               <input
                 type="password"
                 id="new-password"
-                placeholder="Enter a new password"
+                placeholder={t('password.newPlaceholder')}
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
                 autoComplete="new-password"
@@ -264,11 +262,11 @@ export default function Settings({ onNavigateMain }) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="confirm-password" className="form-label">Confirm new password</label>
+              <label htmlFor="confirm-password" className="form-label">{t('password.confirm')}</label>
               <input
                 type="password"
                 id="confirm-password"
-                placeholder="Repeat the new password"
+                placeholder={t('password.confirmPlaceholder')}
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 autoComplete="new-password"
@@ -277,7 +275,7 @@ export default function Settings({ onNavigateMain }) {
             </div>
 
             <div className="form-actions">
-              <Button type="submit" variant="dark" className="button-submit">Update password</Button>
+              <Button type="submit" variant="dark" className="button-submit">{t('password.update')}</Button>
             </div>
           </form>
         </div>

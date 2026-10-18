@@ -1,18 +1,26 @@
 // File was created by xslobok00
 
+// Edited by Vladyslav Doroshenko
+//     - Added foreign languages support
+//       Changed lines: 11, 14, 22
+
+import { LanguageContext } from '../../i18n/LanguageContext.js';
 import React from "react";
 import "./enemyShipsList.css";
 
 class EnemyShipsList extends React.Component {
+    static contextType = LanguageContext;
+
     render() {
+        const { t } = this.context;
         const {enemyShips = []} = this.props;
 
-        // grorp by size 4 to 1
+        // group by size 4 to 1
         const sizes = [4, 3, 2, 1];
 
         return (
             <div className="enemy-ships-tracker">
-                <h3>Enemy Ships</h3>
+                <h3>{t('game.enemyShips')}</h3>
                 <div className="ships-grid">
                     {sizes.map((size) => {
                         // how many ships are alive

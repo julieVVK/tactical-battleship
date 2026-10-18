@@ -1,3 +1,5 @@
+/*File was created by Yuliia Vovk*/
+
 .settings-container {
   max-width: 1080px;
   margin: 0 auto;
@@ -225,4 +227,18 @@
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .settings-grid,
+  .account-form,
+  .password-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-form > .form-group:nth-of-type(n),
+  .profile-picture-section {
+    grid-column: auto;
+    grid-row: auto;
+  }
 }

@@ -6,11 +6,17 @@
  * @author xhaziyh00
  */
 
+// Edited by Vladyslav Doroshenko
+//     - Added foreign languages support
+//       Changed lines: 13, 19, 31, 313, 322, 325, 351
+
+import { LanguageContext } from '../../i18n/LanguageContext.js';
 import React from "react";
 import Header from "../header/Header.jsx";
 import Battlefield from "../battlefield/Battlefield.jsx";
 import BattleShip from "../battleship/BattleShip.jsx";
 import {SHIPS_CONFIG} from "../../constants.js";
+import "./getReady.css";
 
 /**
  * BatlleshipGame class component.
@@ -22,6 +28,8 @@ import {SHIPS_CONFIG} from "../../constants.js";
  * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
 class GetReady extends React.Component {
+    static contextType = LanguageContext;
+
     // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
     constructor(props) {
         super(props);
@@ -302,6 +310,7 @@ class GetReady extends React.Component {
      * @returns {JSX.Element} Full match screen layout.
      */
     render() {
+        const { t } = this.context;
         const {draggingShip, mousePos} = this.state;
 
         return (
@@ -310,10 +319,10 @@ class GetReady extends React.Component {
                 <Header onGoHome={this.props.onGoHome}/>
 
                 {/* author:xhaziyh00 - Side-by-side arena container: player's fleet on the left, opponent's grid on the right */}
-                <div style={{display: "flex", justifyContent: "space-around"}}>
+                <div className="preparation-fields">
                     {/* Player's board displaying own ship positions and reserve setup dock */}
                     <Battlefield
-                        title="Your fleet"
+                        title={t('game.yourFleet')}
                         isOpponent={false}
                         isGetReadyScrn={true}
                         ships={this.state.myShips}
@@ -339,7 +348,7 @@ class GetReady extends React.Component {
                             cursor: "pointer",
                         }}
                     >
-                        gogogo
+                        {t('game.start')}
                     </button>
                     {/* xslobok00: layer for replase and rotate in process */}
                     {draggingShip && (

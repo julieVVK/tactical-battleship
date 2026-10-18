@@ -1,3 +1,9 @@
+// File was created by xhaziyh00
+
+// Edited by Vladyslav Doroshenko
+//     - Added foreign languages support
+//       Changed lines: 23-25, 29-33
+
 export const BOARD_SIZE = 10;
 
 export const SHIPS_CONFIG = [
@@ -14,17 +20,17 @@ export const SHIPS_CONFIG = [
 ];
 
 export const GADGETS = [
-    {id: 'radar', name: 'radar (3x3)', icon: '', desc: 'scans square 3x3'},
-    {id: 'mine', name: 'mine', icon: '', desc: 'damages opponent when got hit'},
-    {id: 'relocate', name: 'relocate', icon: '', desc: 'relocates ship to another position'},
+    {id: 'radar', nameKey: 'gadget.radar', descKey: 'gadget.radarDescription', name: 'radar (3x3)', icon: '', desc: 'scans square 3x3'},
+    {id: 'mine', nameKey: 'gadget.mine', descKey: 'gadget.mineDescription', name: 'mine', icon: '', desc: 'damages opponent when got hit'},
+    {id: 'relocate', nameKey: 'gadget.relocate', descKey: 'gadget.relocateDescription', name: 'relocate', icon: '', desc: 'relocates ship to another position'},
 ];
 
 export const TURN_MESSAGES = {
-    my_turn: 'Your turn · Choose a square on the opponent\'s board',
-    opponent_turn: 'Enemy\'s turn · Please wait for the opponent to make a move',
-    waiting: 'Waiting for opponent · Share the game link with a friend',
-    won: 'Victory · All enemy ships have been sunk',
-    lost: 'Defeat · Your fleet has been destroyed',
+    my_turn: 'turn.my_turn',
+    opponent_turn: 'turn.opponent_turn',
+    waiting: 'turn.waiting',
+    won: 'turn.won',
+    lost: 'turn.lost',
 };
 
 export const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
