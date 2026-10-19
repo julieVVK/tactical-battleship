@@ -4,13 +4,15 @@ import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
 import Button from "../button/Button.jsx";
 import "./mainPage.css";
-function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
+function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigateStatistics }) {
 
     return (
         <>
             <div className="main-page">
                 <Ship />
-                <ProfileMenu />
+                <ProfileMenu 
+                    onNavigateStatistics={onNavigateStatistics}
+                />
                 <div className="main-page-content">
                     <h1 className="main-page-title">Battleships</h1>
                     <div className="main-page-dialogue">

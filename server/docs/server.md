@@ -38,7 +38,7 @@ and the error handler runs after them.
 ## Sessions
 
 `POST /api/createUser` is public. All `/api/createGames`, `/api/games/...`,
-`/api/statistics` and `/api/signout` routes require the token returned by user creation:
+`/api/statistics`, `/api/session` and `/api/signout` routes require the token returned by user creation:
 
 ```http
 Authorization: Bearer <token>
@@ -50,6 +50,20 @@ need a `userId` in the body or query. Missing or unknown tokens return HTTP 401
 with `SESSION_NOT_FOUND`.
 
 # Game routes
+
+## HTTP `GET /api/session`:
+
+Requires `Authorization: Bearer <token>`. A valid session returns HTTP 204
+without a response body. A missing token or an unknown or removed session returns
+HTTP 401.
+
+The frontend checks a saved token before showing the application pages. If there is no
+token or this endpoint returns 401, it calls `POST /api/createUser` with a random
+user ID and the name `Guest`, then saves the returned token in localStorage.
+Server errors and network failures show a retry action instead of creating a new
+user. App initializes the session in an effect. In development, StrictMode may run
+it twice and create two guests when there is no saved token. The last completed
+creation saves the token used by the frontend.
 
 ## HTTP `POST /api/createUser`:
 
