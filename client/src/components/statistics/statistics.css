@@ -27,17 +27,21 @@
   cursor: pointer;
 }
 
-.statistic-profile-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--text-btn-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-btn-color);
-  background-color: var(--avatar-bg);
-  cursor: pointer;
+.statistic-navigation .profile-menu {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: auto;
+  max-width: none;
+}
+
+.statistic-navigation .profile-menu-toggle {
+  margin-right: 0;
+}
+
+.statistic-navigation .profile-menu-panel {
+  width: 16rem;
+  max-width: calc(100vw - 36px);
 }
 
 .statistic-title {
@@ -80,7 +84,6 @@
 
 .statistic-card-value--victory { color: var(--win-text); }
 .statistic-card-value--defeat { color: var(--loss-text); }
-.statistic-card-value--dark { color: var(--text-btn-color); background: transparent;}
 
 .statistic-card-description {
   font-size: 13px;
@@ -267,10 +270,11 @@
     color: var(--loss-text);
 }
 
-.statistic-footnote {
-  margin-top: 20px;
-  font-size: 12px;
-  color: var(--text-btn-color);
+.statistic-load-more-button {
+  display: block;
+  margin: 20px auto 0;
+  padding: 8px 14px;
+  font-size: 1rem;
 }
 
 @media (max-width: 720px) {

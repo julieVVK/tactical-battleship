@@ -1,17 +1,16 @@
-// Import React hooks.
-// useState stores the data and the current loading/error state.
-// useEffect runs the request when the component is mounted.
-import { useEffect, useState } from 'react';
+// File was created by Marie Pindorová (xpindom00) and Vladyslav Doroshenko (xdorosv00)
+// Marie: HTML structure, styles, prepared backend communication here and on backend
+// Vladyslav: fixed all backend communication - requestStats(), loadMoreMatches()
 
-// Import the CSS file responsible for the page's appearance.
-// Keep this filename consistent with the actual CSS filename.
+import {useEffect, useState} from 'react';
+import ProfileMenu from '../profileMenu/ProfileMenu.jsx';
+import Button from '../button/Button.jsx';
 import './statistics.css';
 
-// Convert an ISO date string from the backend into a readable date and time.
+// Convert an ISO date string from the backend
 function formatDateTime(isoString) {
   const date = new Date(isoString);
 
-  // Example: 21 Sept 2026
   const datePart = date.toLocaleDateString('en-GB', {
     timeZone: 'Europe/Prague',
     day: '2-digit',
@@ -19,26 +18,50 @@ function formatDateTime(isoString) {
     year: 'numeric',
   });
 
-  // Example: 18:42
   const timePart = date.toLocaleTimeString('en-GB', {
     timeZone: 'Europe/Prague',
     hour: '2-digit',
     minute: '2-digit',
   });
 
-  // Combine the date and time into one string.
   return `${datePart} · ${timePart}`;
 }
 
-export default function StatisticsPage({ onHome, onProfile }) {
+async function requestStats(offset = 0, limit = 10) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No session found. Please reload the page.');
+  }
+
+  // Request a portion of match history and the overall statistics.
+  const response = await fetch(
+    `/api/statistics?offset=${offset}&limit=${limit}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (response.status === 401) {
+    throw new Error(
+      'Your session has expired. Please reload the page.'
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error('Failed to load statistics.');
+  }
+
+  const data = await response.json();
+  return data;
+}
+
+export default function StatisticsPage({onHome}) {
   // stats will contain the data returned by the backend.
-  // Initially, we do not have any statistics.
   const [stats, setStats] = useState(null);
-
-  // loading tells React whether the request is still running.
   const [loading, setLoading] = useState(true);
-
-  // error stores an error message if the request fails.
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
 
   // useEffect runs when this component appears on the page.
@@ -53,74 +76,54 @@ export default function StatisticsPage({ onHome, onProfile }) {
         setLoading(true);
         setError(null);
 
-        // The backend requires a token from the user's session.
-        // The token should have been saved during login/user creation.
-        const token = localStorage.getItem('token');
-
-        // If there is no token, we cannot make an authenticated request.
-        if (!token) {
-          throw new Error(
-            'You are not signed in. Please sign in first.'
-          );
-        }
-
-        // Request the first 10 matches and the overall statistics.
-        // IMPORTANT: Your backend uses /api/statistics,
-        // not /api/statistics/${userId}.
-        const response = await fetch(
-          'http://127.0.0.1:3000/api/statistics?offset=0&limit=10',
-          {
-            headers: {
-              // Send the session token to the backend.
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // HTTP 401 means that the session token is missing or invalid.
-        if (response.status === 401) {
-          throw new Error(
-            'Your session has expired. Please sign in again.'
-          );
-        }
-
-        // Check whether the request was successful.
-        if (!response.ok) {
-          throw new Error('Failed to load statistics.');
-        }
-
-        // Convert the JSON response into a JavaScript object.
-        const data = await response.json();
+        const data = await requestStats(0, 10);
 
         // Update React state only if the component is still mounted.
         if (!cancelled) {
           setStats(data);
         }
       } catch (err) {
-        // Display the error in the component instead of crashing the page.
         if (!cancelled) {
           setError(
             err.message || 'An unexpected error occurred.'
           );
         }
       } finally {
-        // This runs whether the request succeeds or fails.
         if (!cancelled) {
           setLoading(false);
         }
       }
     }
 
-    // Actually start the request.
     fetchStats();
 
-    // Cleanup function: runs when the component is removed.
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // While waiting for the server, show a loading message.
+  async function loadMoreMatches() {
+    setLoadingMore(true);
+    setError(null);
+
+    try {
+      const offset = stats.recentMatches.length;
+      const data = await requestStats(offset, 10);
+
+      setStats(previouslyFetchedStats => ({
+        ...data,
+        recentMatches: [
+          ...previouslyFetchedStats.recentMatches,
+          ...data.recentMatches,
+        ],
+      }));
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="statistic-page">
@@ -129,16 +132,19 @@ export default function StatisticsPage({ onHome, onProfile }) {
     );
   }
 
-  // If the request failed, show the error message.
-  if (error) {
+  if (error && !stats) {
     return (
       <div className="statistic-page">
-        Error: {error}
+        <div className="statistic-navigation">
+          <Button className="statistic-home-button" onClick={onHome}>
+            Home
+          </Button>
+        </div>
+        <p role="alert">Error: {error}</p>
       </div>
     );
   }
 
-  // Do not try to display statistics if there is no data.
   if (!stats) {
     return (
       <div className="statistic-page">
@@ -147,8 +153,7 @@ export default function StatisticsPage({ onHome, onProfile }) {
     );
   }
 
-  // Extract the properties returned by the backend.
-  // The names must match the actual JSON response.
+
   const {
     battlesWon,
     battlesLost,
@@ -156,24 +161,16 @@ export default function StatisticsPage({ onHome, onProfile }) {
     winRate,
     recentMatches = [],
   } = stats;
-
-  // Use the name totalGames inside the component to make
-  // the JSX easier to read. The backend calls this battlesPlayed.
   const totalGames = battlesPlayed;
 
-  // Calculate the percentage of won battles.
-  // The condition prevents division by zero.
   const wonPercent = totalGames > 0
     ? Math.round((battlesWon / totalGames) * 100)
     : 0;
 
-  // Calculate the percentage of lost battles.
   const lostPercent = totalGames > 0
     ? Math.round((battlesLost / totalGames) * 100)
     : 0;
 
-  // Express the win ratio on a scale from 0 to 5.
-  // For example, 48 wins out of 60 games gives 4 out of 5.
   const ratioOutOf5 = totalGames > 0
     ? Math.round((battlesWon / totalGames) * 5)
     : 0;
@@ -193,26 +190,7 @@ export default function StatisticsPage({ onHome, onProfile }) {
           ‹ Home
         </button>
 
-        {/* User/profile icon */}
-        <button
-          className="statistic-profile-button"
-          type="button"
-          aria-label="User profile"
-          onClick={onProfile}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
-          </svg>
-        </button>
+        <ProfileMenu />
       </div>
 
       {/* Page title */}
@@ -280,12 +258,12 @@ export default function StatisticsPage({ onHome, onProfile }) {
               {/* The width of each segment depends on the percentage */}
               <div
                 className="statistic-chart-won"
-                style={{ width: `${wonPercent}%` }}
+                style={{width: `${wonPercent}%`}}
               />
 
               <div
                 className="statistic-chart-lost"
-                style={{ width: `${lostPercent}%` }}
+                style={{width: `${lostPercent}%`}}
               />
             </div>
 
@@ -293,7 +271,7 @@ export default function StatisticsPage({ onHome, onProfile }) {
             <div className="statistic-legend">
 
               <span className="statistic-legend-item">
-                <span className="statistic-legend-dot statistic-legend-dot--victory" />
+                <span className="statistic-legend-dot statistic-legend-dot--victory"/>
                 Won
               </span>
 
@@ -307,7 +285,7 @@ export default function StatisticsPage({ onHome, onProfile }) {
               </span>
 
               <span className="statistic-legend-item">
-                <span className="statistic-legend-dot statistic-legend-dot--defeat" />
+                <span className="statistic-legend-dot statistic-legend-dot--defeat"/>
                 Lost
               </span>
 
@@ -339,9 +317,6 @@ export default function StatisticsPage({ onHome, onProfile }) {
 
           {/* Create one row for every match returned by the backend */}
           {recentMatches.map((match, index) => {
-
-            // The API uses lowercase "victory" and "defeat".
-            // Convert the result into a boolean for styling.
             const isVictory =
               match.result.toLowerCase() === 'victory';
 
@@ -378,9 +353,21 @@ export default function StatisticsPage({ onHome, onProfile }) {
 
         </div>
 
-        <div className="statistic-footnote">
-          Statistics from your match history
-        </div>
+        {error &&
+          <p role="alert" style={{"display": "flex",
+          "margin": "15px",
+          justifyContent: "center"}}>
+            {error}
+          </p>
+        }
+
+        <Button
+          className="statistic-load-more-button"
+          onClick={loadMoreMatches}
+          disabled={loadingMore || recentMatches.length >= battlesPlayed}
+        >
+          {loadingMore ? 'Loading...' : 'Load more matches'}
+        </Button>
 
       </div>
     </div>

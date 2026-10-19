@@ -60,7 +60,9 @@ See [network handlers](server.md) for the request example.
 ## Frontend storage
 
 The existing ProfileMenu reads the session token from `localStorage` under
-`token`. After a successful user creation, the frontend should save
+`token`. App creates a guest session automatically before showing its pages.
+It checks saved tokens with `GET /api/session` and replaces them only after HTTP
+401. After a successful user creation, it saves
 `localStorage.setItem("token", data.token)`. After creating or joining a game,
 save its code with `localStorage.setItem("gameId", data.id)`.
 
@@ -71,8 +73,9 @@ it clears the same values without sending a request. Other HTTP errors or
 network failures keep the stored values and show an error. The signout button
 is disabled while a request is in progress.
 
-User creation and game subscription on the frontend still need to be connected
-by the page implementation. Insomnia environment variables are separate from
+Game subscription on the frontend still needs to be connected
+by the page implementation. After signout reloads the page, a new guest session
+is created automatically. Insomnia environment variables are separate from
 browser localStorage.
 
 ## File `socketMiddleware.js`

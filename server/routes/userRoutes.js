@@ -29,6 +29,13 @@ export default function createUserRouter(io) {
     });
 
 
+    // Endpoint just for token validation.
+    // 204 - OK but No content.
+    // May be removed in the future.
+    router.get('/session', requireSession, (req, res) => {
+        return res.sendStatus(204)
+    })
+
     router.get('/statistics', requireSession, (req, res) => {
         const { offset = "0", limit = "10" } = req.query
         const start = Number(offset)
