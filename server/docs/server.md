@@ -11,7 +11,8 @@ Users, sessions and games are stored in memory and disappear on server restart.
 
 ## HTTP routers
 
-`routes/userRoutes.js` exports `createUserRouter(io)` for user creation and signout.
+`routes/userRoutes.js` exports `createUserRouter(io)` for user creation, statistics
+and signout.
 `routes/gameRoutes.js` exports `createGameRouter(io)` for creation, joining,
 readiness, shots and reading a player's game state.
 
@@ -36,8 +37,8 @@ and the error handler runs after them.
 
 ## Sessions
 
-`POST /api/createUser` is public. All `/api/createGames`, `/api/games/...`
-and `/api/signout` routes require the token returned by user creation:
+`POST /api/createUser` is public. All `/api/createGames`, `/api/games/...`,
+`/api/statistics` and `/api/signout` routes require the token returned by user creation:
 
 ```http
 Authorization: Bearer <token>
@@ -133,6 +134,76 @@ User creation, Ready and shots require a request body. Missing bodies return
 HTTP 400 with `INVALID_REQUEST_BODY`.
 
 ## Other handlers
+
+## HTTP `GET /api/statistics`:
+
+@brief Returns sample statistics and a requested window of match history.
+`statistics.js` exports the `statistics` constant with fixed totals and 60
+sample matches. The first ten match the statistics page design; the
+remaining fifty are generated sample history. Every authenticated user receives
+the same response for the same query. Game actions do not update this data.
+
+@param Bearer token in the Authorization header. No body or user ID is required.
+@param `offset` Query parameter, number of matches to skip. Defaults to `0`.
+The frontend supplies a non-negative integer.
+@param `limit` Query parameter, number of matches to return, a positive integer.
+Defaults to `10`.
+@returns HTTP 200 with totals for the full history, a window of matches in newest
+first order. The route assumes valid pagination parameters from the frontend.
+A missing or invalid token returns HTTP 401 with `SESSION_NOT_FOUND`.
+
+Default response from `GET /api/statistics`:
+
+```json
+{
+  "battlesWon": 48,
+  "battlesLost": 12,
+  "battlesPlayed": 60,
+  "winRate": 80,
+  "recentMatches": [
+    { "date": "2026-09-21T18:42:00+02:00", "result": "victory", "moves": 42 },
+    { "date": "2026-09-21T17:15:00+02:00", "result": "victory", "moves": 38 },
+    { "date": "2026-09-20T21:08:00+02:00", "result": "defeat", "moves": 51 },
+    { "date": "2026-09-20T19:34:00+02:00", "result": "victory", "moves": 35 },
+    { "date": "2026-09-19T22:10:00+02:00", "result": "victory", "moves": 46 },
+    { "date": "2026-09-19T18:56:00+02:00", "result": "victory", "moves": 41 },
+    { "date": "2026-09-18T20:22:00+02:00", "result": "defeat", "moves": 49 },
+    { "date": "2026-09-18T16:40:00+02:00", "result": "victory", "moves": 37 },
+    { "date": "2026-09-17T21:03:00+02:00", "result": "victory", "moves": 44 },
+    { "date": "2026-09-17T19:11:00+02:00", "result": "victory", "moves": 39 }
+  ]
+}
+```
+
+`winRate` is a percentage from 0 to 100. Match dates use ISO 8601 with a timezone
+offset, and `result` is `"victory"` or `"defeat"`. `recentMatches` contains only
+the requested window. Totals are fixed in the exported constant and stay the
+same across windows: 48 wins, 12 losses and an 80% win rate.
+
+Request examples:
+
+```http
+GET /api/statistics?offset=0&limit=10
+GET /api/statistics?offset=10&limit=10
+GET /api/statistics?offset=20&limit=10
+Authorization: Bearer <token>
+```
+
+The frontend chooses `limit` based on how many rows it wants to show. For a
+"Load more" button, increase `offset` by the number of returned matches and
+append the next response's matches. For page navigation, use `offset = (page - 1) * limit`
+and replace the displayed rows.
+
+The route returns up to `limit` matches. If six remain and ten are requested,
+it returns six. An offset at or beyond the end returns an empty `recentMatches`
+array with the same overall totals. There are no pagination metadata fields.
+The frontend can check `offset + recentMatches.length < battlesPlayed` to
+decide whether another window exists, including when the final window is full.
+
+The frontend can use `winRate` and `100 - winRate` for the overall results bar
+and its 80% / 20% labels. Reducing `battlesWon / battlesPlayed`, or 48 / 60,
+gives the "4 out of 5" caption. Format match dates in `Europe/Prague` to display
+the dates and times shown in the design.
 
 ___
 ## HTTP `POST /api/dev/fleet`:
