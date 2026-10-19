@@ -68,3 +68,15 @@ Figma: Not used in the checked design.
     --btn-hover-bg: #284866;
     --btn-hover-text: #F0EEE5;
 }
+
+* {
+    font-family: 'IBM Plex Sans', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--signout-bg);
+    color: var(--text-btn-color);
+}
