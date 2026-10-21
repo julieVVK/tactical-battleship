@@ -52,7 +52,8 @@ function App() {
 
   //TODO: Implement React Router
   /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-  *       sound and language will be stored in `const localStorage`.
+  *       sound settings still need persistence.
+  *       Language is handled by LanguageProvider.
   *       Add isDirty, savedProfile, draftProfile
   * */
 

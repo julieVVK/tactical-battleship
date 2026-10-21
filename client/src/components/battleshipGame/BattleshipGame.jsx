@@ -6,6 +6,11 @@
  * @author xhaziyh00
  */
 
+// Edited by Vladyslav Doroshenko
+//     - Added language context
+//       Changed lines: 13, 32, 70, 88, 106
+
+import { LanguageContext } from '../../i18n/LanguageContext.js';
 import React from "react";
 import Header from "../header/Header.jsx";
 import Battlefield from "../battlefield/Battlefield.jsx";
@@ -24,6 +29,8 @@ import "./battleshipGame.css";
  */
 
 class BatlleshipGame extends React.Component {
+  static contextType = LanguageContext;
+
   constructor(props) {
     super(props);
     // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
@@ -60,6 +67,7 @@ class BatlleshipGame extends React.Component {
    */
 
   render() {
+    const { t } = this.context;
     console.log("Battlefield received boardData:", this.state.boardData);
     return (
       <div>
@@ -77,7 +85,7 @@ class BatlleshipGame extends React.Component {
         <div className="battleContainer">
           {/* Player's board displaying own ship positions and reserve setup dock */}
           <Battlefield
-            title="Your fleet"
+            title={t('game.yourFleet')}
             isOpponent={false}
             isGetReadyScrn={false}
             ships={this.state.myShips}
@@ -95,7 +103,7 @@ class BatlleshipGame extends React.Component {
           </div>
 
           {/* Opponent's board with hidden ship positions, ready for targeting clicks */}
-          <Battlefield title="Opponent" isOpponent={true} />
+          <Battlefield title={t('game.opponent')} isOpponent={true} />
         </div>
       </div>
     );
