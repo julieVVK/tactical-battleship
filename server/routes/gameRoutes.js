@@ -21,6 +21,23 @@ export default function createGameRouter(io) {
     });
 
 
+    // create a new game against the robot
+    router.post('/createRobotGame', requireSession, (req, res) => {
+        const userId = req.userId;
+
+        // create the game and generate the robot's fleet
+        const localGame = game.createRobotGame(userId);
+
+        // notify connected client about the new game
+        publishGame(io, localGame.id);
+
+        // return the game state
+        return res.status(200).json(
+            game.getGameForPlayer(localGame.id, userId)
+        );
+    });
+
+
     router.post('/games/:gameId/join', requireSession, (req, res) => {
         console.log("req.body:", req.body)
         console.log("req.params:", req.params)
@@ -74,6 +91,7 @@ export default function createGameRouter(io) {
         const gameId = req.params.gameId
 
         const response = game.fireShot(gameId, userId, row, col)
+        game.playRobotTurn(gameId)
         publishGame(io, gameId)
         return res.status(200).json(response)
     })

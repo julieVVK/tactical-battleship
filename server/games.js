@@ -6,6 +6,7 @@ import {randomBytes} from "node:crypto"
 import {getUser} from "./users.js"
 import {prepareFleet} from "./placement.js"
 import {BOARD_SIZE} from "./rules.js"
+import { generateRobotFleet, resetRobot, chooseRobotShot, getRobotTargets, updateRobotAfterShot } from "./robot.js";
 import fail from "./error.js"
 
 
@@ -72,6 +73,27 @@ export const createGame = (userId) => {
     return structuredClone(game)
 }
 
+export const createRobotGame = (userId) => {
+    const user = getUser(userId);
+    if (!user) {
+        fail("USER_NOT_FOUND", "User not found.");
+    }
+
+    const gameId = makeGameId();
+
+    const robotId = `robot-${gameId}`;
+
+    const robot = {id: robotId, name: "Robot", ready: true, ships: generateRobotFleet(), shots: []};
+
+    const game = {id: gameId, phase: "placement", players: [makePlayer(user), robot], turnPlayerId: null, winnerPlayerId: null, robotPlayerId: robotId};
+
+    resetRobot(gameId);
+
+    games.set(game.id, game);
+
+    return structuredClone(game);
+}
+
 
 export const joinGame = (gameId, userId) => {
     const user = getUser(userId)
@@ -121,7 +143,13 @@ export const readyPlayer = (gameId, userId, board) => {
 
     if (game.players.length === 2 && game.players.every(player => player.ready)) {
         game.phase = "battle"
-        game.turnPlayerId = game.players[  Math.floor(Math.random() + 0.5)  ].id
+
+        // the user starts in games against the robot
+        if (game.robotPlayerId) {
+            game.turnPlayerId = game.players.find(player => player.id !== game.robotPlayerId).id;
+        } else {        
+            game.turnPlayerId = game.players[  Math.floor(Math.random() + 0.5)  ].id
+        }
     }
 
     const returnValue = getGameForPlayer(game.id, userId)
@@ -211,6 +239,38 @@ export const fireShot = (gameId, userId, row, col) => {
         winnerPlayerId: game.winnerPlayerId,
     })
 }
+
+// robot's automatic turn
+export const playRobotTurn = (gameId) => {
+    const game = games.get(normalizeGameId(gameId));
+
+    if (!game || !game.robotPlayerId || game.phase !== "battle") {
+        return;
+    }
+
+    const robot = game.players.find(player => player.id === game.robotPlayerId);
+
+    if (!robot) {
+        return;
+    }
+
+    // shoot while it is the robot's turn
+    while (game.phase === "battle" && game.turnPlayerId === robot.id) {
+        // choose a target using the robot's remembered targets
+        const shot = chooseRobotShot(robot.shots, getRobotTargets(game.id));
+
+        // stop if no available cells remain
+        if (!shot) {
+            break;
+        }
+
+        // fire the shot
+        const result = fireShot(game.id, robot.id, shot.row, shot.col);
+
+        // update the robot's targeting strategy
+        updateRobotAfterShot(game.id, result, robot.shots);
+    }
+};
 
 
 export const getGame = (gameId) => {

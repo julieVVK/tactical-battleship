@@ -4,7 +4,7 @@ import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
 import Button from "../button/Button.jsx";
 import "./mainPage.css";
-function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigateStatistics }) {
+function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigateStatistics, onPlayWithPC }) {
 
     return (
         <>
@@ -18,7 +18,7 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                     <div className="main-page-dialogue">
                         <h2 className="mainPageh1">Play</h2>
                         <div className="main-page-button-container">
-                            <Button variant="light">With PC</Button>
+                            <Button variant="light" onClick={onPlayWithPC}>With PC</Button>
                             <Button variant="dark" onClick={onStartGame}>2 Players</Button>
                         </div>
                     </div>

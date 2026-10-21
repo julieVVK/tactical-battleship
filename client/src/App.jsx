@@ -10,6 +10,7 @@ import { initializeSession } from "./session.js";
 function App() {
   const [screen, setScreen] = useState("menu");
   const [session, setSession] = useState({ status: "loading", error: null });
+  const [robotGameId, setRobotGameId] = useState(null);
 
   // author: Vladyslav Doroshenko
   // Create random user
@@ -26,6 +27,32 @@ function App() {
 
   function retrySession() {
     setSession({ status: "loading", error: null });
+  }
+
+  async function handlePlayWithPC() {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch("/api/createRobotGame", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create a robot game.");
+      }
+
+      const game = await response.json();
+      console.log("Robot game created:", game);
+
+      setRobotGameId(game.id);
+      setScreen("ready");
+
+    } catch (error) {
+      console.error("Could not start robot game:", error);
+    }
   }
 
 
@@ -74,6 +101,7 @@ function App() {
     case "menu":
       return (
         <MainPage
+          onPlayWithPC={handlePlayWithPC}
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
           onNavigateRules={() => setScreen("rules")}
@@ -90,6 +118,7 @@ function App() {
     case "ready":
       return (
         <GetReady
+          gameId={robotGameId}
           onGoHome={() => setScreen("menu")}
           onStartBattle={handleStartBattle}
         />
