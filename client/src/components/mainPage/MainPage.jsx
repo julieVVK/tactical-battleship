@@ -1,6 +1,7 @@
 // File was created by Vladyslav Doroshenko
 
 import { useRef, useState } from "react";
+import { useLanguage } from "../../i18n/useLanguage.js";
 import { createLobby, joinLobby } from "../../api/lobby.js";
 import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
@@ -9,18 +10,17 @@ import DialogWindow from "../dialogWindow/DialogWindow.jsx";
 import "./mainPage.css";
 
 
-const dialogTitles = {
-    play: "Play",
-    lobby: "Lobby",
-    join: "Join a lobby",
-    create: "Create a lobby",
-};
-
-
 function MainPage({
-    onNavigateSettings, onNavigateRules, onStartGame, onResumeGame,
+    onNavigateSettings, onNavigateRules, onNavigateStatistics, onStartGame, onResumeGame,
     game, isRestoring, gameError, canRestore, onRestoreGame, connection,
 }) {
+    const { t } = useLanguage();
+    const dialogTitles = {
+        play: t("menu.play"),
+        lobby: t("lobby.title"),
+        join: t("lobby.joinTitle"),
+        create: "Create a lobby",
+    };
     const [dialogView, setDialogView] = useState(game?.phase === "waiting" ? "create" : "play");
     const [lobbyInput, setLobbyInput] = useState("");
     const [copyStatus, setCopyStatus] = useState("");
@@ -95,17 +95,17 @@ function MainPage({
         <>
             <div className="main-page">
                 <Ship />
-                <ProfileMenu />
+                <ProfileMenu onNavigateStatistics={onNavigateStatistics} />
                 <div className="main-page-content">
-                    <h1 className="main-page-title">Battleships</h1>
+                    <h1 className="main-page-title">{t("app.title")}</h1>
                     <DialogWindow
                         title={dialogTitles[currentView]}
                         className={currentView === "lobby" ? "main-page-lobby-dialog" : ""}
                     >
                         {currentView === "play" && (
                             <div className="main-page-button-container">
-                                <Button variant="light" disabled={busy}>With PC</Button>
-                                <Button variant="dark" disabled={busy} onClick={() => setDialogView("lobby")}>2 Players</Button>
+                                <Button variant="light" disabled={busy}>{t("menu.computer")}</Button>
+                                <Button variant="dark" disabled={busy} onClick={() => setDialogView("lobby")}>{t("menu.twoPlayers")}</Button>
                             </div>
                         )}
 
@@ -114,9 +114,9 @@ function MainPage({
                                 <Button variant="light" disabled={busy} onClick={() => {
                                     setLobbyError("");
                                     setDialogView("join");
-                                }}>Join</Button>
+                                }}>{t("lobby.join")}</Button>
                                 <Button variant="dark" disabled={busy} onClick={handleCreateLobby}>
-                                    {isSubmitting ? "Creating..." : game?.phase === "waiting" ? "Return to lobby" : "Create"}
+                                    {isSubmitting ? "Creating..." : game?.phase === "waiting" ? "Return to lobby" : t("lobby.create")}
                                 </Button>
                             </div>
                         )}
@@ -124,11 +124,11 @@ function MainPage({
                         {currentView === "join" && (
                             <form className="main-page-lobby-fields" onSubmit={handleJoinLobby}>
                                 <div className="main-page-lobby-field">
-                                    <label htmlFor="lobby-invitation">Lobby code or invitation link</label>
+                                    <label htmlFor="lobby-invitation">{t("lobby.code")}</label>
                                     <input
                                         id="lobby-invitation"
                                         className="main-page-lobby-input"
-                                        placeholder="ABC123 or paste a lobby link"
+                                        placeholder={t("lobby.placeholder")}
                                         value={lobbyInput}
                                         disabled={busy}
                                         onChange={(event) => setLobbyInput(event.target.value)}
@@ -136,7 +136,7 @@ function MainPage({
                                     />
                                 </div>
                                 <Button variant="dark" type="submit" disabled={busy || !lobbyInput.trim()}>
-                                    {isSubmitting ? "Joining..." : "Join lobby"}
+                                    {isSubmitting ? "Joining..." : t("lobby.joinButton")}
                                 </Button>
                             </form>
                         )}
@@ -172,8 +172,8 @@ function MainPage({
                     )}
 
                     <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem"}}>
-                        <Button className="main-page-rules" disabled={busy} onClick={onNavigateRules}>Rules</Button>
-                        <Button className="main-page-rules" variant="light" disabled={busy} onClick={onNavigateSettings}>Settings</Button>
+                        <Button className="main-page-rules" disabled={busy} onClick={onNavigateRules}>{t("nav.rules")}</Button>
+                        <Button className="main-page-rules" variant="light" disabled={busy} onClick={onNavigateSettings}>{t("nav.settings")}</Button>
                     </div>
                 </div>
             </div>

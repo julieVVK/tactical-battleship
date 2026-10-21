@@ -3,6 +3,7 @@ import Settings from "./components/settings/Settings.jsx";
 import Rules from "./components/rulesPage/Rules.jsx";
 import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
+import StatisticsPage from "./components/statistics/Statistics.jsx";
 import {useCallback, useEffect, useState} from "react";
 import {getLobby} from "./api/lobby.js";
 import {clearSession, clearStoredGame, getSessionToken} from "./api/session.js";
@@ -142,6 +143,7 @@ function App() {
         onResumeGame: resumeGame,
         onNavigateSettings: () => setScreen("settings"),
         onNavigateRules: () => setScreen("rules"),
+        onNavigateStatistics: () => setScreen("statistics"),
         isRestoring,
         gameError,
         onRestoreGame: restoreGame,
@@ -159,7 +161,8 @@ function App() {
 
     //TODO: Implement React Router
     /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-    *       sound and language will be stored in `const localStorage`.
+    *       sound settings still need persistence.
+    *       Language is handled by LanguageProvider.
     *       Add isDirty, savedProfile, draftProfile
     * */
 
@@ -174,6 +177,9 @@ function App() {
 
             case "rules":
                 return <Rules onNavigateMain={() => setScreen("menu")}/>;
+
+            case "statistics":
+                return <StatisticsPage onHome={() => setScreen("menu")}/>;
 
             case "ready":
                 return (<GetReady

@@ -19,7 +19,7 @@ export default async function request(path, { token, signal, ...options } = {}) 
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
         });
-        const data = await response.json().catch(error => {
+        const data = response.status === 204 ? null : await response.json().catch(error => {
             if (controller.signal.aborted) throw error;
             throw new Error("The server returned an invalid response. Try again.");
         });

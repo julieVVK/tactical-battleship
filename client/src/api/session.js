@@ -8,27 +8,38 @@ export function clearSession() {
     clearStoredGame();
 }
 
-let creatingSession = null;
+let pendingSession = null;
 
 export async function ensureSession() {
-    const token = getSessionToken();
-    if (token) return token;
-
-    if (!creatingSession) {
-        const userId = crypto.randomUUID();
-        creatingSession = request("/createUser", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, userName: `Guest ${userId.slice(0, 4)}` }),
-        }).then(user => {
-            localStorage.setItem("token", user.token);
-            return user.token;
-        }).finally(() => {
-            creatingSession = null;
+    if (!pendingSession) {
+        pendingSession = initializeSession().finally(() => {
+            pendingSession = null;
         });
     }
 
-    return creatingSession;
+    return pendingSession;
+}
+
+async function initializeSession() {
+    const token = getSessionToken();
+    if (token) {
+        try {
+            await request("/session", { token });
+            return token;
+        } catch (error) {
+            if (error.code !== "SESSION_NOT_FOUND") throw error;
+            clearSession();
+        }
+    }
+
+    const userId = crypto.randomUUID();
+    const user = await request("/createUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, userName: `Guest ${userId.slice(0, 4)}` }),
+    });
+    localStorage.setItem("token", user.token);
+    return user.token;
 }
 
 export async function signOutSession() {
