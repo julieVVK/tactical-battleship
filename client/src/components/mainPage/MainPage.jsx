@@ -7,14 +7,17 @@ import Button from "../button/Button.jsx";
 import "./mainPage.css";
 
 
-function MainPage({ onNavigateSettings, onNavigateRules, onStartGame }) {
+
+function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigateStatistics }) {
     const { t } = useLanguage();
 
     return (
         <>
             <div className="main-page">
                 <Ship />
-                <ProfileMenu />
+                <ProfileMenu 
+                    onNavigateStatistics={onNavigateStatistics}
+                />
                 <div className="main-page-content">
                     <h1 className="main-page-title">{t('app.title')}</h1>
                     <div className="main-page-dialogue">

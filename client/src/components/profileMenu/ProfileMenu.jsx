@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
 
-function ProfileMenu() {
+
+function ProfileMenu({ onNavigateStatistics }) {
     const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -121,7 +122,13 @@ function ProfileMenu() {
                             type="button"
                             className="profile-menu-item"
                             key={label}
-                            onClick={ () => {setIsOpen(false)} }
+                            onClick={ () => {
+                                setIsOpen(false)
+                                
+                                if (label === "Statistics") {
+                                    onNavigateStatistics?.();
+                                }
+                            } }
                         >
                             {t(label)}
                         </button>

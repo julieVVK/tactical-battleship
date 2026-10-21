@@ -3,10 +3,31 @@ import Settings from "./components/settings/Settings.jsx";
 import Rules from "./components/rulesPage/Rules.jsx";
 import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
-import { useState } from "react";
+import StatisticsPage from "./components/statistics/Statistics.jsx";
+import { useEffect, useState } from "react";
+import { initializeSession } from "./session.js";
 
 function App() {
   const [screen, setScreen] = useState("menu");
+  const [session, setSession] = useState({ status: "loading", error: null });
+
+  // author: Vladyslav Doroshenko
+  // Create random user
+  useEffect(() => {
+    if (session.status !== "loading")
+      return;
+
+    initializeSession().then( () => {
+      setSession({ status: "ready", error: null });
+    }, (error) => {
+      setSession({ status: "error", error: error.message });
+    });
+  }, [session.status]);
+
+  function retrySession() {
+    setSession({ status: "loading", error: null });
+  }
+
 
   // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
   const [playerBoardData, setPlayerBoardData] = useState(null);
@@ -36,6 +57,19 @@ function App() {
   *       Add isDirty, savedProfile, draftProfile
   * */
 
+  // author: Vladyslav Doroshenko
+  if (session.status === "loading") {
+    return <p role="status">Connecting to the server...</p>;
+  }
+  if (session.status === "error") {
+    return (
+      <div role="alert">
+        <p>{session.error}</p>
+        <button type="button" onClick={retrySession}>Try again</button>
+      </div>
+    );
+  }
+
   // author:xhaziyh00 - Declarative client-side screen switcher
   switch (screen) {
     case "menu":
@@ -44,6 +78,7 @@ function App() {
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
           onNavigateRules={() => setScreen("rules")}
+          onNavigateStatistics={() => setScreen("statistics")}
         />
       );
 
@@ -70,6 +105,13 @@ function App() {
         />
       );
 
+    case "statistics":
+      return (
+        <StatisticsPage
+          onHome={() => setScreen("menu")}
+        />
+      );
+
     default:
       // author:xhaziyh00 - Fallback to main menu if unknown screen state is passed
       return (
@@ -77,6 +119,7 @@ function App() {
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
           onNavigateRules={() => setScreen("rules")}
+          onNavigateStatistics={() => setScreen("statistics")}
         />
       );
   }
