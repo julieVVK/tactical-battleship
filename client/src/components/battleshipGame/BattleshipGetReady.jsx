@@ -25,6 +25,7 @@ class GetReady extends React.Component {
     // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
     constructor(props) {
         super(props);
+        this.boardRef = React.createRef();
         // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
 
         const emptyBoard = Array(10)
@@ -64,6 +65,9 @@ class GetReady extends React.Component {
      * xslobok00: placing check
      */
     canPlaceShip = (startX, startY, size, isVertical, board) => {
+
+        if (!board || !Array.isArray(board)) return false;
+
         for (let i = 0; i < size; i++) {
             let currentX = isVertical ? startX + i : startX;
             let currentY = isVertical ? startY : startY + i;
@@ -81,11 +85,15 @@ class GetReady extends React.Component {
 
                     //xslobok00: is coord in board?
                     if (checkX >= 0 && checkX < 10 && checkY >= 0 && checkY < 10) {
-                        if (
-                            board[checkX][checkY]
-                                ?.hasShip /* || board[checkY][checkX]?.hasShip*/
-                        ) {
-                            return false;
+                        const row = board[checkX] || [];
+                        const cell = row[checkY];
+
+                        if (cell && cell.hasShip) {
+                           
+                            if (this.state.draggingShip && cell.shipId === this.state.draggingShip.id) {
+                                continue;
+                            }
+                            return false; 
                         }
                     }
                 }
@@ -107,21 +115,11 @@ class GetReady extends React.Component {
     };
 
     //xslobok00: place a ship
-
     handleCellDragOver = (e, rowIndex, colIndex) => {
         e.preventDefault();
-        const {currentHoveredCell, draggingShip} = this.state;
-
+        const { currentHoveredCell } = this.state;
         let targetX = rowIndex;
         let targetY = colIndex;
-
-        if (draggingShip && draggingShip.size > 1) {
-            if (draggingShip.isVertical) {
-                targetX = Math.max(0, rowIndex);
-            } else {
-                targetY = Math.max(0, colIndex);
-            }
-        }
 
         if (
             !currentHoveredCell ||
@@ -129,15 +127,37 @@ class GetReady extends React.Component {
             currentHoveredCell.y !== targetY
         ) {
             this.setState({
-                currentHoveredCell: {x: targetX, y: targetY},
+                currentHoveredCell: { x: targetX, y: targetY },
             });
         }
     };
 
+
+
     handleCellDrop = (e, rowIndex, colIndex) => {
         e.preventDefault();
-        !this.handleGlobalMouseUp();
+        const { draggingShip } = this.state;
+        let targetX = rowIndex;
+        let targetY = colIndex;
+
+        if (draggingShip) {
+            if (draggingShip.isVertical) {
+                targetX = Math.min(rowIndex, 10 - draggingShip.size);
+                targetX = Math.max(0, targetX);
+            } else {
+                targetY = Math.min(colIndex, 10 - draggingShip.size);
+                targetY = Math.max(0, targetY);
+            }
+        }
+
+
+        this.setState({
+            currentHoveredCell: { x: targetX, y: targetY }
+        }, () => {
+            this.handleGlobalMouseUp();
+        });
     };
+    
 
     toggleShipOrientation = (shipId) => {
         this.setState((prevState) => ({
@@ -148,12 +168,38 @@ class GetReady extends React.Component {
     };
 
     handleMouseMove = (e) => {
-        if (this.state.draggingShip) {
-            this.setState({
-                mousePos: {x: e.clientX, y: e.clientY},
-            });
+        if (!this.state.draggingShip) return;
+
+        
+        this.setState({
+            mousePos: { x: e.clientX, y: e.clientY },
+        });
+
+    
+        if (this.boardRef.current) {
+            const rect = this.boardRef.current.getBoundingClientRect();
+            
+      
+            const relativeX = e.clientX - rect.left;
+            const relativeY = e.clientY - rect.top;
+            const cellSize = rect.width / 10; 
+            const colIndex = Math.floor(relativeX / cellSize);
+            const rowIndex = Math.floor(relativeY / cellSize);
+
+            if (rowIndex >= -4 && rowIndex <= 14 && colIndex >= -4 && colIndex <= 14) {
+                if (
+                    !this.state.currentHoveredCell ||
+                    this.state.currentHoveredCell.x !== rowIndex ||
+                    this.state.currentHoveredCell.y !== colIndex
+                ) {
+                    this.setState({
+                        currentHoveredCell: { x: rowIndex, y: colIndex }
+                    });
+                }
+            }
         }
     };
+
 
     handleGlobalMouseUp = () => {
         const {draggingShip, currentHoveredCell, boardData} = this.state;
@@ -165,6 +211,7 @@ class GetReady extends React.Component {
             return;
         }
 
+    
         //const { x: rowIndex, y: colIndex } = currentHoveredCell;
         const rowIndex = currentHoveredCell.x;
         const colIndex = currentHoveredCell.y;
@@ -314,7 +361,7 @@ class GetReady extends React.Component {
                     {/* Player's board displaying own ship positions and reserve setup dock */}
                     <Battlefield
                         title="Your fleet"
-                        isOpponent={false}
+                        isOpponent={false}////??!shouldDraw
                         isGetReadyScrn={true}
                         ships={this.state.myShips}
                         boardData={this.state.boardData}
@@ -323,6 +370,11 @@ class GetReady extends React.Component {
                         onCellDrop={this.handleCellDrop}
                         onShipClick={(ship) => this.toggleShipOrientation(ship.id)}
                         onPlacedShipDragStart={this.handlePlacedShipDragStart}
+
+                        draggingShip={this.state.draggingShip}
+                        currentHoveredCell={this.state.currentHoveredCell}
+                        canPlaceShip={this.canPlaceShip}
+                        containerRef={this.boardRef}
                     />
                     <button
                         onClick={() => {
