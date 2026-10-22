@@ -114,3 +114,27 @@ File was created by Vladyslav Doroshenko
     height: auto;
     gap: 1rem;
 }
+
+
+.lobby-back {
+    margin-top: 0.5rem;
+    align-self: center;
+}
+
+.lobby-dialogue {
+    max-width: 290px;
+}
+
+.lobby-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+
+    width: 100%;
+}
+
+@media (max-width: 576px) {
+    .lobby-dialogue {
+        max-width: 100%; }
+    }
+    
