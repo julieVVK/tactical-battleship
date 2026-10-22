@@ -21,7 +21,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  
+  position: relative; 
 }
 
 .owner {
@@ -69,8 +69,11 @@
 .info {
   margin-top: 10px;
   width: 100%;
-  height: 100%;
-  flex: 1;
+
+  height: 125px;
+  max-height: 125px;
+  flex-grow: 1;    
+
   box-sizing: border-box;
   border: 2px solid var(--ship-border);
   border-radius: 8px;
@@ -156,3 +159,13 @@
     height: 450px;
   }
   }
+
+/*попытка сделать значки больше*/
+.info > button svg,
+.info > button i,
+.info > button span {
+  width: 40px;
+  height: 40px; 
+  font-size: 40px;
+  transform: scale(1.4); 
+}

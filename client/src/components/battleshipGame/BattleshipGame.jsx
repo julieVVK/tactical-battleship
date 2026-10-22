@@ -59,46 +59,61 @@ class BatlleshipGame extends React.Component {
    * @returns {JSX.Element} Full match screen layout.
    */
 
-  render() {
+   render() {
     console.log("Battlefield received boardData:", this.state.boardData);
     return (
       <div>
-        {/* author:xhaziyh00 - Top navigation bar with return-to-home callback forwarding */}
         <Header onGoHome={this.props.onGoHome} />
 
         <div style={{ textAlign: "center", margin: "10px 0" }}>
-          <p
-            style={{ fontSize: "14px", color: "#666", marginBottom: "5px" }}
-          ></p>
+          <p style={{ fontSize: "14px", color: "#666", marginBottom: "5px" }}></p>
         </div>
 
-        {/* author:xhaziyh00 - Side-by-side arena container: player's fleet on the left, opponent's grid on the right */}
-
         <div className="battleContainer">
-          {/* Player's board displaying own ship positions and reserve setup dock */}
+          
+
           <Battlefield
             title="Your fleet"
-            isOpponent={false}
+            isOpponent={false}///???/!shouldDraw
             isGetReadyScrn={false}
             ships={this.state.myShips}
             boardData={this.state.boardData}
+
+
+            onShipDragStart={this.handleShipDragStart}
+            onCellDragOver={this.handleCellDragOver}
+            onCellDrop={this.handleCellDrop}
+            onShipClick={(ship) => this.toggleShipOrientation(ship.id)}
+            onPlacedShipDragStart={this.handlePlacedShipDragStart}
+            onStartBattle={this.handleReadyToGo}
+            draggingShip={this.state.draggingShip}
+            currentHoveredCell={this.state.currentHoveredCell}
+            canPlaceShip={this.canPlaceShip}
           />
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+    
+          <div style={{ display: "none" }}></div>
+
+  
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "stretch", 
+            gap: "0px" 
+          }}>
+            
+            <Battlefield title="Opponent" isOpponent={true} />
+            
+  
             <EnemyShipsList enemyShips={this.state.enemyShips} />
+            
+            
           </div>
 
-          {/* Opponent's board with hidden ship positions, ready for targeting clicks */}
-          <Battlefield title="Opponent" isOpponent={true} />
         </div>
       </div>
     );
   }
+
 }
 export default BatlleshipGame;
