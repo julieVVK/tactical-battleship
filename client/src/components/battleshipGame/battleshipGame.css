@@ -12,6 +12,7 @@
   gap: 24px;
   width: 100%;
   margin-left: 5px;
+  height: 650px;
 }
 
 /* author:xhaziyh00 - Mobile & narrow screen breakpoint: stack vertically with enemy on top */
@@ -19,5 +20,36 @@
   .battleContainer {
     flex-direction: column-reverse; 
     align-items: center;
+    height: 1500px;
   }
 }
+  @media (max-height: 620px) {
+  
+  .mainField{
+    
+  width: 290px;
+  }
+  .battleContainer{
+    height: 600px;
+  }
+  }
+  @media (max-width: 450px) {
+  
+  .mainField{
+    width: 315px;
+  }
+  .battleContainer{
+    height: 1300px;
+  }
+}
+
+@media (max-width: 320px) {
+  
+  .mainField{
+    
+  width: 290px;
+  }
+  .battleContainer{
+    height: 1200px;
+  }
+  }

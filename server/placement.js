@@ -1,6 +1,6 @@
 // File was created by Vladyslav Doroshenko
 
-import {BOARD_SIZE, FLEET_SIZES} from "./rules.js";
+import {BOARD_SIZE, FLEET_SIZES} from './rules.js';
 
 
 /* ============================- RESPONSE FROM BACKEND: -============================ */
@@ -63,21 +63,21 @@ import {BOARD_SIZE, FLEET_SIZES} from "./rules.js";
 
 
 export const prepareFleet = (board) => {
-    const shipDepo = new Map()
+    const shipDepo = new Map();
 
-    if (!Array.isArray(board)) return {error: "board matrix contain at least 1 non array item"};
-    if (board.length !== BOARD_SIZE) return {error: "board matrix has invalid size"};
+    if (!Array.isArray(board)) return {error: 'board matrix contain at least 1 non array item'};
+    if (board.length !== BOARD_SIZE) return {error: 'board matrix has invalid size'};
 
     for (let i = 0; i < board.length; i++) {
-        if (!Array.isArray(board[i])) return {error: "board matrix cell is not an array"};
-        if (board[i].length !== BOARD_SIZE) return {error: "board matrix cell has invalid size"};
+        if (!Array.isArray(board[i])) return {error: 'board matrix cell is not an array'};
+        if (board[i].length !== BOARD_SIZE) return {error: 'board matrix cell has invalid size'};
     }
 
     for (const [i, row] of board.entries()) {
         for (const [j, cell] of row.entries()) {
-            if (cell !== null){
+            if (cell !== null) {
                 const key = cell;
-                if (typeof key !== "string" || key?.length < 1) return {error: "board matrix cell contains invalid value"};
+                if (typeof key !== 'string' || key?.length < 1) return {error: 'board matrix cell contains invalid value'};
 
                 if (!shipDepo.has(key)) {
                     shipDepo.set(key, {cells: []});
@@ -87,20 +87,20 @@ export const prepareFleet = (board) => {
         }
     }
 
-    const tempArray = []
-    for (const [key, value] of shipDepo.entries()){
+    const tempArray = [];
+     for (const [key, value] of shipDepo.entries()) {
         tempArray.push(value.cells.length)
     }
     tempArray.sort((a, b) => b - a);
 
-    for(let i = 0; i < FLEET_SIZES.length; i++){
-        if (tempArray[i] !== FLEET_SIZES[i]){
-            return {error: "fleet has invalid size"};
+    for (let i = 0; i < FLEET_SIZES.length; i++) {
+        if (tempArray[i] !== FLEET_SIZES[i]) {
+            return {error: 'fleet has invalid size'};
         }
     }
 
     const fleet = Array.from(shipDepo.values());
-    if (fleet.length !== 10) return {error: "fleet has invalid size"};
+    if (fleet.length !== 10) return {error: 'fleet has invalid size'};
 
     return fleet;
 };
