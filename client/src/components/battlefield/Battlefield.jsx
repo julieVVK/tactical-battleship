@@ -149,6 +149,7 @@ class Battlefield extends React.Component {
       canPlaceShip,
 
     } = this.props;
+    const shouldDraw = isGetReadyScrn || !isOpponent;
 
     const CellTag = isOpponent ? "button" : "div";
     const unplacedShips = ships.filter((ship) => !ship.isPlaced);
@@ -210,7 +211,13 @@ class Battlefield extends React.Component {
           </div>
 
           {/* 100-cell grid container */}
-          <div className="grid-container" ref={this.props.containerRef}>
+          <div className="grid-container"
+              ref={this.props.containerRef}
+              onMouseLeave={() => {
+                if (this.props.onCellDragOver) {
+                 this.props.onCellDragOver(null, null, null);
+                }
+              }}>
             {LETTERS.map((letter, rowIndex) =>
               NUMBERS.map((num, colIndex) => {
                 const cell = boardData ? boardData[rowIndex][colIndex] : null;
@@ -247,9 +254,14 @@ class Battlefield extends React.Component {
 
                   //xslobok00: If the cell falls under the ship, we check whether it can be placed there.
                   if (isUnderShipZone && canPlaceShip) {
-                    const isValid = canPlaceShip(startX, startY, draggingShip.size, draggingShip.isVertical, boardData);
-                    if (!isValid) {
-                      isInvalidPlace = true; 
+                    if (startX >= 0 && startX < 10 && startY >= 0 && startY < 10) {
+                      const isValid = canPlaceShip(startX, startY, draggingShip.size, draggingShip.isVertical, boardData);
+                      if (!isValid) {
+                        isInvalidPlace = true; 
+                      }
+                    } else {
+                      // Если голова вышла за край, но хвост на поле — позиция гарантированно невалидна (красная тень)
+                      isInvalidPlace = true;
                     }
                   }
                 }
@@ -286,15 +298,16 @@ class Battlefield extends React.Component {
                     id={isOpponent ? `cell-${rowIndex}-${colIndex}` : undefined}
                     key={`${letter}-${num}`}
                     onClick={() => this.handleCellClick(rowIndex, colIndex)}
-                    onDragOver={(e) =>
-                      this.handleDragOver(e, rowIndex, colIndex)
-                    }
+                    //onDragOver={(e) =>
+                    //  this.handleDragOver(e, rowIndex, colIndex)
+                    //}/*
                     onMouseEnter={(e) => {
                       // xslobok00:coords with dragging
                       if (this.props.onCellDragOver) {
                         this.props.onCellDragOver(e, rowIndex, colIndex);
                       }
                     }}
+                    
                     draggable={!isOpponent && cell?.hasShip}
                     onMouseDown={(e) => {
                       if (shouldDraw && cell?.hasShip) {
@@ -309,6 +322,8 @@ class Battlefield extends React.Component {
                       }
                     }}
                     onDrop={(e) => this.handleDrop(e, rowIndex, colIndex)}
+                    //onDragOver={(e) => this.handleDragOver(e, rowIndex, colIndex)}
+                    onDragOver={(e) => e.preventDefault()}
                     onKeyDown={
                       !shouldDraw//////////
                         ? (e) => this.handleCellKeyDown(e, rowIndex, colIndex)
@@ -317,7 +332,7 @@ class Battlefield extends React.Component {
                     style={{
                       backgroundColor: cellBackground,
                       backgroundImage: cellBackgroundImage,
-                      cursor: !shouldDraw ? "pointer" : "default",////
+                      //cursor: !shouldDraw ? "pointer" : "default",////
                       cursor: !shouldDraw ? "pointer" : "default",/////
                     }}
                   >
@@ -416,6 +431,7 @@ class Battlefield extends React.Component {
                     padding: "8px",
                     borderRadius: "100px",
                     height: "80px",
+                    fontSize: "36px", 
                   }}
                 >
                   {gadget.icon}

@@ -78,6 +78,17 @@ class BatlleshipGame extends React.Component {
             isGetReadyScrn={false}
             ships={this.state.myShips}
             boardData={this.state.boardData}
+
+
+            onShipDragStart={this.handleShipDragStart}
+            onCellDragOver={this.handleCellDragOver}
+            onCellDrop={this.handleCellDrop}
+            onShipClick={(ship) => this.toggleShipOrientation(ship.id)}
+            onPlacedShipDragStart={this.handlePlacedShipDragStart}
+            onStartBattle={this.handleReadyToGo}
+            draggingShip={this.state.draggingShip}
+            currentHoveredCell={this.state.currentHoveredCell}
+            canPlaceShip={this.canPlaceShip}
           />
 
     
