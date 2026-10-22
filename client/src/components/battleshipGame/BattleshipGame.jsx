@@ -9,7 +9,6 @@
 import React from "react";
 import Header from "../header/Header.jsx";
 import Battlefield from "../battlefield/Battlefield.jsx";
-import EnemyShipsList from "./EnemyShipsList.jsx"; //xslobok00: component of enemies
 import { SHIPS_CONFIG } from "../../constants.js";
 import "./battleshipGame.css";
 
@@ -65,51 +64,20 @@ class BatlleshipGame extends React.Component {
       <div>
         <Header onGoHome={this.props.onGoHome} />
 
-        <div style={{ textAlign: "center", margin: "10px 0" }}>
-          <p style={{ fontSize: "14px", color: "#666", marginBottom: "5px" }}></p>
-        </div>
-
         <div className="battleContainer">
-          
-
           <Battlefield
             title="Your fleet"
-            isOpponent={false}///???/!shouldDraw
+            isOpponent={false} 
             isGetReadyScrn={false}
             ships={this.state.myShips}
             boardData={this.state.boardData}
-
-
-            onShipDragStart={this.handleShipDragStart}
-            onCellDragOver={this.handleCellDragOver}
-            onCellDrop={this.handleCellDrop}
-            onShipClick={(ship) => this.toggleShipOrientation(ship.id)}
-            onPlacedShipDragStart={this.handlePlacedShipDragStart}
-            onStartBattle={this.handleReadyToGo}
-            draggingShip={this.state.draggingShip}
-            currentHoveredCell={this.state.currentHoveredCell}
-            canPlaceShip={this.canPlaceShip}
           />
 
-    
-          <div style={{ display: "none" }}></div>
-
-  
-          <div style={{ 
-            display: "flex", 
-            flexDirection: "column", 
-            alignItems: "stretch", 
-            gap: "0px" 
-          }}>
-            
-            <Battlefield title="Opponent" isOpponent={true} />
-            
-  
-            <EnemyShipsList enemyShips={this.state.enemyShips} />
-            
-            
-          </div>
-
+          <Battlefield
+            title="Opponent"
+            isOpponent={true}
+            enemyShips={this.state.enemyShips}
+          />
         </div>
       </div>
     );

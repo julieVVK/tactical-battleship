@@ -11,12 +11,11 @@
   align-items: flex-start;
   gap: 24px;
   width: 100%;
-  margin-left: 5px;
   height: 650px;
 }
 
 /* author:xhaziyh00 - Mobile & narrow screen breakpoint: stack vertically with enemy on top */
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .battleContainer {
     flex-direction: column-reverse; 
     align-items: center;
@@ -30,7 +29,10 @@
   width: 290px;
   }
   .battleContainer{
-    height: 600px;
+    height: 400px;
+  }
+  #containerForField,#root{
+    height: 90%;
   }
   }
   @media (max-width: 450px) {
@@ -53,3 +55,12 @@
     height: 1200px;
   }
   }
+  @media (max-width: 450px) {
+  
+  .mainField{
+    width: 315px;
+  }
+  .battleContainer{
+    height: 1300px;
+  }
+}

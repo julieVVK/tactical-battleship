@@ -91,7 +91,7 @@ class BattleShip extends React.Component {
           onMouseEnter={() => this.setState({ isHovered: true })}
           onMouseLeave={() => this.setState({ isHovered: false })}
           style={{
-            width: `${shipWidth}px`, //xslobok: мне пришлось коечто поменять по что что изза этого были баги с размещением
+            width: `${shipWidth}px`, 
             height: `${shipHeight}px`,
             borderRadius: "5px",
             border: "3px solid transparent", 
