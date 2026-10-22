@@ -109,19 +109,14 @@ class Battlefield extends React.Component {
   };
 
   /**
-   * Initiates drag event when taking a ship from the reserve dock.
+   * Initiates mouse dragging when taking a ship from the reserve dock.
    *
    * @author xhaziyh00
-   * @param {DragEvent} e - Native dragstart event.
+   * @param {MouseEvent} e - Mouse down event.
    * @param {Object} ship - Ship object configuration.
    */
   handleShipDragStart = (e, ship) => {
     const { onShipDragStart } = this.props;
-
-    const img = new Image();
-    img.src =
-      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-    e.dataTransfer.setDragImage(img, 0, 0);
 
     if (onShipDragStart) onShipDragStart(e, ship);
   };
@@ -308,7 +303,7 @@ class Battlefield extends React.Component {
                       }
                     }}
                     
-                    draggable={!isOpponent && cell?.hasShip}
+                    draggable={false}
                     onMouseDown={(e) => {
                       if (shouldDraw && cell?.hasShip) {
                         e.preventDefault();
@@ -322,6 +317,7 @@ class Battlefield extends React.Component {
                       }
                     }}
                     onDrop={(e) => this.handleDrop(e, rowIndex, colIndex)}
+                    onMouseUp={(e) => this.handleDrop(e, rowIndex, colIndex)}
                     //onDragOver={(e) => this.handleDragOver(e, rowIndex, colIndex)}
                     onDragOver={(e) => e.preventDefault()}
                     onKeyDown={

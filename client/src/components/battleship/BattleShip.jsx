@@ -68,10 +68,10 @@ class BattleShip extends React.Component {
     const shipWidth = vertical ? cellSize : cellSize * sizeNum;
     const shipHeight = vertical ? cellSize * sizeNum : cellSize;
     return (
-      // author:xhaziyh00 - Outer wrapper managing layout flow and native HTML5 drag events
+      // author:xhaziyh00 - Outer wrapper managing layout flow and mouse drag initiation
       <div
-        draggable={isDraggable}
-        onDragStart={onDragStart}
+        draggable={false}
+        onMouseDown={isDraggable ? onDragStart : undefined}
         style={{
           display: "flex",
           flexDirection: isVertical ? "column" : "row",

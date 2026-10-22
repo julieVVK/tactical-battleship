@@ -50,6 +50,7 @@ class GetReady extends React.Component {
       })),
       boardData: emptyBoard,
       draggingShip: null,
+      dragOffset: null,
       currentHoveredCell: null,
       mousePos: { x: 0, y: 0 },
     };
@@ -285,26 +286,53 @@ class GetReady extends React.Component {
 
     // xslobok00: take a ship
     handleShipDragStart = (e, ship) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cellSize = (ship.isVertical ? rect.height : rect.width) / ship.size;
+        const cellIndex = Math.min(ship.size - 1, Math.floor((ship.isVertical ? y : x) / cellSize));
         const updatedShips = this.state.myShips.map((s) =>
             s.id === ship.id ? {...s, isPlaced: true} : s,
         );
         this.setState({
             draggingShip: ship,
+            dragOffset: { x, y, cellIndex },
+            currentHoveredCell: null,
             myShips: updatedShips,
             mousePos: {x: e.clientX, y: e.clientY},
         });
     };
 
     //xslobok00: place a ship
+    getPlacementStart = (rowIndex, colIndex) => {
+        const { draggingShip, dragOffset } = this.state;
+        return {
+            x: rowIndex - (draggingShip.isVertical ? dragOffset.cellIndex : 0),
+            y: colIndex - (draggingShip.isVertical ? 0 : dragOffset.cellIndex),
+        };
+    };
+
+    getPlacementAtPosition = (e) => {
+        const board = this.boardRef.current;
+        if (!this.state.draggingShip || !board) return null;
+        const rect = board.getBoundingClientRect();
+        const colIndex = Math.floor((e.clientX - rect.left - board.clientLeft) / (board.clientWidth / 10));
+        const rowIndex = Math.floor((e.clientY - rect.top - board.clientTop) / (board.clientHeight / 10));
+        if (rowIndex < 0 || rowIndex >= 10 || colIndex < 0 || colIndex >= 10) return null;
+        return this.getPlacementStart(rowIndex, colIndex);
+    };
+
     handleCellDragOver = (e, rowIndex, colIndex) => {
         if (e === null) {
           this.setState({ currentHoveredCell: null });
           return;
         }
         e.preventDefault();
-        const { currentHoveredCell } = this.state;
-        let targetX = rowIndex;
-        let targetY = colIndex;
+        const { currentHoveredCell, draggingShip } = this.state;
+        if (!draggingShip) return;
+        const { x: targetX, y: targetY } = this.getPlacementStart(rowIndex, colIndex);
 
         if (
             !currentHoveredCell ||
@@ -321,26 +349,9 @@ class GetReady extends React.Component {
 
     handleCellDrop = (e, rowIndex, colIndex) => {
         e.preventDefault();
-        const { draggingShip } = this.state;
-        let targetX = rowIndex;
-        let targetY = colIndex;
-
-        if (draggingShip) {
-            if (draggingShip.isVertical) {
-                targetX = Math.min(rowIndex, 10 - draggingShip.size);
-                targetX = Math.max(0, targetX);
-            } else {
-                targetY = Math.min(colIndex, 10 - draggingShip.size);
-                targetY = Math.max(0, targetY);
-            }
-        }
-
-
-        this.setState({
-            currentHoveredCell: { x: targetX, y: targetY }
-        }, () => {
-            this.handleGlobalMouseUp();
-        });
+        if (!this.state.draggingShip) return;
+        this.handleGlobalMouseUp(e, this.getPlacementStart(rowIndex, colIndex));
+        e.stopPropagation();
     };
     
 
@@ -390,60 +401,25 @@ class GetReady extends React.Component {
 
       this.setState({
         mousePos: { x: e.clientX, y: e.clientY },
+        currentHoveredCell: this.getPlacementAtPosition(e),
       });
-
-      if (this.boardRef.current) {
-        const rect = this.boardRef.current.getBoundingClientRect();
-        const relativeX = e.clientX - rect.left;
-        const relativeY = e.clientY - rect.top;
-        const cellSize = rect.width / 10; 
-      
-        const colIndex = Math.floor(relativeX / cellSize);
-        const rowIndex = Math.floor(relativeY / cellSize);
-
-        const size = this.state.draggingShip.size;
-        const isVertical = this.state.draggingShip.isVertical;
-
-      
-        const minRow = isVertical ? -(size - 1) : 0;
-        const maxRow = 9;
-        const minCol = isVertical ? 0 : -(size - 1);
-        const maxCol = 9;
-
-        if (rowIndex >= minRow && rowIndex <= maxRow && colIndex >= minCol && colIndex <= maxCol) {
-          if (
-            !this.state.currentHoveredCell ||
-            this.state.currentHoveredCell.x !== rowIndex ||
-            this.state.currentHoveredCell.y !== colIndex
-          ) {
-            this.setState({
-              currentHoveredCell: { x: rowIndex, y: colIndex }
-            });
-          }
-        } else {
-        
-          if (this.state.currentHoveredCell !== null) {
-            this.setState({ currentHoveredCell: null });
-          }
-        }
-      }
     };
 
 
-    handleGlobalMouseUp = () => {
-        const {draggingShip, currentHoveredCell, boardData, myShips } = this.state;
+    handleGlobalMouseUp = (e, placement = null) => {
+        const {draggingShip, boardData, myShips } = this.state;
         if (!draggingShip) return;
+        const target = placement || this.getPlacementAtPosition(e);
 
-        if (!currentHoveredCell) {
+        if (!target) {
             console.log(" Мышка отпущена МИМО поля");
             this.returnShipToDock(draggingShip.id);
             return;
         }
 
     
-        //const { x: rowIndex, y: colIndex } = currentHoveredCell;
-        const rowIndex = currentHoveredCell.x;
-        const colIndex = currentHoveredCell.y;
+        const rowIndex = target.x;
+        const colIndex = target.y;
 
         console.log(
             ` Пытаемся поставить корабль ${draggingShip.id} в координаты: Строка ${rowIndex}, Колонка ${colIndex}`,
@@ -485,6 +461,7 @@ class GetReady extends React.Component {
         this.setState({
           boardData: newBoard,
           draggingShip: null,
+          dragOffset: null,
           currentHoveredCell: null,
           myShips: updatedMyShips,
         });
@@ -497,6 +474,7 @@ class GetReady extends React.Component {
         this.setState({
             myShips: restoredShips,
             draggingShip: null,
+            dragOffset: null,
             currentHoveredCell: null,
         });
     };
@@ -504,7 +482,7 @@ class GetReady extends React.Component {
     //xslobok00: rotate on r
     handleKeyDown = (e) => {
         if (e.key === "r" || e.key === "R" || e.key === "к" || e.key === "К") {
-            const {draggingShip, myShips} = this.state;
+            const {draggingShip, dragOffset, currentHoveredCell, myShips} = this.state;
 
             // xslobok00: works with mouse + r
             if (draggingShip) {
@@ -523,6 +501,12 @@ class GetReady extends React.Component {
 
                 this.setState({
                     draggingShip: updatedDraggingShip,
+                    // Keep the grabbed deck and the point inside it under the cursor.
+                    dragOffset: { x: dragOffset.y, y: dragOffset.x, cellIndex: dragOffset.cellIndex },
+                    currentHoveredCell: currentHoveredCell && {
+                        x: currentHoveredCell.x + (draggingShip.isVertical ? dragOffset.cellIndex : -dragOffset.cellIndex),
+                        y: currentHoveredCell.y + (draggingShip.isVertical ? -dragOffset.cellIndex : dragOffset.cellIndex),
+                    },
                     myShips: updatedMyShips,
                 });
 
@@ -586,6 +570,8 @@ class GetReady extends React.Component {
 
   // xslobok00: replase a ship
   handlePlacedShipDragStart = (e, rowIndex, colIndex) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
     const { boardData, myShips } = this.state;
 
     const targetShipId = boardData[rowIndex]?.[colIndex]?.shipId;
@@ -595,6 +581,21 @@ class GetReady extends React.Component {
         (s) => String(s.id) === String(targetShipId),
       );
       if (!originalShip) return;
+
+      let startRow = rowIndex;
+      let startCol = colIndex;
+      boardData.forEach((row, rowNumber) => row.forEach((cell, colNumber) => {
+        if (String(cell.shipId) === String(targetShipId)) {
+          startRow = Math.min(startRow, rowNumber);
+          startCol = Math.min(startCol, colNumber);
+        }
+      }));
+      const rect = e.currentTarget.getBoundingClientRect();
+      const dragOffset = {
+        x: e.clientX - rect.left + (colIndex - startCol) * rect.width,
+        y: e.clientY - rect.top + (rowIndex - startRow) * rect.height,
+        cellIndex: originalShip.isVertical ? rowIndex - startRow : colIndex - startCol,
+      };
 
       // xslobok00: take it from field
 
@@ -623,6 +624,8 @@ class GetReady extends React.Component {
         boardData: newBoard,
         myShips: updatedShips,
         draggingShip: { ...originalShip, isPlaced: true },
+        dragOffset,
+        currentHoveredCell: { x: startRow, y: startCol },
         mousePos: { x: e.clientX, y: e.clientY },
       });
     }
@@ -649,7 +652,7 @@ class GetReady extends React.Component {
    * @returns {JSX.Element} Full match screen layout.
    */
   render() {
-    const { draggingShip, mousePos } = this.state;
+    const { draggingShip, dragOffset, mousePos } = this.state;
 
     return (
       <>
@@ -683,8 +686,8 @@ class GetReady extends React.Component {
               style={{
                 position: "fixed",
                 pointerEvents: "none",
-                left: `${mousePos.x - 15}px`,
-                top: `${mousePos.y - 15}px`,
+                left: `${mousePos.x - dragOffset.x}px`,
+                top: `${mousePos.y - dragOffset.y}px`,
                 zIndex: 9999,
               }}
             >
