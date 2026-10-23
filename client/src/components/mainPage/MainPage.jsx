@@ -5,28 +5,89 @@ import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
 import Button from "../button/Button.jsx";
 import "./mainPage.css";
-
+import { useLocation, useNavigate } from "react-router";
 
 
 function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigateStatistics }) {
     const { t } = useLanguage();
 
-    const [lobbyView, setLobbyView] = useState("home");
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const pathToView = {
+        "/": "home",
+        "/lobby": "lobby",
+        "/lobby/join": "join",
+        "/lobby/create": "create",
+    };
+
+    const lobbyView = pathToView[location.pathname] ?? "home";
+
     const [lobbyCode, setLobbyCode] = useState("");
-    const [inviteCode] = useState(() =>
-        Math.random().toString(36).slice(2, 8).toUpperCase()
-            );
+
+    const [lobby, setLobby] = useState({
+        code: "",
+        status: "idle", // statuses: "idle", "created", "joined", "error"
+        players: []
+        //error: null
+    });
+
+    const [message, setMessage] = useState("");
+
+    const handleCopy = async () => {
+    if (!lobby.code) return;
+
+    try {
+        await navigator.clipboard.writeText(lobby.code);
+        setMessage("Lobby code copied!");
+    } 
+        catch {
+        setMessage("Could not copy the lobby code.");
+    }
+    };
+
+    const handleCreate = () => {
+        // https://www.geeksforgeeks.org/reactjs/how-to-generate-random-number-in-react-js/
+        // https://stackoverflow.com/questions/1349404/generate-a-string-of-random-characters
+        const generateCode = (Math.random()+1).toString(36).substring(2, 8).toUpperCase();
+        setLobby({
+            code: generateCode,
+            status: "created",
+            players: ["Player 1"]
+            //error: null
+        });
+    setMessage(`Lobby created! Code: ${generateCode}`);
+    navigate("/lobby/create");
+    };
 
     const handleJoin = (e) => {
         e.preventDefault();
-        if (!lobbyCode.trim()) return;
-
-        // TODO: Connect to backend
+        const code = lobbyCode.trim().toUpperCase();
+        if (!code) return;
+        setLobby({
+            code: code,
+            status: "joined",
+            players: ["Player 1", "Player 2"]
+            //error: null
+        });
+        setMessage(`Joined lobby with code: ${code}`);
+        navigate("/lobby/join");
+    };  
+    
+    const handleLeave = () => {
+    setLobby({
+        code: "",
+        status: "idle",
+        players: []
+        //error: null
+    });
+    setLobbyCode("");
+    setMessage("");
+    navigate("/lobby");
     };
 
-const handleCopy = async () => {
-    await navigator.clipboard.writeText(inviteCode);
-};
+
+
     return (
         <>
             <div className="main-page">
@@ -50,7 +111,7 @@ const handleCopy = async () => {
 
                                 <Button
                                     variant="dark"
-                                    onClick={() => setLobbyView("lobby")}
+                                    onClick={() => navigate("/lobby")}
                                 >
                                     {t("menu.twoPlayers")}
                                 </Button>
@@ -90,21 +151,21 @@ const handleCopy = async () => {
                             <div style={{
                                     display: "flex",
                                     flexDirection: "column",
-                                    width: "8 rem",
-                                    minWidth: "8 rem",
+                                    width: "8rem",
+                                    minWidth: "8rem",
                                     alignItems: "stretch",
                                     gap: "0.5rem"
                                 }}>
                                 <Button style={{ width: "100%", padding: "0.5rem 1rem" }}
                                     variant="light"
-                                    onClick={() => setLobbyView("join")}
+                                    onClick={() => navigate("/lobby/join")}
                                 >
                                     Join
                                 </Button>
 
                                 <Button style={{ width: "100%", padding: "0.5rem 1rem" }}
                                     variant="dark"
-                                    onClick={() => setLobbyView("create")}
+                                    onClick={handleCreate}
                                 >
                                     Create
                                 </Button>
@@ -123,6 +184,7 @@ const handleCopy = async () => {
 
                         <div className="main-page-dialogue lobby-dialogue" >
                             <form className="lobby-form" onSubmit={handleJoin}>
+
                                 <h2 className="mainPageh1">Join a lobby</h2>
 
                                 <label htmlFor="lobby-code">
@@ -149,6 +211,11 @@ const handleCopy = async () => {
                                 <Button variant="dark" type="submit" style={{ width: "100%", padding: "0.5rem 1rem" }}>
                                     Join lobby
                                 </Button>
+                                {message && (
+                                <p role="status" className="lobby-message">
+                                    {message}
+                                </p>
+                                )}
                             </form>
                         </div>
                     </>
@@ -175,9 +242,16 @@ const handleCopy = async () => {
                                              height: "2rem"}}
                                     id="invite-code"
                                     className="lobby-generated-code"
-                                    value={inviteCode}
+                                    value={lobby.code}
                                     readOnly
                                 />
+                                
+                                {lobby.status === "created" && (
+                                    <div className="lobby-info">
+                                        <p>Status: Lobby created</p>
+                                        <p>Players: {lobby.players.join(", ")}</p>
+                                    </div>
+                )}
 
                                 <p className="lobby-hint">
                                     Share this code with a friend to invite them.
@@ -187,6 +261,11 @@ const handleCopy = async () => {
                                     Copy code
                                 </Button>
 
+                                {message && (
+                                <p role="status" className="lobby-message">
+                                    {message}
+                                </p>
+                                )}
                                 <p className="lobby-waiting">
                                     o Waiting for another player...
                                 </p>
@@ -202,9 +281,9 @@ const handleCopy = async () => {
                         className="lobby-back"
                         onClick={() => {
                             if (lobbyView == "lobby") {
-                                setLobbyView("home");
+                                navigate("/");
                             } else {
-                                setLobbyView("lobby");
+                                handleLeave();
                             }
                         }}
                     >
@@ -215,6 +294,6 @@ const handleCopy = async () => {
             </div>
         </>
     );
-}
 
+}
 export default MainPage

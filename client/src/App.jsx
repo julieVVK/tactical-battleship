@@ -6,8 +6,10 @@ import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
 import StatisticsPage from "./components/statistics/Statistics.jsx";
 import { useEffect, useState } from "react";
 import { initializeSession } from "./session.js";
+import {Routes, Route, useNavigate} from "react-router";
 
 function App() {
+  const navigate = useNavigate();
   const [screen, setScreen] = useState("menu");
   const [session, setSession] = useState({ status: "loading", error: null });
 
@@ -70,7 +72,35 @@ function App() {
     );
   }
 
+
+
+  return(
+    <Routes>
+      <Route path="/" element={
+        <MainPage
+          onNavigateSettings={() => navigate("/settings")}
+          onNavigateRules={() => navigate("/rules")}
+          onNavigateStatistics={() => navigate("/statistics")}
+          onStartGame={() => navigate("/ready")}
+        /> } />
+        <Route
+          path="/lobby" element={<MainPage />} />
+      <Route 
+        path = "/lobby/create" element = {<MainPage />} />
+      <Route
+        path = "/lobby/join" element = {<MainPage />} />
+      <Route
+        path="/settings" element={<Settings onNavigateMain={() => navigate("/")} />} />
+      <Route
+        path="/rules" element={<Rules onNavigateMain={() => navigate("/")} />} />
+      <Route
+        path="/statistics" element={<StatisticsPage onHome={() => navigate("/")} />} />
+      <Route
+        path="/ready" element={<GetReady onGoHome={() => navigate("/")} onStartBattle={handleStartBattle} />} />
+    </Routes>
+  )
   // author:xhaziyh00 - Declarative client-side screen switcher
+  /*
   switch (screen) {
     case "menu":
       return (
@@ -123,5 +153,7 @@ function App() {
         />
       );
   }
+}
+  */
 }
 export default App;

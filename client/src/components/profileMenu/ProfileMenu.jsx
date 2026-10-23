@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
+import { useNavigate } from "react-router";
 
 
 function ProfileMenu({ onNavigateStatistics }) {
@@ -12,6 +13,8 @@ function ProfileMenu({ onNavigateStatistics }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const containerRef = useRef(null);
+
+    const navigate = useNavigate();
 
     //TODO: connect React Router to this
     const menu_items = {
@@ -125,8 +128,8 @@ function ProfileMenu({ onNavigateStatistics }) {
                             onClick={ () => {
                                 setIsOpen(false)
                                 
-                                if (label === "Statistics") {
-                                    onNavigateStatistics?.();
+                                if (label == "account.statistics") {
+                                    navigate("/statistics");
                                 }
                             } }
                         >

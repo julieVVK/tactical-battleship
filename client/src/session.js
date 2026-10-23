@@ -1,11 +1,11 @@
 // File was created by Vladyslav Doroshenko
 
 export async function initializeSession() {
-    const savedToken = localStorage.getItem('token');
+    const savedToken = localStorage.getItem('token');   // localStorage stores data in the browser
 
     if (savedToken) {
-        const response = await fetch('/api/session', {
-            headers: { Authorization: `Bearer ${savedToken}` },
+        const response = await fetch('/api/session', {  // fetch is a built-in function that allows you to make HTTP requests, wait is used to send a request to the server 
+            headers: { Authorization: `Bearer ${savedToken}` }, // The Authorization header carries our token
         });
 
         if (response.ok)

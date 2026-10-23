@@ -67,6 +67,10 @@ File was created by Vladyslav Doroshenko
     gap: 0.125rem;
 }
 
+.profile-menu-item:hover{
+    background-color: color-mix(in srgb, var(--signout-bg) 94%, var(--btn-border));
+}
+
 .profile-menu-item {
     box-sizing: border-box;
     width: 100%;
@@ -83,9 +87,8 @@ File was created by Vladyslav Doroshenko
     text-decoration: none;
 }
 
-.profile-menu-item:hover {
-    background-color: color-mix(in srgb, var(--page-bg) 94%, var(--btn-border));
-}
+
+
 
 .profile-menu-signout {
     background-color: var(--signout-bg);
