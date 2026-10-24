@@ -8,6 +8,7 @@
 import React from "react";
 import { LETTERS, NUMBERS, GADGETS } from "../../constants";
 import BattleShip from "../battleship/BattleShip.jsx";
+import EnemyShipsList from "../battleshipGame/EnemyShipsList.jsx"; //xslobok00: component of enemies
 import "./battlefield.css";
 
 /**
@@ -102,6 +103,7 @@ class Battlefield extends React.Component {
    */
   handleDrop = (e, rowIndex, colIndex) => {
     const { isOpponent, onCellDrop } = this.props;
+
     if (!isOpponent && onCellDrop) {
       e.preventDefault();
       onCellDrop(e, rowIndex, colIndex);
@@ -119,13 +121,22 @@ class Battlefield extends React.Component {
     const { onShipDragStart } = this.props;
 
     const img = new Image();
-    img.src =
-      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
     e.dataTransfer.setDragImage(img, 0, 0);
 
     if (onShipDragStart) onShipDragStart(e, ship);
   };
+  isShipPristine = (shipId) => {
+    const { boardData } = this.props;
 
+    if (!boardData || !shipId) return false;
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 10; c++) {
+        if (String(boardData[r][c]?.shipId) === String(shipId) && boardData[r][c]?.hit) return false;
+      }
+    }
+    return true;
+  };
   state = {
     activeTarget: null, // { rowIndex, colIndex } | null
   };
@@ -139,7 +150,7 @@ class Battlefield extends React.Component {
   render() {
     const {
       title,
-      isOpponent,////?!shouldDraw
+      isOpponent,
       isGetReadyScrn,
       boardData,
       ships = [],
@@ -147,41 +158,14 @@ class Battlefield extends React.Component {
       draggingShip,
       currentHoveredCell,
       canPlaceShip,
-
     } = this.props;
     const shouldDraw = isGetReadyScrn || !isOpponent;
 
     const CellTag = isOpponent ? "button" : "div";
+
     const unplacedShips = ships.filter((ship) => !ship.isPlaced);
+
     const allPlaced = ships.length > 0 && unplacedShips.length === 0;
-
-    
-    const isCellNearAnyShip = (x, y) => {
-      if (!boardData || !Array.isArray(boardData)) return false; 
-      
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          const checkX = x + dx;
-          const checkY = y + dy;
-          
-          
-          if (checkX >= 0 && checkX < 10 && checkY >= 0 && checkY < 10) {
-            
-            const row = boardData[checkX] || [];
-            const targetCell = row[checkY];
-            
-            if (targetCell && targetCell.hasShip) {
-              if (draggingShip && targetCell.shipId === draggingShip.id) {
-                continue;
-              }
-              return true; 
-            }
-          }
-        }
-      }
-      return false;
-    };
-
 
     return (
       <div className="mainField">
@@ -211,38 +195,51 @@ class Battlefield extends React.Component {
           </div>
 
           {/* 100-cell grid container */}
-          <div className="grid-container"
-              ref={this.props.containerRef}
-              onMouseLeave={() => {
-                if (this.props.onCellDragOver) {
-                 this.props.onCellDragOver(null, null, null);
-                }
-              }}>
+          <div
+            className="grid-container"
+            ref={this.props.containerRef}
+            onMouseLeave={() => {
+              if (this.props.onCellDragOver) {
+                this.props.onCellDragOver(null, null, null);
+              }
+            }}>
             {LETTERS.map((letter, rowIndex) =>
               NUMBERS.map((num, colIndex) => {
                 const cell = boardData ? boardData[rowIndex][colIndex] : null;
                 // author:xhaziyh00 - Ships are visible on player's board, but hidden on opponent's unless hit
-                const isShipVisible =
-                  (!isOpponent && cell?.hasShip) ||
-                  (isOpponent && cell?.hasShip && cell?.hit);
+                const isShipVisible = (!isOpponent && cell?.hasShip) || (isOpponent && cell?.hasShip && cell?.hit);
+                const canGrabShip = isGetReadyScrn || (this.props.relocationMode && this.isShipPristine(cell?.shipId));
 
-
-                
                 //xslobok00:Layout Error Highlighting
                 let isUnderDraggingShip = false;
                 let isUnderShipZone = false;
                 let isInvalidPlace = false;
+                // author:xhaziyh00 - Check if mine is hovering over this cell
+                const isMineDrag = this.props.draggingGadget === "mine";
+                const isHovered = currentHoveredCell?.x === rowIndex && currentHoveredCell?.y === colIndex;
+
+                // author:xhaziyh00 - radar
+                const isRadarDrag = this.props.draggingGadget === "radar";
+                let isRadarHover = false;
+
+                if (isOpponent && isRadarDrag && currentHoveredCell) {
+                  if (Math.abs(rowIndex - currentHoveredCell.x) <= 1 && Math.abs(colIndex - currentHoveredCell.y) <= 1) {
+                    isRadarHover = true;
+                  }
+                }
+
+                const scannedZone = (this.props.scannedZones || []).find((z) => Math.abs(rowIndex - z.row) <= 1 && Math.abs(colIndex - z.col) <= 1);
+                const isZoneCenter = scannedZone && scannedZone.row === rowIndex && scannedZone.col === colIndex;
 
                 if (shouldDraw && draggingShip && currentHoveredCell) {
                   const startX = currentHoveredCell.x;
                   const startY = currentHoveredCell.y;
 
-                   //xslobok00: We checkif the cell (rowIndex, colIndex) is part of the ship
+                  //xslobok00: We checkif the cell (rowIndex, colIndex) is part of the ship
                   for (let i = 0; i < draggingShip.size; i++) {
                     const shipCellX = draggingShip.isVertical ? startX + i : startX;
                     const shipCellY = draggingShip.isVertical ? startY : startY + i;
 
-                    
                     if (shipCellX === rowIndex && shipCellY === colIndex) {
                       isUnderDraggingShip = true;
                     }
@@ -257,10 +254,9 @@ class Battlefield extends React.Component {
                     if (startX >= 0 && startX < 10 && startY >= 0 && startY < 10) {
                       const isValid = canPlaceShip(startX, startY, draggingShip.size, draggingShip.isVertical, boardData);
                       if (!isValid) {
-                        isInvalidPlace = true; 
+                        isInvalidPlace = true;
                       }
                     } else {
-                      // Если голова вышла за край, но хвост на поле — позиция гарантированно невалидна (красная тень)
                       isInvalidPlace = true;
                     }
                   }
@@ -269,10 +265,17 @@ class Battlefield extends React.Component {
                 //xslobok00:cell color
                 let cellBackground = "var(--page-bg)";
                 let cellBackgroundImage = "none";
-
-                if (isShipVisible) {
+                if (isOpponent && (isRadarHover || scannedZone)) {
+                  cellBackground = "rgba(0, 255, 255, 0.2)";
+                } else if (!isOpponent && isMineDrag && isHovered) {
+                  if (!cell?.hasShip && !cell?.hasMine) {
+                    cellBackground = "rgba(46, 204, 113, 0.4)";
+                  } else {
+                    cellBackground = "rgba(235, 94, 94, 0.4)";
+                  }
+                } else if (isShipVisible) {
                   cellBackground = "var(--ship-bg)";
-                  
+
                   if (isUnderShipZone && isInvalidPlace) {
                     cellBackgroundImage = "repeating-linear-gradient(45deg, rgba(235,94,94,0.4), rgba(235,94,94,0.4) 6px, rgba(0,0,0,0) 6px, rgba(0,0,0,0) 12px)";
                   }
@@ -285,81 +288,57 @@ class Battlefield extends React.Component {
                   }
                 } else if (isUnderShipZone) {
                   if (isUnderDraggingShip) {
-                    cellBackground = "rgba(46, 204, 113, 0.4)"; 
+                    cellBackground = "rgba(46, 204, 113, 0.4)";
                   } else {
                     cellBackground = "rgba(46, 204, 113, 0.12)";
                   }
                 }
 
-
                 return (
                   <CellTag
-                    className="cell"
+                    className={`cell ${!isOpponent && this.props.relocationMode && cell?.hasShip && this.isShipPristine(cell.shipId) ? "blinking-ship" : ""}`}
                     id={isOpponent ? `cell-${rowIndex}-${colIndex}` : undefined}
                     key={`${letter}-${num}`}
                     onClick={() => this.handleCellClick(rowIndex, colIndex)}
-                    //onDragOver={(e) =>
-                    //  this.handleDragOver(e, rowIndex, colIndex)
-                    //}/*
+
                     onMouseEnter={(e) => {
                       // xslobok00:coords with dragging
                       if (this.props.onCellDragOver) {
                         this.props.onCellDragOver(e, rowIndex, colIndex);
                       }
                     }}
-                    
-                    draggable={!isOpponent && cell?.hasShip}
+
+                    draggable={!isOpponent && cell?.hasShip && canGrabShip}
+
                     onMouseDown={(e) => {
-                      if (shouldDraw && cell?.hasShip) {
+                      if (!isOpponent && cell?.hasShip && canGrabShip) {
                         e.preventDefault();
                         if (this.props.onPlacedShipDragStart) {
-                          this.props.onPlacedShipDragStart(
-                            e,
-                            rowIndex,
-                            colIndex,
-                          );
+                          this.props.onPlacedShipDragStart(e, rowIndex, colIndex);
                         }
                       }
                     }}
+
                     onDrop={(e) => this.handleDrop(e, rowIndex, colIndex)}
-                    //onDragOver={(e) => this.handleDragOver(e, rowIndex, colIndex)}
                     onDragOver={(e) => e.preventDefault()}
-                    onKeyDown={
-                      !shouldDraw//////////
-                        ? (e) => this.handleCellKeyDown(e, rowIndex, colIndex)
-                        : undefined
-                    }
+                    onKeyDown={!shouldDraw ? (e) => this.handleCellKeyDown(e, rowIndex, colIndex) : undefined}
+
                     style={{
                       backgroundColor: cellBackground,
                       backgroundImage: cellBackgroundImage,
-                      //cursor: !shouldDraw ? "pointer" : "default",////
-                      cursor: !shouldDraw ? "pointer" : "default",/////
-                    }}
-                  >
+                      cursor: !shouldDraw ? "pointer" : "default",
+                    }}>
+                    {/* if radar scanned */}
+                    {isZoneCenter && isOpponent && <span className="radar-percent">{scannedZone.percent}%</span>}
+
+                    {/* if has mine */}
+                    {cell?.hasMine && !isOpponent && <span className="mineIcon">{GADGETS.find((g) => g.id === "mine")?.icon}</span>}
+
                     {/* Hit marker */}
-                    {cell?.hit && (
-                      <span
-                        style={{
-                          color: "var(--hit-mark)",
-                          fontSize: "24px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        ✕
-                      </span>
-                    )}
+                    {cell?.hit && <span className="hitCell">✕</span>}
 
                     {/* Miss marker */}
-                    {cell?.miss && (
-                      <span
-                        style={{
-                          color: "var(--text-btn-color)",
-                          fontSize: "18px",
-                        }}
-                      >
-                        •
-                      </span>
-                    )}
+                    {cell?.miss && <span className="missCell">•</span>}
                   </CellTag>
                 );
               }),
@@ -369,88 +348,66 @@ class Battlefield extends React.Component {
 
         {/* author:xhaziyh00 - Dock container for unplaced ships during setup phase (own fleet only) */}
 
-        {shouldDraw && (
-          <div////!isOpponent->shouldDraw
-            className="info"
-            style={
-              !isGetReadyScrn && !isOpponent
-                ? {
-                    backgroundColor: "transparent",
-                    border: "none",
-                    boxShadow: "none",
+        <div
+          className="info"
+          style={
+            !isGetReadyScrn
+              ? {
+                  backgroundColor: "transparent",
+                  border: "none",
+                  boxShadow: "none",
+                }
+              : undefined
+          }>
+          {isGetReadyScrn &&
+            (!allPlaced ? (
+              ships.filter((ship) => !ship.isPlaced).map((ship) => <BattleShip key={ship.id} size={ship.size} isVertical={ship.isVertical} isDraggable={true} onDragStart={(e) => this.handleShipDragStart(e, ship)} />)
+            ) : (
+              <button
+                className="readyToGoButton"
+
+                onClick={() => {
+                  if (this.props.onStartBattle) {
+                    this.props.onStartBattle(boardData, ships);
                   }
-                : undefined
-            }
-          >
+                }}>
+                Ready to go
+              </button>
+            ))}
 
-            {isGetReadyScrn &&
-              (!allPlaced ? (
-                ships
-                  .filter((ship) => !ship.isPlaced)
-                  .map((ship) => (
-                    <BattleShip
-                      key={ship.id}
-                      size={ship.size}
-                      isVertical={ship.isVertical}
-                      isDraggable={true}
-                      onDragStart={(e) => this.handleShipDragStart(e, ship)}
-                    />
-                  ))
-              ) : (
-                <button
-                  onClick={() => {
-                    if (this.props.onStartBattle) {
-                      this.props.onStartBattle(boardData, ships);
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    flex: 1,
-                    fontSize: "18px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                >
-                  Ready to go
-                </button>
-              ))}
+          {!isGetReadyScrn &&
+            !isOpponent &&
+            GADGETS.map((gadget) => {
+              const isUsed = (this.props.usedGadgets || []).includes(gadget.id);
 
-            {!isGetReadyScrn &&
-              !isOpponent &&
-              GADGETS.map((gadget) => (
+              return (
                 <button
+                  className="gadgetButton"
                   key={gadget.id}
                   title={`${gadget.name}:\n${gadget.desc}`}
-                  onClick={() =>
-                    this.props.onSelectAbility &&
-                    this.props.onSelectAbility(gadget.id)
-                  }
-                  style={{
-                    flex: 1,
-                    cursor: "pointer",
-                    padding: "8px",
-                    borderRadius: "100px",
-                    height: "80px",
-                    fontSize: "36px", 
+
+                  onMouseDown={(e) => {
+                    if (!isUsed && this.props.onSelectAbility) {
+                      this.props.onSelectAbility(e, gadget.id);
+                    }
                   }}
-                >
+
+                  style={{
+                    cursor: isUsed ? "not-allowed" : gadget.id === "relocate" ? "pointer" : "grab",
+                    opacity: isUsed ? 0.4 : 1,
+                    backgroundColor: gadget.id === "relocate" && this.props.relocationMode ? "rgba(0, 150, 255, 0.2)" : undefined,
+                    border: gadget.id === "relocate" && this.props.relocationMode ? "2px solid #0096ff" : undefined,
+                  }}>
                   {gadget.icon}
                 </button>
-              ))}
+              );
+            })}
 
-            {!isGetReadyScrn && isOpponent && (
-              <div>
-                {/*                 
-                  //code for alive ship
-                */}
-              </div>
-            )}
-          </div>
-          )
-        }
+          {!isGetReadyScrn && isOpponent && <EnemyShipsList enemyShips={this.props.enemyShips} />}
+        </div>
       </div>
-  );
-  
-}}
+    );
+  }
+}
 
 export default Battlefield;

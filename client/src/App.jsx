@@ -4,6 +4,8 @@ import Rules from "./components/rulesPage/Rules.jsx";
 import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
 import { useState } from "react";
+import socket from "./socket.js";
+
 
 function App() {
   const [screen, setScreen] = useState("menu");
@@ -15,6 +17,9 @@ function App() {
   const [playerShips, setPlayerShips] = useState(null);
 
   const [serverBoardData, setServerBoardData] = useState(null);
+  // Чисто для теста на фронте:
+  const testGameId = "A1B2C3"; // то, что выдал бы makeGameId
+  const testUserId = "USER-1"; // то, что взял бы makePlayer из user.id
   /**
    * Transition callback from preparation dock to active combat arena.
    * Caches finalized fleet configuration and triggers battle screen mount.
@@ -59,6 +64,9 @@ function App() {
         <GetReady
           onGoHome={() => setScreen("menu")}
           onStartBattle={handleStartBattle}
+          gameId={testGameId}
+          userId={testUserId}
+          socket={socket}
         />
       );
 
@@ -69,6 +77,9 @@ function App() {
           initialBoardData={playerBoardData}
           initialShips={playerShips}
           serverBoard={serverBoardData}
+          gameId={testGameId}
+          userId={testUserId}
+          socket={socket}
         />
       );
 
