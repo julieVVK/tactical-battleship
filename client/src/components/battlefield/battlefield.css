@@ -103,63 +103,13 @@
 }
 .info>button{
   width: 100%;
-  height: 100%;
   box-sizing: border-box;
   margin: 0px;
   
 
 }
 
-  @media (max-height: 620px) {
-  :root {
-    --cell-size: 24px;
-  }
-  .mainField{
-    
-  width: 290px;
-  }
-  #containerForField{
-    height: 600px;
-  }
-  }
-  @media (max-width: 450px) {
-  .cell,.coords{
-    width: var(--cell-size);
-    height: var(--cell-size);
 
-  }
-  .grid-container{
-
-  grid-template-columns: repeat(10, var(--cell-size));
-  grid-template-rows: repeat(10, var(--cell-size));
-  }
-  .mainField{
-    width: 315px;
-  }
-  #containerForField{
-    height: 500px;
-  }
-}
-@media (max-width: 450px) {
-  :root {
-    --cell-size: 27px;
-  }
-  
-}
-@media (max-width: 320px) {
-  :root {
-    --cell-size: 24px;
-  }
-  .mainField{
-    
-  width: 290px;
-  }
-  #containerForField{
-    height: 450px;
-  }
-  }
-
-/*попытка сделать значки больше*/
 .info > button svg,
 .info > button i,
 .info > button span {
@@ -168,3 +118,102 @@
   font-size: 40px;
   transform: scale(1.4); 
 }
+
+@keyframes blink-ship {
+  0% { opacity: 1; box-shadow: inset 0 0 10px #0096ff; }
+  50% { opacity: 0.5; box-shadow: inset 0 0 25px #0096ff; }
+  100% { opacity: 1; box-shadow: inset 0 0 10px #0096ff; }
+}
+.blinking-ship {
+  animation: blink-ship 1.5s infinite !important;
+  cursor: grab !important;
+}
+.gadgetButton{
+position: relative;
+flex: 1;
+padding: 8px;
+border-radius: 100px;
+height: 80px;
+font-size: 36px;
+}
+.readyToGoButton{
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mineIcon{
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.hitCell{
+  color: var(--hit-mark);
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.missCell{
+  color: var(--text-btn-color);
+  font-size: 18px;
+}
+
+
+
+
+@media (max-height: 620px) {
+:root {
+  --cell-size: 24px;
+}
+.mainField{
+  
+width: 290px;
+}
+#containerForField{
+  height: 600px;
+}
+}
+@media (max-width: 450px) {
+.cell,.coords{
+  width: var(--cell-size);
+  height: var(--cell-size);
+
+}
+.grid-container{
+
+grid-template-columns: repeat(10, var(--cell-size));
+grid-template-rows: repeat(10, var(--cell-size));
+}
+.mainField{
+  width: 315px;
+}
+#containerForField{
+  height: 500px;
+}
+}
+@media (max-width: 450px) {
+:root {
+  --cell-size: 27px;
+}
+
+}
+@media (max-width: 320px) {
+:root {
+  --cell-size: 24px;
+}
+.mainField{
+  
+width: 290px;
+}
+#containerForField{
+  height: 450px;
+}
+}
+

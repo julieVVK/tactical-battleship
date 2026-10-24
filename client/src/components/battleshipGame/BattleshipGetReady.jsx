@@ -12,6 +12,7 @@ import Battlefield from "../battlefield/Battlefield.jsx";
 import Battleship from "../battleship/BattleShip";
 import { SHIPS_CONFIG } from "../../constants.js";
 import "../battlefield/battlefield.css";
+
 /**
  * GetReady class component.
  *
@@ -58,13 +59,13 @@ class GetReady extends React.Component {
   componentDidMount() {
     window.addEventListener("keydown", this.handleKeyDown);
     window.addEventListener("mousemove", this.handleMouseMove);
-    window.addEventListener("mouseup", this.handleGlobalMouseUp); // xslobok00: ловим отпускание мыши по всему экрану
+    window.addEventListener("mouseup", this.handleGlobalMouseUp);
   }
 
   componentWillUnmount() {
     window.removeEventListener("keydown", this.handleKeyDown);
     window.removeEventListener("mousemove", this.handleMouseMove);
-    window.removeEventListener("mouseup", this.handleGlobalMouseUp); // xslobok00: ловим отпускание мыши по всему экрану
+    window.removeEventListener("mouseup", this.handleGlobalMouseUp);
   }
 
   /**
@@ -88,10 +89,7 @@ class GetReady extends React.Component {
 
           //xslobok00: is coord in board?
           if (checkX >= 0 && checkX < 10 && checkY >= 0 && checkY < 10) {
-            if (
-              board[checkX][checkY]
-                ?.hasShip /* || board[checkY][checkX]?.hasShip*/
-            ) {
+            if (board[checkX][checkY]?.hasShip /* || board[checkY][checkX]?.hasShip*/) {
               return false;
             }
           }
@@ -103,9 +101,7 @@ class GetReady extends React.Component {
 
   // xslobok00: take a ship
   handleShipDragStart = (e, ship) => {
-    const updatedShips = this.state.myShips.map((s) =>
-      s.id === ship.id ? { ...s, isPlaced: true } : s,
-    );
+    const updatedShips = this.state.myShips.map((s) => (s.id === ship.id ? { ...s, isPlaced: true } : s));
     this.setState({
       draggingShip: ship,
       myShips: updatedShips,
@@ -130,11 +126,7 @@ class GetReady extends React.Component {
       }
     }
 
-    if (
-      !currentHoveredCell ||
-      currentHoveredCell.x !== targetX ||
-      currentHoveredCell.y !== targetY
-    ) {
+    if (!currentHoveredCell || currentHoveredCell.x !== targetX || currentHoveredCell.y !== targetY) {
       this.setState({
         currentHoveredCell: { x: targetX, y: targetY },
       });
@@ -148,9 +140,7 @@ class GetReady extends React.Component {
 
   toggleShipOrientation = (shipId) => {
     this.setState((prevState) => ({
-      myShips: prevState.myShips.map((s) =>
-        s.id === shipId ? { ...s, isVertical: !s.isVertical } : s,
-      ),
+      myShips: prevState.myShips.map((s) => (s.id === shipId ? { ...s, isVertical: !s.isVertical } : s)),
     }));
   };
 
@@ -167,7 +157,6 @@ class GetReady extends React.Component {
     if (!draggingShip) return;
 
     if (!currentHoveredCell) {
-      console.log(" Мышка отпущена МИМО поля");
       this.returnShipToDock(draggingShip.id);
       return;
     }
@@ -176,22 +165,7 @@ class GetReady extends React.Component {
     const rowIndex = currentHoveredCell.x;
     const colIndex = currentHoveredCell.y;
 
-    console.log(
-      ` Пытаемся поставить корабль ${draggingShip.id} в координаты: Строка ${rowIndex}, Колонка ${colIndex}`,
-    );
-
-    if (
-      !this.canPlaceShip(
-        rowIndex,
-        colIndex,
-        draggingShip.size,
-        draggingShip.isVertical,
-        boardData,
-      )
-    ) {
-      console.log(
-        " Проверка canPlaceShip НЕ ПРОШЛА! Место занято или вылезло за край.",
-      );
+    if (!this.canPlaceShip(rowIndex, colIndex, draggingShip.size, draggingShip.isVertical, boardData)) {
       this.returnShipToDock(draggingShip.id);
       return;
     }
@@ -216,9 +190,7 @@ class GetReady extends React.Component {
 
   //xslobok00: returns ship to dock
   returnShipToDock = (shipId) => {
-    const restoredShips = this.state.myShips.map((s) =>
-      s.id === shipId ? { ...s, isPlaced: false } : s,
-    );
+    const restoredShips = this.state.myShips.map((s) => (s.id === shipId ? { ...s, isPlaced: false } : s));
     this.setState({
       myShips: restoredShips,
       draggingShip: null,
@@ -271,10 +243,7 @@ class GetReady extends React.Component {
             const cell = row[checkY];
 
             if (cell && cell.hasShip) {
-              if (
-                this.state.draggingShip &&
-                cell.shipId === this.state.draggingShip.id
-              ) {
+              if (this.state.draggingShip && cell.shipId === this.state.draggingShip.id) {
                 continue;
               }
               return false;
@@ -288,9 +257,7 @@ class GetReady extends React.Component {
 
   // xslobok00: take a ship
   handleShipDragStart = (e, ship) => {
-    const updatedShips = this.state.myShips.map((s) =>
-      s.id === ship.id ? { ...s, isPlaced: true } : s,
-    );
+    const updatedShips = this.state.myShips.map((s) => (s.id === ship.id ? { ...s, isPlaced: true } : s));
     this.setState({
       draggingShip: ship,
       myShips: updatedShips,
@@ -309,11 +276,7 @@ class GetReady extends React.Component {
     let targetX = rowIndex;
     let targetY = colIndex;
 
-    if (
-      !currentHoveredCell ||
-      currentHoveredCell.x !== targetX ||
-      currentHoveredCell.y !== targetY
-    ) {
+    if (!currentHoveredCell || currentHoveredCell.x !== targetX || currentHoveredCell.y !== targetY) {
       this.setState({
         currentHoveredCell: { x: targetX, y: targetY },
       });
@@ -348,9 +311,7 @@ class GetReady extends React.Component {
 
   toggleShipOrientation = (shipId) => {
     this.setState((prevState) => ({
-      myShips: prevState.myShips.map((s) =>
-        s.id === shipId ? { ...s, isVertical: !s.isVertical } : s,
-      ),
+      myShips: prevState.myShips.map((s) => (s.id === shipId ? { ...s, isVertical: !s.isVertical } : s)),
     }));
   };
 
@@ -378,17 +339,8 @@ class GetReady extends React.Component {
       const minCol = isVertical ? 0 : -(size - 1);
       const maxCol = 9;
 
-      if (
-        rowIndex >= minRow &&
-        rowIndex <= maxRow &&
-        colIndex >= minCol &&
-        colIndex <= maxCol
-      ) {
-        if (
-          !this.state.currentHoveredCell ||
-          this.state.currentHoveredCell.x !== rowIndex ||
-          this.state.currentHoveredCell.y !== colIndex
-        ) {
+      if (rowIndex >= minRow && rowIndex <= maxRow && colIndex >= minCol && colIndex <= maxCol) {
+        if (!this.state.currentHoveredCell || this.state.currentHoveredCell.x !== rowIndex || this.state.currentHoveredCell.y !== colIndex) {
           this.setState({
             currentHoveredCell: { x: rowIndex, y: colIndex },
           });
@@ -406,7 +358,6 @@ class GetReady extends React.Component {
     if (!draggingShip) return;
 
     if (!currentHoveredCell) {
-      console.log(" Мышка отпущена МИМО поля");
       this.returnShipToDock(draggingShip.id);
       return;
     }
@@ -415,42 +366,23 @@ class GetReady extends React.Component {
     const rowIndex = currentHoveredCell.x;
     const colIndex = currentHoveredCell.y;
 
-    console.log(
-      ` Пытаемся поставить корабль ${draggingShip.id} в координаты: Строка ${rowIndex}, Колонка ${colIndex}`,
-    );
-
-    if (
-      !this.canPlaceShip(
-        rowIndex,
-        colIndex,
-        draggingShip.size,
-        draggingShip.isVertical,
-        boardData,
-      )
-    ) {
-      console.log(
-        " Проверка canPlaceShip НЕ ПРОШЛА! Место занято или вылезло за край.",
-      );
+    if (!this.canPlaceShip(rowIndex, colIndex, draggingShip.size, draggingShip.isVertical, boardData)) {
       this.returnShipToDock(draggingShip.id);
       return;
     }
 
-    // Если всё ок — красим сетку (ставим корабль)
     const newBoard = boardData.map((row) => row.map((cell) => ({ ...cell })));
     for (let i = 0; i < draggingShip.size; i++) {
       let currentX = draggingShip.isVertical ? rowIndex + i : rowIndex;
       let currentY = draggingShip.isVertical ? colIndex : colIndex + i;
 
-      // xslobok00: Красим ячейки в сетке Гоши (учитываем его структуру)
       if (newBoard[currentX] && newBoard[currentX][currentY]) {
         newBoard[currentX][currentY].hasShip = true;
         newBoard[currentX][currentY].shipId = draggingShip.id;
       }
     }
     // Orientation renew stateе
-    const updatedMyShips = myShips.map((s) =>
-      s.id === draggingShip.id ? { ...s, isPlaced: true } : s,
-    );
+    const updatedMyShips = myShips.map((s) => (s.id === draggingShip.id ? { ...s, isPlaced: true } : s));
 
     this.setState({
       boardData: newBoard,
@@ -461,9 +393,7 @@ class GetReady extends React.Component {
   };
   //xslobok00: returns ship to dock
   returnShipToDock = (shipId) => {
-    const restoredShips = this.state.myShips.map((s) =>
-      s.id === shipId ? { ...s, isPlaced: false } : s,
-    );
+    const restoredShips = this.state.myShips.map((s) => (s.id === shipId ? { ...s, isPlaced: false } : s));
     this.setState({
       myShips: restoredShips,
       draggingShip: null,
@@ -471,34 +401,82 @@ class GetReady extends React.Component {
     });
   };
 
-  //xslobok00: rotate on r
+  // xslobok00: rotate on r
+  // author:xhaziyh00 - modified to use e.code for any keyboard layout and added random placement
   handleKeyDown = (e) => {
-    if (e.key === "r" || e.key === "R" || e.key === "к" || e.key === "К") {
+    if (e.code === "KeyR") {
       const { draggingShip, myShips } = this.state;
 
       // xslobok00: works with mouse + r
       if (draggingShip) {
         const nextOrientation = !draggingShip.isVertical;
 
-        //xslobok00: change orientation
+        // xslobok00: change orientation
         const updatedDraggingShip = {
           ...draggingShip,
           isVertical: nextOrientation,
         };
 
         // Orientation renew state
-        const updatedMyShips = myShips.map((s) =>
-          s.id === draggingShip.id ? { ...s, isVertical: nextOrientation } : s,
-        );
+        const updatedMyShips = myShips.map((s) => (s.id === draggingShip.id ? { ...s, isVertical: nextOrientation } : s));
 
         this.setState({
           draggingShip: updatedDraggingShip,
           myShips: updatedMyShips,
         });
-
-        console.log("ship turned");
+      } else {
+        // author:xhaziyh00 - Trigger random placement if board is idle
+        this.randomizeShips();
       }
     }
+  };
+  // author:xhaziyh00 - Randomly place all ships
+  randomizeShips = () => {
+    const emptyBoard = Array(10)
+      .fill(null)
+      .map(() =>
+        Array(10)
+          .fill(null)
+          .map(() => ({
+            hasShip: false,
+            shipId: null,
+            hit: false,
+            miss: false,
+          })),
+      );
+
+    let tempBoard = emptyBoard;
+    let updatedShips = [...this.state.myShips];
+
+    updatedShips = updatedShips.map((ship) => {
+      let placed = false;
+      let isVertical = false;
+      let startX = 0;
+      let startY = 0;
+
+      while (!placed) {
+        isVertical = Math.random() < 0.5;
+        startX = Math.floor(Math.random() * (isVertical ? 10 - ship.size + 1 : 10));
+        startY = Math.floor(Math.random() * (isVertical ? 10 : 10 - ship.size + 1));
+
+        if (this.canPlaceShip(startX, startY, ship.size, isVertical, tempBoard)) {
+          for (let i = 0; i < ship.size; i++) {
+            let curX = isVertical ? startX + i : startX;
+            let curY = isVertical ? startY : startY + i;
+            tempBoard[curX][curY].hasShip = true;
+            tempBoard[curX][curY].shipId = String(ship.id);
+          }
+          placed = true;
+        }
+      }
+      return { ...ship, isVertical, isPlaced: true };
+    });
+
+    this.setState({
+      boardData: tempBoard,
+      myShips: updatedShips,
+      currentHoveredCell: null,
+    });
   };
 
   // xslobok00: replase a ship
@@ -508,9 +486,7 @@ class GetReady extends React.Component {
     const targetShipId = boardData[rowIndex]?.[colIndex]?.shipId;
 
     if (targetShipId) {
-      const originalShip = myShips.find(
-        (s) => String(s.id) === String(targetShipId),
-      );
+      const originalShip = myShips.find((s) => String(s.id) === String(targetShipId));
       if (!originalShip) return;
 
       // xslobok00: take it from field
@@ -531,9 +507,7 @@ class GetReady extends React.Component {
       );
 
       // xslobok00: not in docs
-      const updatedShips = myShips.map((s) =>
-        String(s.id) === String(targetShipId) ? { ...s, isPlaced: true } : s,
-      );
+      const updatedShips = myShips.map((s) => (String(s.id) === String(targetShipId) ? { ...s, isPlaced: true } : s));
 
       // xslobok00: take a whole ship in cursor
       this.setState({
@@ -546,19 +520,18 @@ class GetReady extends React.Component {
   };
 
   handleReadyToGo = (boardData, ships) => {
-    const serverBoard = boardData.map((row) =>
-      row.map((cell) =>
-        cell.hasShip && cell.shipId !== null ? `ship-${cell.shipId}` : null,
-      ),
-    );
+    const payload = {
+      gameId: this.props.gameId,
+      playerId: this.props.userId,
+      board: boardData.map((row) => row.map((cell) => (cell.hasShip ? cell.shipId : null))),
+    };
 
-    console.log("array for the server (prepareFleet):", serverBoard);
-
+    console.log("send board:", payload);
+    this.props.socket.emit("readyPlayer", payload);
     if (this.props.onStartBattle) {
-      this.props.onStartBattle(boardData, ships, serverBoard);
+      this.props.onStartBattle(boardData, ships, payload.board);
     }
   };
-  
 
   /**
    * Renders the game arena: top navigation header and side-by-side battlefields.
@@ -604,13 +577,8 @@ class GetReady extends React.Component {
                 left: `${mousePos.x - 15}px`,
                 top: `${mousePos.y - 15}px`,
                 zIndex: 9999,
-              }}
-            >
-              <Battleship
-                size={draggingShip.size}
-                isVertical={draggingShip.isVertical}
-                isDraggable={false}
-              />
+              }}>
+              <Battleship size={draggingShip.size} isVertical={draggingShip.isVertical} isDraggable={false} />
             </div>
           )}
         </div>

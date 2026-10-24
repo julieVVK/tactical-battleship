@@ -14,9 +14,9 @@ export const SHIPS_CONFIG = [
 ];
 
 export const GADGETS = [
-    {id: 'radar', name: 'radar (3x3)', icon: '📡', desc: 'scans square 3x3'},
     {id: 'mine', name: 'mine', icon: '💣', desc: 'damages opponent when got hit'},
     {id: 'relocate', name: 'relocate', icon: '⚓', desc: 'relocates ship to another position'},
+    {id: 'radar', name: 'radar (3x3)', icon: '📡', desc: 'scans square 3x3'},
 ];
 
 export const TURN_MESSAGES = {
