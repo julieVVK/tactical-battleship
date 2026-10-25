@@ -42,6 +42,9 @@ class BatlleshipGame extends React.Component {
         isKilled: false,
       })),
       boardData: props.initialBoardData,
+      opponentBoard: Array(10)
+        .fill(null)
+        .map(() => Array(10).fill({ hit: false, miss: false })),
       usedGadgets: [],
       scannedZones: [],
       draggingGadget: null,
@@ -341,8 +344,7 @@ class BatlleshipGame extends React.Component {
     });
   };
 
-
-handleShot = (row, col) => {
+  handleShot = (row, col) => {
     const { opponentBoard } = this.state;
 
     if (opponentBoard && opponentBoard[row] && opponentBoard[row][col]) {
@@ -365,7 +367,6 @@ handleShot = (row, col) => {
     if (this.props.socket) {
       this.props.socket.emit("fireShot", payload);
     }
-    
   };
   componentDidMount() {
     window.addEventListener("mousemove", this.handleMouseMove);
@@ -415,6 +416,7 @@ handleShot = (row, col) => {
           <Battlefield
             title="Opponent"
             isOpponent={true}
+            boardData={this.state.opponentBoard}
             enemyShips={this.state.enemyShips}
             containerRef={this.opponentBoardRef}
             scannedZones={this.state.scannedZones}
@@ -453,4 +455,3 @@ handleShot = (row, col) => {
   }
 }
 export default BatlleshipGame;
-

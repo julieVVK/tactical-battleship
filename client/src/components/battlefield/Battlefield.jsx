@@ -361,7 +361,11 @@ class Battlefield extends React.Component {
           }>
           {isGetReadyScrn &&
             (!allPlaced ? (
-              ships.filter((ship) => !ship.isPlaced).map((ship) => <BattleShip key={ship.id} size={ship.size} isVertical={ship.isVertical} isDraggable={true} onDragStart={(e) => this.handleShipDragStart(e, ship)} />)
+              ships
+                .filter((ship) => !ship.isPlaced)
+                .map((ship) => (
+                  <BattleShip key={ship.id} size={ship.size} isVertical={ship.isVertical} isDraggable={true} onDragStart={(e) => this.handleShipDragStart(e, ship)} />
+                ))
             ) : (
               <button
                 className="readyToGoButton"
