@@ -341,6 +341,32 @@ class BatlleshipGame extends React.Component {
     });
   };
 
+
+handleShot = (row, col) => {
+    const { opponentBoard } = this.state;
+
+    if (opponentBoard && opponentBoard[row] && opponentBoard[row][col]) {
+      const targetCell = opponentBoard[row][col];
+      if (targetCell.hit || targetCell.miss) {
+        console.log("Not here, here you shot before");
+        return;
+      }
+    }
+
+    const payload = {
+      gameId: this.props.gameId,
+      playerId: this.props.userId,
+      row: row,
+      col: col,
+    };
+
+    console.log("send shot on server:", payload);
+
+    if (this.props.socket) {
+      this.props.socket.emit("fireShot", payload);
+    }
+    
+  };
   componentDidMount() {
     window.addEventListener("mousemove", this.handleMouseMove);
     window.addEventListener("mouseup", this.handleGlobalMouseUp);
@@ -394,6 +420,8 @@ class BatlleshipGame extends React.Component {
             scannedZones={this.state.scannedZones}
             draggingGadget={this.state.draggingGadget}
             currentHoveredCell={this.state.hoveredField === "opponent" ? this.state.currentHoveredCell : null}
+
+            onCellClick={this.handleShot}
           />
         </div>
 
@@ -425,3 +453,4 @@ class BatlleshipGame extends React.Component {
   }
 }
 export default BatlleshipGame;
+
