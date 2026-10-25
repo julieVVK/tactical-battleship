@@ -1,127 +1,254 @@
+import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router";
+import { io } from "socket.io-client";
 import MainPage from "./components/mainPage/MainPage.jsx";
 import Settings from "./components/settings/Settings.jsx";
 import Rules from "./components/rulesPage/Rules.jsx";
+import StatisticsPage from "./components/statistics/Statistics.jsx";
 import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
-import StatisticsPage from "./components/statistics/Statistics.jsx";
-import { useEffect, useState } from "react";
 import { initializeSession } from "./session.js";
+import { getGame, leaveGame } from "./gameApi.js";
+import { createBoard, boardFromShips } from "./board.js";
 
 function App() {
-  const [screen, setScreen] = useState("menu");
-  const [session, setSession] = useState({ status: "loading", error: null });
+    const navigate = useNavigate();
+    const [session, setSession] = useState({ status: "loading", token: null });
+    const [game, setGame] = useState(null);
+    const [board, setBoard] = useState(createBoard);
+    const [connected, setConnected] = useState(false);
+    const [error, setError] = useState("");
+    const [leaving, setLeaving] = useState(false);
+    const gameId = game?.id;
 
-  // author: Vladyslav Doroshenko
-  // Create random user
-  useEffect(() => {
-    if (session.status !== "loading")
-      return;
+    useEffect(() => {
+        if (session.status !== "loading") return;
+        let active = true;
 
-    initializeSession().then( () => {
-      setSession({ status: "ready", error: null });
-    }, (error) => {
-      setSession({ status: "error", error: error.message });
-    });
-  }, [session.status]);
+        async function loadSession() {
+            try {
+                const token = await initializeSession();
+                const savedGameId = localStorage.getItem("gameId");
 
-  function retrySession() {
-    setSession({ status: "loading", error: null });
-  }
+                if (savedGameId) {
+                    try {
+                        const savedGame = await getGame(savedGameId);
+                        if (!active) return;
 
+                        if (savedGame.phase !== "cancelled") {
+                            setGame(savedGame);
+                            setBoard(boardFromShips(savedGame.players.you.ships));
+                        } else {
+                            localStorage.removeItem("gameId");
+                        }
+                    } catch (error) {
+                        if (!active) return;
+                        if (
+                            error.code === "GAME_NOT_FOUND" ||
+                            error.code === "PLAYER_NOT_IN_GAME" ||
+                            error.code === "INVALID_GAME_ID"
+                        ) {
+                            localStorage.removeItem("gameId");
+                            setError(error.message);
+                        } else {
+                            throw error;
+                        }
+                    }
+                }
 
-  // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
-  const [playerBoardData, setPlayerBoardData] = useState(null);
+                if (active) setSession({ status: "ready", token });
+            } catch (error) {
+                if (active) {
+                    setSession({ status: "error", token: null });
+                    setError(error.message);
+                }
+            }
+        }
 
-  // author:xhaziyh00 - Persisted player ships registry holding orientation and placement states
-  const [playerShips, setPlayerShips] = useState(null);
+        loadSession();
+        return () => {
+            active = false;
+        };
+    }, [session.status]);
 
-  /**
-   * Transition callback from preparation dock to active combat arena.
-   * Caches finalized fleet configuration and triggers battle screen mount.
-   *
-   * @author xhaziyh00
-   * @param {Array<Array<Object>>} boardData - Populated 10x10 board matrix.
-   * @param {Array<Object>} ships - List of configured ship entities.
-   */
+    useEffect(() => {
+        if (!gameId || !session.token) return;
 
-  const handleStartBattle = (boardData, ships) => {
-    setPlayerBoardData(boardData);
-    setPlayerShips(ships);
-    setScreen("battle");
-  };
+        const socket = io({ auth: { token: session.token } });
 
-  //TODO: Implement React Router
-  /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-  *       sound settings still need persistence.
-  *       Language is handled by LanguageProvider.
-  *       Add isDirty, savedProfile, draftProfile
-  * */
+        socket.on("connect", () => {
+            socket.emit("game:subscribe", { gameId }, (reply) => {
+                if (reply.ok) {
+                    setConnected(true);
+                    setError("");
+                } else {
+                    setError(reply.error.message);
+                }
+            });
+        });
 
-  // author: Vladyslav Doroshenko
-  if (session.status === "loading") {
-    return <p role="status">Connecting to the server...</p>;
-  }
-  if (session.status === "error") {
-    return (
-      <div role="alert">
-        <p>{session.error}</p>
-        <button type="button" onClick={retrySession}>Try again</button>
-      </div>
+        socket.on("game:state", (updatedGame) => {
+            if (updatedGame.phase === "cancelled") {
+                localStorage.removeItem("gameId");
+                setGame(null);
+                setError("The lobby was closed.");
+            } else {
+                setGame(updatedGame);
+            }
+        });
+
+        socket.on("disconnect", () => setConnected(false));
+        socket.on("connect_error", (error) => {
+            setConnected(false);
+            setError(error.message);
+        });
+
+        return () => {
+            socket.removeAllListeners();
+            socket.disconnect();
+        };
+    }, [gameId, session.token]);
+
+    function startGame(newGame) {
+        localStorage.setItem("gameId", newGame.id);
+        setGame(newGame);
+        setBoard(createBoard());
+        setConnected(false);
+        setError("");
+        navigate(newGame.phase === "waiting" ? "/lobby/create" : "/ready");
+    }
+
+    async function closeGame() {
+        if (leaving) return;
+        setLeaving(true);
+        try {
+            await leaveGame(game.id);
+            localStorage.removeItem("gameId");
+            setGame(null);
+            setConnected(false);
+            navigate("/");
+            setError("");
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setLeaving(false);
+        }
+    }
+
+    if (session.status === "loading") {
+        return <p role="status">Connecting to the server...</p>;
+    }
+
+    if (session.status === "error") {
+        return (
+            <div role="alert">
+                <p>{error}</p>
+                <button onClick={() => setSession({ status: "loading", token: null })}>
+                    Try again
+                </button>
+            </div>
+        );
+    }
+
+    let gamePath = "/";
+    if (game?.phase === "waiting") gamePath = "/lobby/create";
+    if (game?.phase === "placement") gamePath = "/ready";
+    if (game?.phase === "battle" || game?.phase === "finished") gamePath = "/game";
+
+    const menu = (
+        <MainPage
+            game={game}
+            onStartGame={startGame}
+            onResumeGame={() => navigate(gamePath)}
+            onLeaveGame={closeGame}
+            leaving={leaving}
+        />
     );
-  }
 
-  // author:xhaziyh00 - Declarative client-side screen switcher
-  switch (screen) {
-    case "menu":
-      return (
-        <MainPage
-          onStartGame={() => setScreen("ready")}
-          onNavigateSettings={() => setScreen("settings")}
-          onNavigateRules={() => setScreen("rules")}
-          onNavigateStatistics={() => setScreen("statistics")}
-        />
-      );
-
-    case "settings":
-      return <Settings onNavigateMain={() => setScreen("menu")} />;
-
-    case "rules":
-      return <Rules onNavigateMain={() => setScreen("menu")} />;
-
-    case "ready":
-      return (
+    const preparation = (
         <GetReady
-          onGoHome={() => setScreen("menu")}
-          onStartBattle={handleStartBattle}
+            game={game}
+            board={board}
+            onBoardChange={setBoard}
+            disabled={!connected || leaving}
+            onGoHome={() => navigate("/")}
+            onLeaveGame={closeGame}
         />
-      );
+    );
 
-    case "battle":
-      return (
+    const battle = (
         <BattleshipGame
-          onGoHome={() => setScreen("menu")}
-          initialBoardData={playerBoardData}
-          initialShips={playerShips}
+            game={game}
+            disabled={!connected || leaving}
+            onGoHome={() => navigate("/")}
+            onLeaveGame={closeGame}
         />
-      );
+    );
 
-    case "statistics":
-      return (
-        <StatisticsPage
-          onHome={() => setScreen("menu")}
-        />
-      );
-
-    default:
-      // author:xhaziyh00 - Fallback to main menu if unknown screen state is passed
-      return (
-        <MainPage
-          onStartGame={() => setScreen("ready")}
-          onNavigateSettings={() => setScreen("settings")}
-          onNavigateRules={() => setScreen("rules")}
-          onNavigateStatistics={() => setScreen("statistics")}
-        />
-      );
-  }
+    return (
+        <>
+            {error && (
+                <p
+                    className="game-message"
+                    role="alert"
+                >
+                    {error}
+                </p>
+            )}
+            {game && !connected && (
+                <p
+                    className="game-message"
+                    role="status"
+                >
+                    Connecting to the game...
+                </p>
+            )}
+            <Routes>
+                <Route path="/" element={menu} />
+                <Route
+                    path="/lobby"
+                    element={game ? <Navigate to={gamePath} replace /> : menu}
+                />
+                <Route
+                    path="/lobby/join"
+                    element={game ? <Navigate to={gamePath} replace /> : menu}
+                />
+                <Route
+                    path="/lobby/create"
+                    element={
+                        game && game.phase !== "waiting"
+                            ? <Navigate to={gamePath} replace />
+                            : menu
+                    }
+                />
+                <Route
+                    path="/ready"
+                    element={
+                        game?.phase === "placement"
+                            ? preparation
+                            : <Navigate to={gamePath} replace />
+                    }
+                />
+                <Route
+                    path="/game"
+                    element={gamePath === "/game" ? battle : <Navigate to={gamePath} replace />}
+                />
+                <Route
+                    path="/settings"
+                    element={<Settings onNavigateMain={() => navigate("/")} />}
+                />
+                <Route
+                    path="/rules"
+                    element={<Rules onNavigateMain={() => navigate("/")} />}
+                />
+                <Route
+                    path="/statistics"
+                    element={<StatisticsPage onHome={() => navigate("/")} />}
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </>
+    );
 }
+
 export default App;

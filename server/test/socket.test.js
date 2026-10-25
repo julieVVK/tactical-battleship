@@ -250,6 +250,101 @@ test("HTTP actions and authenticated Socket.IO subscriptions", { timeout: 30000 
         assert.equal((await request(`/api/games/${gameId}/shots`, other.token, { row: 9, col: 8 })).data.error.code, "BATTLE_NOT_ACTIVE")
     })
 
+    await t.test("gadgets update both players, hide private data and can finish a match", async () => {
+        const {alice, bob, aliceSocket, bobSocket, gameId} = await match()
+        await request(`/api/games/${gameId}/ready`, alice.token, {board})
+        const started = await request(`/api/games/${gameId}/ready`, bob.token, {board})
+        const first = started.data.turnPlayerId === alice.id ? alice : bob
+        const second = first.id === alice.id ? bob : alice
+
+        async function action(player, path, body) {
+            const a = event(aliceSocket, "game:state")
+            const b = event(bobSocket, "game:state")
+            const response = await request(`/api/games/${gameId}/${path}`, player.token, body)
+            assert.equal(response.status, 200)
+            await a
+            await b
+            return response.data
+        }
+
+        const wrongTurn = await request(`/api/games/${gameId}/gadgets/radar`, second.token, {row: 0, col: 0})
+        assert.equal(wrongTurn.data.error.code, "TURN_MISMATCH")
+        const scanned = await action(first, "gadgets/radar", {row: 0, col: 0})
+        assert.deepEqual(scanned.players.you.radar, {
+            row: 0, col: 0, cells: [{row: 0, col: 0}, {row: 0, col: 1}],
+        })
+        assert.equal(scanned.turnPlayerId, first.id)
+        const reused = await request(`/api/games/${gameId}/gadgets/radar`, first.token, {row: 0, col: 0})
+        assert.equal(reused.data.error.code, "GADGET_ALREADY_USED")
+
+        const invalidMove = await request(`/api/games/${gameId}/gadgets/relocate`, first.token, {
+            shipId: "ship-6", row: 0, col: 0, vertical: false,
+        })
+        assert.equal(invalidMove.data.error.code, "INVALID_GADGET_TARGET")
+        const moved = await action(first, "gadgets/relocate", {
+            shipId: "ship-6", row: 9, col: 3, vertical: false,
+        })
+        const ship = moved.players.you.ships.find(ship => ship.id === "ship-6")
+        assert.deepEqual(ship.cells, [{row: 9, col: 3, hit: false}])
+
+        await action(first, "gadgets/mine", {row: 9, col: 9})
+        const privateView = await request(`/api/games/${gameId}`, second.token, undefined, "GET")
+        assert.equal(privateView.data.players.opponent.mine, undefined)
+        assert.equal(privateView.data.players.opponent.radar, undefined)
+        assert.equal(privateView.data.players.opponent.ships, undefined)
+
+        // Leave one enemy cell intact, then let the mine sink it.
+        for (const cell of cells.slice(0, -1)) {
+            await action(first, "shots", cell)
+        }
+        const damagedMove = await request(`/api/games/${gameId}/gadgets/relocate`, second.token, {
+            shipId: "ship-0", row: 9, col: 0, vertical: false,
+        })
+        assert.equal(damagedMove.data.error.code, "TURN_MISMATCH")
+        await action(first, "shots", {row: 9, col: 8})
+        const result = await action(second, "shots", {row: 9, col: 9})
+        assert.equal(result.result, "mine")
+        assert.equal(result.phase, "finished")
+        assert.equal(result.winnerPlayerId, first.id)
+        const finalView = await request(`/api/games/${gameId}`, first.token, undefined, "GET")
+        assert.equal(finalView.data.players.you.shots.at(-1).result, "sunk")
+    })
+
+    await t.test("closing a lobby and surrendering notify the other player", async () => {
+        const {alice, bob, bobSocket, gameId} = await match()
+        const closed = event(bobSocket, "game:state")
+        await request(`/api/games/${gameId}/leave`, alice.token)
+        assert.equal((await closed)[0].phase, "cancelled")
+        const rejected = await request(`/api/games/${gameId}/ready`, bob.token, {board})
+        assert.equal(rejected.data.error.code, "SHIP_PLACEMENT_CLOSED")
+
+        const battle = await match()
+        await request(`/api/games/${battle.gameId}/ready`, battle.alice.token, {board})
+        await request(`/api/games/${battle.gameId}/ready`, battle.bob.token, {board})
+        const finished = event(battle.bobSocket, "game:state")
+        await request(`/api/games/${battle.gameId}/leave`, battle.alice.token)
+        assert.equal((await finished)[0].winnerPlayerId, battle.bob.id)
+    })
+
+    await t.test("computer responds until the human's turn and a match can finish", async () => {
+        const human = await user("Human")
+        const created = await request("/api/createRobotGame", human.token)
+        const gameId = created.data.id
+        await request(`/api/games/${gameId}/ready`, human.token, {board})
+        let view = (await request(`/api/games/${gameId}`, human.token, undefined, "GET")).data
+
+        for (const cell of cells) {
+            if (view.phase === "finished") break
+            assert.equal(view.turnPlayerId, human.id)
+            await request(`/api/games/${gameId}/shots`, human.token, cell)
+            view = (await request(`/api/games/${gameId}`, human.token, undefined, "GET")).data
+        }
+        assert.equal(view.phase, "finished")
+        const shots = view.players.opponent.shots
+        const coordinates = shots.map(shot => `${shot.row},${shot.col}`)
+        assert.equal(new Set(coordinates).size, shots.length)
+    })
+
     await t.test("automatic reconnection re-subscribes and restores updates missed while offline", async () => {
         const { alice, bob, aliceSocket, gameId } = await match()
         await request(`/api/games/${gameId}/ready`, alice.token, { board })

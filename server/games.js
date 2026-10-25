@@ -7,6 +7,7 @@ import {getUser} from "./users.js"
 import {prepareFleet} from "./placement.js"
 import {BOARD_SIZE} from "./rules.js"
 import fail from "./error.js"
+import {scanArea, placeMine, relocateShip} from "./gadgets.js"
 
 
 /* ==========- GAME OBJECT -========== */
@@ -28,6 +29,9 @@ const makePlayer = (user) => {
         ready: false,
         ships: [],
         shots: [],
+        usedGadgets: [],
+        radar: null,
+        mine: null,
     }
 }
 /* ==========- PLAYER OBJECT -========== */
@@ -148,6 +152,47 @@ export const unreadyPlayer = (gameId, userId) => {
 }
 
 
+const hitCell = (game, player, opponent, row, col) => {
+    const ship = opponent.ships.find(ship =>
+        ship.cells.some(cell => cell.row === row && cell.col === col)
+    )
+    const shot = {row, col, result: "miss"}
+
+    if (ship) {
+        const cell = ship.cells.find(cell => cell.row === row && cell.col === col)
+        cell.hit = true
+        shot.result = "hit"
+
+        if (ship.cells.every(cell => cell.hit)) {
+            shot.result = "sunk"
+            shot.cells = ship.cells.map(cell => ({row: cell.row, col: cell.col}))
+
+            // Ships cannot touch, so surrounding cells are known water.
+            for (const cell of ship.cells) {
+                for (let r = cell.row - 1; r <= cell.row + 1; r++) {
+                    for (let c = cell.col - 1; c <= cell.col + 1; c++) {
+                        if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) continue
+                        if (ship.cells.some(part => part.row === r && part.col === c)) continue
+                        if (player.shots.some(previous => previous.row === r && previous.col === c)) continue
+
+                        player.shots.push({row: r, col: c, result: "blocked"})
+                    }
+                }
+            }
+        }
+
+        if (opponent.ships.every(ship => ship.cells.every(cell => cell.hit))) {
+            game.phase = "finished"
+            game.winnerPlayerId = player.id
+            game.turnPlayerId = null
+        }
+    }
+
+    player.shots.push(shot)
+    return shot
+}
+
+
 export const fireShot = (gameId, userId, row, col) => {
     const game = games.get(normalizeGameId(gameId))
     if (!game)
@@ -171,37 +216,30 @@ export const fireShot = (gameId, userId, row, col) => {
 
 
     const opponent = game.players.find(player => player.id !== userId)
-    // Find the opponent's ship on the board that contains a cell that was shot.
-    const oppsShip = opponent.ships.find(ship =>
-        ship.cells.some(cell => cell.row === row && cell.col === col)
-    )
+    const shot = hitCell(game, player, opponent, row, col)
 
-    // Predefine shot as a miss
-    const shot = {row, col, result: "miss"}
+    const mine = opponent.mine
+    if (mine && !mine.triggered && mine.row === row && mine.col === col) {
+        mine.triggered = true
+        shot.result = "mine"
 
-    if (oppsShip) {
-        // Find the cell that was shot
-        const cell = oppsShip.cells.find(cell => cell.row === row && cell.col === col)
-        cell.hit = true
-        // Check if the ship has more cells to hit or if it must sink now
-        shot.result = oppsShip.cells.every(cell => cell.hit) ? "sunk" : "hit"
-
-        if (shot.result === "sunk") {
-            shot.cells = oppsShip.cells.map( ({ row, col }) => ({row, col}))
+        // A mine hits one random undamaged cell of the attacker's fleet.
+        const targets = []
+        for (const ship of player.ships) {
+            for (const cell of ship.cells) {
+                if (!cell.hit) targets.push(cell)
+            }
         }
 
-        if (opponent.ships.every(ship => ship.cells.every(cell => cell.hit))) {
-            game.phase = "finished"
-            game.winnerPlayerId = userId
-            game.turnPlayerId = null
-        }
-    } else {
+        const target = targets[Math.floor(Math.random() * targets.length)]
+        hitCell(game, opponent, player, target.row, target.col)
+    }
+
+    if (game.phase === "battle" && (shot.result === "miss" || shot.result === "mine")) {
         game.turnPlayerId = opponent.id
     }
 
-    // Each player stores their outgoing shots, including misses.
-    player.shots.push(shot)
-
+    // is this the right way to return the shot?
     return structuredClone({
         ...shot,
         playerId: userId,
@@ -210,6 +248,117 @@ export const fireShot = (gameId, userId, row, col) => {
         turnPlayerId: game.turnPlayerId,
         winnerPlayerId: game.winnerPlayerId,
     })
+}
+
+
+export const useGadget = (gameId, userId, gadget, row, col, shipId, vertical) => {
+    const game = games.get(normalizeGameId(gameId))
+    if (!game)
+        fail("GAME_NOT_FOUND", "Game not found.")
+
+    const player = game.players.find(player => player.id === userId)
+    if (!player)
+        fail("PLAYER_NOT_IN_GAME", "This user is not in the game.")
+    if (game.phase !== "battle")
+        fail("BATTLE_NOT_ACTIVE", "The battle is not active.")
+    if (game.turnPlayerId !== userId)
+        fail("TURN_MISMATCH", "It is not your turn.")
+
+    if (gadget !== "radar" && gadget !== "mine" && gadget !== "relocate")
+        fail("INVALID_GADGET", "Unknown gadget.")
+    if (player.usedGadgets.includes(gadget))
+        fail("GADGET_ALREADY_USED", "You have already used this gadget.")
+
+    if (!Number.isInteger(row) || !Number.isInteger(col) ||
+        row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE)
+        fail("INVALID_GADGET_TARGET", "Choose a cell inside the board.")
+
+    const opponent = game.players.find(player => player.id !== userId)
+
+    if (gadget === "radar") {
+        scanArea(player, opponent, row, col)
+    } else if (gadget === "mine") {
+        placeMine(player, opponent, row, col)
+    } else {
+        if (typeof vertical !== "boolean")
+            fail("INVALID_GADGET_TARGET", "Choose a ship orientation.")
+
+        relocateShip(player, opponent, shipId, row, col, vertical)
+    }
+
+    player.usedGadgets.push(gadget)
+    return getGameForPlayer(game.id, userId)
+}
+
+
+export const leaveGame = (gameId, userId) => {
+    const game = games.get(normalizeGameId(gameId))
+    if (!game)
+        fail("GAME_NOT_FOUND", "Game not found.")
+    if (!game.players.some(player => player.id === userId))
+        fail("PLAYER_NOT_IN_GAME", "This user is not in the game.")
+
+    if (game.phase === "battle") {
+        const opponent = game.players.find(player => player.id !== userId)
+        game.phase = "finished"
+        game.winnerPlayerId = opponent.id
+        game.turnPlayerId = null
+    } else if (game.phase === "waiting" || game.phase === "placement") {
+        game.phase = "cancelled"
+    }
+
+    return getGameForPlayer(game.id, userId)
+}
+
+
+export const createRobotGame = (userId) => {
+    const created = createGame(userId)
+    const game = games.get(created.id)
+    const robot = makePlayer({id: "computer-" + game.id, name: "Computer"})
+
+    // One fixed legal fleet is enough for this example opponent.
+    const board = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(null))
+    const positions = [
+        [0, 0, 4], [0, 6, 3], [2, 0, 3], [2, 6, 2], [4, 0, 2],
+        [4, 6, 2], [6, 0, 1], [6, 6, 1], [8, 0, 1], [8, 6, 1],
+    ]
+
+    for (let i = 0; i < positions.length; i++) {
+        const [row, col, size] = positions[i]
+        for (let offset = 0; offset < size; offset++) {
+            board[row][col + offset] = "computer-ship-" + i
+        }
+    }
+
+    robot.ships = prepareFleet(board)
+    robot.ready = true
+    robot.isRobot = true
+    game.players.push(robot)
+    game.phase = "placement"
+
+    return getGameForPlayer(game.id, userId)
+}
+
+
+export const playRobotTurn = (gameId) => {
+    const game = games.get(normalizeGameId(gameId))
+    const robot = game.players.find(player => player.isRobot)
+    if (!robot) return
+
+    // Hits keep the turn. Stop after a miss or the end of the match.
+    while (game.phase === "battle" && game.turnPlayerId === robot.id) {
+        const availableCells = []
+
+        for (let row = 0; row < BOARD_SIZE; row++) {
+            for (let col = 0; col < BOARD_SIZE; col++) {
+                const alreadyShot = robot.shots.some(shot => shot.row === row && shot.col === col)
+                if (!alreadyShot) availableCells.push({row, col})
+            }
+        }
+
+        const cell = availableCells[Math.floor(Math.random() * availableCells.length)]
+        fireShot(game.id, robot.id, cell.row, cell.col)
+    }
 }
 
 
@@ -246,6 +395,9 @@ export const getGameForPlayer = (gameId, userId) => {
                 ready: player.ready,
                 ships: player.ships,
                 shots: player.shots,
+                usedGadgets: player.usedGadgets,
+                radar: player.radar,
+                mine: player.mine,
             },
             opponent: opponent ? {
                 id: opponent.id,

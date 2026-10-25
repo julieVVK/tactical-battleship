@@ -10,7 +10,7 @@
 //       Changed lines: 12, 26, 42, 48, 53, 54
 
 import { LanguageContext } from '../../i18n/LanguageContext.js';
-import React, { useState } from "react";
+import React from "react";
 import { TURN_MESSAGES } from "../../constants";
 import "./header.css";
 /**
@@ -25,13 +25,6 @@ import "./header.css";
 class Header extends React.Component {
   static contextType = LanguageContext;
 
-  constructor(props) {
-    super(props);
-    // author:xhaziyh00 - Initialize local state with default turn status
-    this.state = {
-      turnStatus: "my_turn",
-    };
-  }
   /**
    * Renders the header layout.
    *
@@ -51,7 +44,7 @@ class Header extends React.Component {
         <div className="textContainer">
           {/* author:xhaziyh00 - Information section: title and dynamic turn status text */}
           <h1>{t('app.title')}</h1>
-          <p>{t(TURN_MESSAGES[this.state.turnStatus])}</p>
+          <p>{this.props.message || t(TURN_MESSAGES[this.props.turnStatus || "waiting"])}</p>
         </div>
       </div>
     );

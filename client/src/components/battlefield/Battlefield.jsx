@@ -1,289 +1,127 @@
-/**
- * @file Battlefield.jsx
- * @description Renders the 10x10 game board, axis labels (A-J, 1-10), cell click/drop handlers,
- * hit/miss visual markers, and the reserve ship dock for the fleet preparation phase.
- * @author xhaziyh00
- */
-
-import React from "react";
-import { LETTERS, NUMBERS } from "../../constants";
-import BattleShip from "../battleship/BattleShip.jsx";
+// Board layout based on the UI by xhaziyh00 and xslobok00.
+import { LETTERS, NUMBERS } from "../../constants.js";
 import "./battlefield.css";
 
-/**
- * Battlefield class component.
- *
- * @author xhaziyh00
- * @property {Object} props - Component properties.
- * @property {string} props.title - Field title ("Your fleet", "Opponent").
- * @property {boolean} props.isOpponent - True for enemy field (hides ships, enables targeting clicks).
- * @property {Array<Array<Object>>} [props.boardData] - 10x10 matrix holding cell statuses (hasShip, hit, miss).
- * @property {Array<Object>} [props.ships=[]] - Array of player ships for the setup dock.
- * @property {Function} [props.onCellClick] - Callback triggered when a cell is clicked.
- * @property {Function} [props.onCellDragOver] - HTML5 drag-over callback for ship placement.
- * @property {Function} [props.onCellDrop] - HTML5 drop callback for ship placement.
- * @property {Function} [props.onShipDragStart] - Callback when dragging a ship begins.
- */
-class Battlefield extends React.Component {
-  /**
-   * Handles keyboard arrow navigation across the 10x10 opponent grid.
-   *
-   * @author xhaziyh00
-   * @param {KeyboardEvent} e - Native keyboard event.
-   * @param {number} rowIndex - Current row index (0-9).
-   * @param {number} colIndex - Current column index (0-9).
-   */
-  handleCellKeyDown = (e, rowIndex, colIndex) => {
-    const { isOpponent } = this.props;
-    if (!isOpponent) return;
+export default function Battlefield({
+    title,
+    board,
+    shots = [],
+    mine = null,
+    radar = null,
+    preview = null,
+    radarTarget = null,
+    selectedShipId = null,
+    boardRef,
+    disabled = false,
+    onCellClick,
+    onCellPointerDown,
+    onCellHover,
+    children,
+}) {
+    function moveFocus(event, row, col) {
+        if (event.key === "ArrowUp") row--;
+        else if (event.key === "ArrowDown") row++;
+        else if (event.key === "ArrowLeft") col--;
+        else if (event.key === "ArrowRight") col++;
+        else return;
 
-    let nextRow = rowIndex;
-    let nextCol = colIndex;
-
-    switch (e.key) {
-      case "ArrowUp":
-        nextRow = Math.max(0, rowIndex - 1);
-        break;
-      case "ArrowDown":
-        nextRow = Math.min(9, rowIndex + 1);
-        break;
-      case "ArrowLeft":
-        nextCol = Math.max(0, colIndex - 1);
-        break;
-      case "ArrowRight":
-        nextCol = Math.min(9, colIndex + 1);
-        break;
-      default:
-        return;
+        event.preventDefault();
+        const next = event.currentTarget.parentElement.querySelector(
+            `[data-row="${row}"][data-col="${col}"]`,
+        );
+        if (next) next.focus();
     }
 
-    e.preventDefault();
+    function renderCell(row, col) {
+        const shot = shots.find((shot) => shot.row === row && shot.col === col);
+        const hit = shot && (shot.result === "hit" || shot.result === "sunk");
+        const shipId = board[row][col];
+        let className = "cell";
 
-    const targetButton = document.getElementById(`cell-${nextRow}-${nextCol}`);
-    if (targetButton) {
-      targetButton.focus();
+        if (shipId || hit) className += " ship-cell";
+        if (shot?.result === "blocked") className += " blocked-cell";
+        const scannedShip = radar?.cells.some(
+            (cell) => cell.row === row && cell.col === col,
+        );
+        if (scannedShip && !shot) className += " scanned-ship";
+        if (shipId && shipId === selectedShipId) className += " selected-ship";
+
+        if (radar && Math.abs(row - radar.row) <= 1 && Math.abs(col - radar.col) <= 1) {
+            className += " radar-cell";
+        }
+        if (
+            radarTarget &&
+            Math.abs(row - radarTarget.row) <= 1 &&
+            Math.abs(col - radarTarget.col) <= 1
+        ) {
+            className += " radar-cell";
+        }
+        if (preview && preview.cells.some((cell) => cell.row === row && cell.col === col)) {
+            if (preview.valid) className += " valid-placement";
+            else className += " invalid-placement";
+        }
+
+        let status = "water";
+        if (shipId || scannedShip) status = "ship";
+        if (shot) status = shot.result;
+
+        return (
+            <button
+                type="button"
+                key={`${row}-${col}`}
+                className={className}
+                data-row={row}
+                data-col={col}
+                aria-label={`${LETTERS[row]}${col + 1}, ${status}`}
+                disabled={disabled || shot?.result === "blocked"}
+                onClick={() => onCellClick?.(row, col)}
+                onPointerDown={(event) => onCellPointerDown?.(event, row, col)}
+                onPointerEnter={() => onCellHover?.(row, col)}
+                onKeyDown={(event) => moveFocus(event, row, col)}
+            >
+                {hit && <span className="hitCell">✕</span>}
+                {shot && !hit && <span className="missCell">•</span>}
+                {mine && !mine.triggered && mine.row === row && mine.col === col && (
+                    <span className="mineIcon">💣</span>
+                )}
+            </button>
+        );
     }
-  };
-  /**
-   * Handles user click on a cell (e.g., firing a shot).
-   *
-   * @author xhaziyh00
-   * @param {number} rowIndex - Row coordinate (0-9).
-   * @param {number} colIndex - Column coordinate (0-9).
-   */
-  handleCellClick = (rowIndex, colIndex) => {
-    const { onCellClick } = this.props;
-    if (onCellClick) onCellClick(rowIndex, colIndex);
-  };
-
-  /**
-   * Prevents default browser dragover to allow dropping ships on player's own grid.
-   *
-   * @author xhaziyh00
-   * @param {DragEvent} e - Native drag event.
-   * @param {number} rowIndex - Target row.
-   * @param {number} colIndex - Target column.
-   */
-  handleDragOver = (e, rowIndex, colIndex) => {
-    const { isOpponent, onCellDragOver } = this.props;
-    if (!isOpponent && onCellDragOver) {
-      e.preventDefault();
-      onCellDragOver(e, rowIndex, colIndex);
-    }
-  };
-
-  /**
-   * Handles ship placement drop on the player's grid.
-   *
-   * @author xhaziyh00
-   * @param {DragEvent} e - Native drop event.
-   * @param {number} rowIndex - Target row.
-   * @param {number} colIndex - Target column.
-   */
-  handleDrop = (e, rowIndex, colIndex) => {
-    const { isOpponent, onCellDrop } = this.props;
-    if (!isOpponent && onCellDrop) {
-      e.preventDefault();
-      onCellDrop(e, rowIndex, colIndex);
-    }
-  };
-
-  /**
-   * Initiates drag event when taking a ship from the reserve dock.
-   *
-   * @author xhaziyh00
-   * @param {DragEvent} e - Native dragstart event.
-   * @param {Object} ship - Ship object configuration.
-   */
-  handleShipDragStart = (e, ship) => {
-    const { onShipDragStart } = this.props;
-
-    const img = new Image();
-    img.src =
-      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-    e.dataTransfer.setDragImage(img, 0, 0);
-
-    if (onShipDragStart) onShipDragStart(e, ship);
-  };
-
-  state = {
-    activeTarget: null, // { rowIndex, colIndex } | null
-  };
-
-  /**
-   * Renders coordinate axes, 10x10 cell grid, and available ship reserve dock.
-   *
-   * @author xhaziyh00
-   * @returns {JSX.Element} Grid board element.
-   */
-  render() {
-    const {
-      title,
-      isOpponent,
-      isGetReadyScrn,
-      boardData,
-      ships = [],
-    } = this.props;
-
-    const CellTag = isOpponent ? "button" : "div";
 
     return (
-      <div className="mainField">
-        {/* author:xhaziyh00 - Grid header / ownership label */}
-        <p className="owner">{title}</p>
-
-        {/* author:xhaziyh00 - Top horizontal coordinate axis (Numbers 1-10) with 37x37px corner spacer */}
-        <div style={{ display: "flex", marginTop: "18px" }}>
-          {/* author:xhaziyh00 empty div for correct possition of coords*/}
-          <div className="coords"></div>{" "}
-          {NUMBERS.map((num) => (
-            <div className="coords" key={num}>
-              {num}
-            </div>
-          ))}
-        </div>
-
-        {/* author:xhaziyh00 - Main battlefield area: vertical letters (A-J) + 10x10 grid */}
-        <div style={{ display: "flex" }}>
-          {/* Left vertical coordinate axis (Letters A-J) */}
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {LETTERS.map((letter) => (
-              <div className="coords" key={letter}>
-                {letter}
-              </div>
-            ))}
-          </div>
-
-          {/* 100-cell grid container */}
-          <div className="grid-container">
-            {LETTERS.map((letter, rowIndex) =>
-              NUMBERS.map((num, colIndex) => {
-                const cell = boardData ? boardData[rowIndex][colIndex] : null;
-                // author:xhaziyh00 - Ships are visible on player's board, but hidden on opponent's unless hit
-                const isShipVisible =
-                  (!isOpponent && cell?.hasShip) ||
-                  (isOpponent && cell?.hasShip && cell?.hit);
-
-                return (
-                  <CellTag
-                    className="cell"
-                    id={isOpponent ? `cell-${rowIndex}-${colIndex}` : undefined}
-                    key={`${letter}-${num}`}
-                    onClick={() => this.handleCellClick(rowIndex, colIndex)}
-                    onDragOver={(e) =>
-                      this.handleDragOver(e, rowIndex, colIndex)
-                    }
-                    onMouseEnter={(e) => {
-                      // xslobok00:coords with dragging
-                      if (this.props.onCellDragOver) {
-                        this.props.onCellDragOver(e, rowIndex, colIndex);
-                      }
-                    }}
-                    draggable={!isOpponent && cell?.hasShip}
-                    /*onDragStart={(e) => {
-                      if (!isOpponent && cell?.hasShip) {
-
-                        if (this.props.onPlacedShipDragStart) {
-                          this.props.onPlacedShipDragStart(e, rowIndex, colIndex);
-                        }
-                      }
-                    }}*/
-                    onMouseDown={(e) => {
-                      if (!isOpponent && cell?.hasShip) {
-                        e.preventDefault();
-                        if (this.props.onPlacedShipDragStart) {
-                          this.props.onPlacedShipDragStart(
-                            e,
-                            rowIndex,
-                            colIndex,
-                          );
-                        }
-                      }
-                    }}
-                    onDrop={(e) => this.handleDrop(e, rowIndex, colIndex)}
-                    onKeyDown={
-                      isOpponent
-                        ? (e) => this.handleCellKeyDown(e, rowIndex, colIndex)
-                        : undefined
-                    }
-                    style={{
-                      backgroundColor: isShipVisible
-                        ? "var(--ship-bg)"
-                        : "var(--page-bg)",
-                      cursor: isOpponent ? "pointer" : "default",
-                    }}
-                  >
-                    {/* Hit marker */}
-                    {cell?.hit && (
-                      <span
-                        style={{
-                          color: "var(--hit-mark)",
-                          fontSize: "24px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        ✕
-                      </span>
-                    )}
-
-                    {/* Miss marker */}
-                    {cell?.miss && (
-                      <span
-                        style={{
-                          color: "var(--text-btn-color)",
-                          fontSize: "18px",
-                        }}
-                      >
-                        •
-                      </span>
-                    )}
-                  </CellTag>
-                );
-              }),
-            )}
-          </div>
-        </div>
-
-        {/* author:xhaziyh00 - Dock container for unplaced ships during setup phase (own fleet only) */}
-        {!isOpponent && (
-          <div className="info">
-            {isGetReadyScrn &&
-              ships
-                .filter((ship) => !ship.isPlaced)
-                .map((ship) => (
-                  <BattleShip
-                    key={ship.id}
-                    size={ship.size}
-                    isVertical={ship.isVertical}
-                    isDraggable={true}
-                    onDragStart={(e) => this.handleShipDragStart(e, ship)}
-                  />
+        <div className="mainField">
+            <p className="owner">{title}</p>
+            <div className="board-numbers">
+                <div className="coords" />
+                {NUMBERS.map((number) => (
+                    <div
+                        className="coords"
+                        key={number}
+                    >
+                        {number}
+                    </div>
                 ))}
-          </div>
-        )}
-      </div>
+            </div>
+            <div className="board-with-letters">
+                <div>
+                    {LETTERS.map((letter) => (
+                        <div
+                            className="coords"
+                            key={letter}
+                        >
+                            {letter}
+                        </div>
+                    ))}
+                </div>
+                <div
+                    className="grid-container"
+                    ref={boardRef}
+                    onPointerLeave={() => onCellHover?.(null, null)}
+                >
+                    {board.map((line, row) => line.map((cell, col) => renderCell(row, col)))}
+                </div>
+            </div>
+            <div className="info">{children}</div>
+        </div>
     );
-  }
 }
-
-export default Battlefield;

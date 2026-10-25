@@ -1,134 +1,169 @@
-/**
- * @file battlefield.css
- * @description Layout and dimensional constraints for the 10x10 BattleShip grid,
- * coordinate alignment markers, and the reserve ship placement dock.
- * @author xhaziyh00
- */
-:root{
-  --cell-size: 37px;
+/* Board appearance based on the Gosha UI. */
+:root {
+    --cell-size: 37px;
 }
 
- @media (max-width: 450px) {
-  :root {
-    --cell-size: 27px;
-  }
-  
+#containerForField {
+    display: flex;
+    justify-content: center;
+    padding: 16px;
 }
-
-
 
 .mainField {
-  width: 440px;
-  height: fit-content;
-  display: flex;
-  flex-direction: column;
+    width: calc(var(--cell-size) * 11 + 4px);
+    flex-shrink: 0;
 }
 
 .owner {
-  margin: 0;
-  font-weight: 600;
-  font-size: 24px;
-  color: var(--text-btn-color);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-btn-color);
+}
+
+.board-numbers,
+.board-with-letters {
+    display: flex;
+}
+
+.board-numbers {
+    margin-top: 18px;
 }
 
 .coords {
-  width: var(--cell-size);
-  height: var(--cell-size);
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  flex-shrink: 0;
-  color: var(--text-btn-color);
+    width: var(--cell-size);
+    height: var(--cell-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-weight: 600;
 }
 
 .grid-container {
-  width: fit-content;
-  height: fit-content;
-  display: grid;
-  grid-template-columns: repeat(10, var(--cell-size));
-  grid-template-rows: repeat(10, var(--cell-size));
-  border: 2px solid var(--ship-border);
-  border-radius: 8px;
-  box-sizing: border-box;
-  overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(10, var(--cell-size));
+    grid-template-rows: repeat(10, var(--cell-size));
+    border: 2px solid var(--ship-border);
+    border-radius: 8px;
+    overflow: hidden;
+    touch-action: none;
 }
 
 .cell {
-  width: var(--cell-size);
-  height: var(--cell-size);
-  border: 1px solid var(--avatar-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  background-color: var(--page-bg);
-}
-@media (max-width: 450px) {
-  .cell,.coords{
+    position: relative;
     width: var(--cell-size);
     height: var(--cell-size);
-
-  }
-  .grid-container{
-
-  grid-template-columns: repeat(10, var(--cell-size));
-  grid-template-rows: repeat(10, var(--cell-size));
-  }
-  .mainField{
-    width: 330px;
-    height: fit-content;
-  }
+    border: 1px solid var(--avatar-bg);
+    background: var(--page-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
+
+.cell:disabled {
+    cursor: default;
+}
+
+.ship-cell,
+.ship-body {
+    background: var(--ship-bg);
+}
+
+.selected-ship {
+    box-shadow: inset 0 0 0 2px #0096ff;
+}
+
+.radar-cell {
+    background: rgba(0, 200, 220, 0.2);
+}
+
+.valid-placement {
+    background: rgba(46, 204, 113, 0.4);
+}
+
+.invalid-placement {
+    background: rgba(235, 94, 94, 0.5);
+}
+
+.blocked-cell {
+    background: var(--avatar-bg);
+}
+
+.scanned-ship {
+    background: var(--ship-bg);
+    box-shadow: inset 0 0 0 2px var(--ship-border);
+}
+
 .info {
-  margin-top: 10px;
-  width: 100%;
-  flex: 1;
-  box-sizing: border-box;
-  border: 2px solid var(--ship-border);
-  border-radius: 8px;
-  padding: 5px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  align-content: flex-start;
-  background-color: var(--page-bg);
-  min-height: 130px;
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 8px;
+    min-height: 125px;
 }
 
-.info > * {
-  margin: 3px;
+.ship-body {
+    border-radius: 5px;
+    border: 3px solid transparent;
+    pointer-events: none;
 }
 
-.ship-wrapper {
-  display: inline-block;
-  width: fit-content;
-  height: fit-content;
-  cursor: grab;
+.dock-ship {
+    padding: 0;
+    border: 1px solid var(--ship-border);
+    border-radius: 5px;
+    cursor: grab;
+    touch-action: none;
 }
 
-.ship-wrapper:active {
-  cursor: grabbing;
+.gadgetButton {
+    flex: 1;
+    height: 80px;
+    border-radius: 100px;
+    border: 1px solid var(--ship-border);
+    background: var(--avatar-bg);
+    font-size: 36px;
+    cursor: pointer;
 }
-@media (max-width: 320px) {
-  :root {
-    --cell-size: 24px;
-  }
-  .mainField{
-    
-  width: 290px;
-  height: fit-content;
-  }
-  }
-  @media (max-height: 620px) {
-  :root {
-    --cell-size: 24px;
-  }
-  .mainField{
-    
-  width: 290px;
-  height: fit-content;
-  }
-  }
+
+.gadgetButton[aria-pressed="true"] {
+    border: 3px solid #0096ff;
+}
+
+.gadgetButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.readyToGoButton {
+    width: 100%;
+    min-height: 80px;
+    border: 2px solid var(--ship-border);
+    border-radius: 8px;
+    background: var(--page-bg);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.hitCell {
+    color: var(--hit-mark);
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.missCell {
+    color: var(--text-btn-color);
+    font-size: 18px;
+}
+
+.mineIcon {
+    font-size: 22px;
+}
+
+@media (max-width: 480px) {
+    :root {
+        --cell-size: 24px;
+    }
+}

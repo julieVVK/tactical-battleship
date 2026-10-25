@@ -1,377 +1,256 @@
-/**
- * @file BattleshipGame.jsx
- * @description Main gameplay controller component. Manages the dual-board arena layout,
- * initializes player fleet state from SHIPS_CONFIG, and coordinates communication
- * between the navigation Header and both Battlefield grids.
- * @author xhaziyh00
- */
-
-// Edited by Vladyslav Doroshenko
-//     - Added foreign languages support
-//       Changed lines: 13, 19, 31, 313, 322, 325, 351
-
-import { LanguageContext } from '../../i18n/LanguageContext.js';
 import React from "react";
 import Header from "../header/Header.jsx";
 import Battlefield from "../battlefield/Battlefield.jsx";
 import BattleShip from "../battleship/BattleShip.jsx";
-import {SHIPS_CONFIG} from "../../constants.js";
-import "./getReady.css";
+import { SHIPS_CONFIG } from "../../constants.js";
+import {
+    createBoard,
+    randomBoard,
+    getShip,
+    shipCells,
+    canPlaceShip,
+    placeShip,
+    pointerCell,
+} from "../../board.js";
+import { readyPlayer, cancelReady } from "../../gameApi.js";
+import "./battleshipGame.css";
 
-/**
- * BatlleshipGame class component.
- *
- * @author xhaziyh00
- * @property {Object} props - Component input properties.
- * @property {Function} props.onGoHome - Callback function to return to the main menu screen.
- * @property {Object} state - Component internal state.
- * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
- */
-class GetReady extends React.Component {
-    static contextType = LanguageContext;
-
-    // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
+export default class GetReady extends React.Component {
     constructor(props) {
         super(props);
-        // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
-
-        const emptyBoard = Array(10)
-            .fill(null)
-            .map(() =>
-                Array(10)
-                    .fill(null)
-                    .map(() => ({hasShip: false, hit: false, miss: false})),
-            );
-
+        this.boardRef = React.createRef();
+        this.dragging = false;
+        this.pendingDrag = null;
+        this.grabOffset = 0;
         this.state = {
-            myShips: SHIPS_CONFIG.map((ship) => ({
-                ...ship,
-                isVertical: false,
-                isPlaced: false,
-            })),
-            boardData: emptyBoard,
-            draggingShip: null,
-            currentHoveredCell: null,
-            mousePos: {x: 0, y: 0},
+            selectedShip: null,
+            hover: null,
+            pointer: null,
+            busy: false,
+            error: "",
         };
     }
 
     componentDidMount() {
-        window.addEventListener("keydown", this.handleKeyDown);
-        window.addEventListener("mousemove", this.handleMouseMove);
-        window.addEventListener("mouseup", this.handleGlobalMouseUp); // xslobok00: ловим отпускание мыши по всему экрану
+        window.addEventListener("pointermove", this.movePointer);
+        window.addEventListener("pointerup", this.releasePointer);
+        window.addEventListener("pointercancel", this.cancelDrag);
+        window.addEventListener("blur", this.cancelDrag);
+        window.addEventListener("keydown", this.handleKey);
     }
 
     componentWillUnmount() {
-        window.removeEventListener("keydown", this.handleKeyDown);
-        window.removeEventListener("mousemove", this.handleMouseMove);
-        window.removeEventListener("mouseup", this.handleGlobalMouseUp); // xslobok00: ловим отпускание мыши по всему экрану
+        window.removeEventListener("pointermove", this.movePointer);
+        window.removeEventListener("pointerup", this.releasePointer);
+        window.removeEventListener("pointercancel", this.cancelDrag);
+        window.removeEventListener("blur", this.cancelDrag);
+        window.removeEventListener("keydown", this.handleKey);
     }
 
-    /**
-     * xslobok00: placing check
-     */
-    canPlaceShip = (startX, startY, size, isVertical, board) => {
-        for (let i = 0; i < size; i++) {
-            let currentX = isVertical ? startX + i : startX;
-            let currentY = isVertical ? startY : startY + i;
-
-            //xslobok00: is it out of board?
-            if (currentX < 0 || currentX >= 10 || currentY < 0 || currentY >= 10) {
-                return false;
-            }
-
-            //xslobok00: is neighbour places free?
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
-                    let checkX = currentX + dx;
-                    let checkY = currentY + dy;
-
-                    //xslobok00: is coord in board?
-                    if (checkX >= 0 && checkX < 10 && checkY >= 0 && checkY < 10) {
-                        if (
-                            board[checkX][checkY]
-                                ?.hasShip /* || board[checkY][checkX]?.hasShip*/
-                        ) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        return true; //xslobok00: ok. you can place it
+    cancelDrag = () => {
+        this.dragging = false;
+        this.pendingDrag = null;
+        this.setState({ selectedShip: null, hover: null, pointer: null });
     };
 
-    // xslobok00: take a ship
-    handleShipDragStart = (e, ship) => {
-        const updatedShips = this.state.myShips.map((s) =>
-            s.id === ship.id ? {...s, isPlaced: true} : s,
-        );
+    startDrag = (event, ship, offset) => {
+        if (
+            event.button !== 0 ||
+            this.props.disabled ||
+            this.state.busy ||
+            this.props.game.players.you.ready
+        ) return;
+        event.preventDefault();
+        this.pendingDrag = { ship, offset, x: event.clientX, y: event.clientY };
+    };
+
+    takeShip = (event, row, col) => {
+        const id = this.props.board[row][col];
+        if (!id) return;
+
+        const ship = getShip(this.props.board, id);
+        let offset = col - ship.col;
+        if (ship.vertical) offset = row - ship.row;
+        this.startDrag(event, ship, offset);
+    };
+
+    targetCell = (event, ship = this.state.selectedShip) => {
+        const cell = pointerCell(event, this.boardRef.current);
+        if (ship.vertical) cell.row -= this.grabOffset;
+        else cell.col -= this.grabOffset;
+        return cell;
+    };
+
+    movePointer = (event) => {
+        if (!this.pendingDrag) return;
+        const { ship, offset, x, y } = this.pendingDrag;
+        if (!this.dragging && Math.hypot(event.clientX - x, event.clientY - y) < 5) return;
+
+        this.dragging = true;
+        this.grabOffset = offset;
+        const selectedShip = this.state.selectedShip || ship;
         this.setState({
-            draggingShip: ship,
-            myShips: updatedShips,
-            mousePos: {x: e.clientX, y: e.clientY},
+            selectedShip,
+            hover: this.targetCell(event, selectedShip),
+            pointer: { x: event.clientX, y: event.clientY },
+            error: "",
         });
     };
 
-    //xslobok00: place a ship
+    releasePointer = (event) => {
+        if (!this.pendingDrag) return;
+        if (this.dragging && this.state.selectedShip) {
+            const cell = this.targetCell(event);
+            this.placeSelectedShip(cell.row, cell.col);
+        }
+        this.cancelDrag();
+    };
 
-    handleCellDragOver = (e, rowIndex, colIndex) => {
-        e.preventDefault();
-        const {currentHoveredCell, draggingShip} = this.state;
+    placeSelectedShip = (row, col) => {
+        const ship = this.state.selectedShip;
+        if (!ship || this.props.disabled || this.state.busy || this.props.game.players.you.ready)
+            return;
 
-        let targetX = rowIndex;
-        let targetY = colIndex;
+        if (!canPlaceShip(this.props.board, ship, row, col)) {
+            this.setState({ error: "Ships must fit inside the board and cannot touch." });
+            return;
+        }
 
-        if (draggingShip && draggingShip.size > 1) {
-            if (draggingShip.isVertical) {
-                targetX = Math.max(0, rowIndex);
+        const board = placeShip(this.props.board, ship, row, col);
+        this.props.onBoardChange(board);
+        this.setState({ selectedShip: null, hover: null, error: "" });
+    };
+
+    rotateShip = () => {
+        const ship = this.state.selectedShip;
+        if (!ship) return;
+        this.setState({ selectedShip: { ...ship, vertical: !ship.vertical }, hover: null });
+    };
+
+    handleKey = (event) => {
+        if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA") return;
+        if (event.code === "KeyR") this.rotateShip();
+        if (event.code === "Escape") this.cancelDrag();
+    };
+
+    changeReady = async () => {
+        if (this.state.busy) return;
+        this.setState({ busy: true, error: "", selectedShip: null });
+        try {
+            if (this.props.game.players.you.ready) {
+                await cancelReady(this.props.game.id);
             } else {
-                targetY = Math.max(0, colIndex);
+                await readyPlayer(this.props.game.id, this.props.board);
             }
-        }
-
-        if (
-            !currentHoveredCell ||
-            currentHoveredCell.x !== targetX ||
-            currentHoveredCell.y !== targetY
-        ) {
-            this.setState({
-                currentHoveredCell: {x: targetX, y: targetY},
-            });
+        } catch (error) {
+            this.setState({ error: error.message });
+        } finally {
+            this.setState({ busy: false });
         }
     };
 
-    handleCellDrop = (e, rowIndex, colIndex) => {
-        e.preventDefault();
-        !this.handleGlobalMouseUp();
-    };
-
-    toggleShipOrientation = (shipId) => {
-        this.setState((prevState) => ({
-            myShips: prevState.myShips.map((s) =>
-                s.id === shipId ? {...s, isVertical: !s.isVertical} : s,
-            ),
-        }));
-    };
-
-    handleMouseMove = (e) => {
-        if (this.state.draggingShip) {
-            this.setState({
-                mousePos: {x: e.clientX, y: e.clientY},
-            });
-        }
-    };
-
-    handleGlobalMouseUp = () => {
-        const {draggingShip, currentHoveredCell, boardData} = this.state;
-        if (!draggingShip) return;
-
-        if (!currentHoveredCell) {
-            console.log(" Мышка отпущена МИМО поля");
-            this.returnShipToDock(draggingShip.id);
-            return;
-        }
-
-        //const { x: rowIndex, y: colIndex } = currentHoveredCell;
-        const rowIndex = currentHoveredCell.x;
-        const colIndex = currentHoveredCell.y;
-
-        console.log(
-            ` Пытаемся поставить корабль ${draggingShip.id} в координаты: Строка ${rowIndex}, Колонка ${colIndex}`,
-        );
-
-        if (
-            !this.canPlaceShip(
-                rowIndex,
-                colIndex,
-                draggingShip.size,
-                draggingShip.isVertical,
-                boardData,
-            )
-        ) {
-            console.log(
-                " Проверка canPlaceShip НЕ ПРОШЛА! Место занято или вылезло за край.",
-            );
-            this.returnShipToDock(draggingShip.id);
-            return;
-        }
-
-        // Если всё ок — красим сетку (ставим корабль)
-        const newBoard = boardData.map((row) => row.map((cell) => ({...cell})));
-        for (let i = 0; i < draggingShip.size; i++) {
-            let currentX = draggingShip.isVertical ? rowIndex + i : rowIndex;
-            let currentY = draggingShip.isVertical ? colIndex : colIndex + i;
-
-            // xslobok00: Красим ячейки в сетке Гоши (учитываем его структуру)
-            if (newBoard[currentX] && newBoard[currentX][currentY]) {
-                newBoard[currentX][currentY].hasShip = true;
-                newBoard[currentX][currentY].shipId = draggingShip.id;
-            }
-        }
-
-        this.setState({
-            boardData: newBoard,
-            draggingShip: null,
-            currentHoveredCell: null,
-        });
-    };
-
-    //xslobok00: returns ship to dock
-    returnShipToDock = (shipId) => {
-        const restoredShips = this.state.myShips.map((s) =>
-            s.id === shipId ? {...s, isPlaced: false} : s,
-        );
-        this.setState({
-            myShips: restoredShips,
-            draggingShip: null,
-            currentHoveredCell: null,
-        });
-    };
-
-    //xslobok00: rotate on r
-    handleKeyDown = (e) => {
-        if (e.key === "r" || e.key === "R" || e.key === "к" || e.key === "К") {
-            const {draggingShip, myShips} = this.state;
-
-            // xslobok00: works with mouse + r
-            if (draggingShip) {
-                const nextOrientation = !draggingShip.isVertical;
-
-                //xslobok00: change orientation
-                const updatedDraggingShip = {
-                    ...draggingShip,
-                    isVertical: nextOrientation,
-                };
-
-                // Orientation renew state
-                const updatedMyShips = myShips.map((s) =>
-                    s.id === draggingShip.id ? {...s, isVertical: nextOrientation} : s,
-                );
-
-                this.setState({
-                    draggingShip: updatedDraggingShip,
-                    myShips: updatedMyShips,
-                });
-
-                console.log("ship turned");
-            }
-        }
-    };
-
-    // xslobok00: replase a ship
-    handlePlacedShipDragStart = (e, rowIndex, colIndex) => {
-        const {boardData, myShips} = this.state;
-
-        const cellDirect = boardData[rowIndex]?.[colIndex];
-        const cellInverted = boardData[colIndex]?.[rowIndex];
-        const targetShipId = cellDirect?.shipId || cellInverted?.shipId;
-
-        if (targetShipId) {
-            const originalShip = myShips.find((s) => s.id === targetShipId);
-            if (!originalShip) return;
-
-            // xslobok00: take it from field
-
-            const newBoard = boardData.map((row) =>
-                row.map((cell) => {
-                    if (cell.shipId === targetShipId || cell.shipId === originalShip.id) {
-                        return {
-                            hasShip: false,
-                            shipId: null,
-                            hit: false,
-                            miss: false,
-                        };
-                    }
-
-                    return {...cell};
-                }),
-            );
-
-            // xslobok00: not in docs
-            const updatedShips = myShips.map((s) =>
-                s.id === targetShipId ? {...s, isPlaced: true} : s,
-            );
-
-            // xslobok00: take a whole ship in cursor
-            this.setState({
-                boardData: newBoard,
-                myShips: updatedShips,
-                draggingShip: {...originalShip, isPlaced: true},
-                mousePos: {x: e.clientX, y: e.clientY},
-            });
-        }
-    };
-
-    /**
-     * Renders the game arena: top navigation header and side-by-side battlefields.
-     *
-     * @author xhaziyh00
-     * @returns {JSX.Element} Full match screen layout.
-     */
     render() {
-        const { t } = this.context;
-        const {draggingShip, mousePos} = this.state;
+        const { game, board, onBoardChange, onGoHome, onLeaveGame } = this.props;
+        const { selectedShip, hover, pointer, busy, error } = this.state;
+        const ready = game.players.you.ready;
+        const disabled = this.props.disabled || busy || ready;
+        const unplacedShips = SHIPS_CONFIG.filter(
+            (ship) => !board.some((row) => row.includes(ship.id)),
+        );
+        let preview = null;
+        if (selectedShip && hover) {
+            preview = {
+                cells: shipCells(hover.row, hover.col, selectedShip.size, selectedShip.vertical),
+                valid: canPlaceShip(board, selectedShip, hover.row, hover.col),
+            };
+        }
+
+        let message = "Place your ships. R rotates while dragging.";
+        if (ready) message = "Fleet ready. Waiting for the other player.";
 
         return (
             <>
-                {/* author:xhaziyh00 - Top navigation bar with return-to-home callback forwarding */}
-                <Header onGoHome={this.props.onGoHome}/>
-
-                {/* author:xhaziyh00 - Side-by-side arena container: player's fleet on the left, opponent's grid on the right */}
-                <div className="preparation-fields">
-                    {/* Player's board displaying own ship positions and reserve setup dock */}
-                    <Battlefield
-                        title={t('game.yourFleet')}
-                        isOpponent={false}
-                        isGetReadyScrn={true}
-                        ships={this.state.myShips}
-                        boardData={this.state.boardData}
-                        onShipDragStart={this.handleShipDragStart}
-                        onCellDragOver={this.handleCellDragOver}
-                        onCellDrop={this.handleCellDrop}
-                        onShipClick={(ship) => this.toggleShipOrientation(ship.id)}
-                        onPlacedShipDragStart={this.handlePlacedShipDragStart}
-                    />
+                <Header
+                    onGoHome={onGoHome}
+                    message={message}
+                />
+                <div className="game-controls">
                     <button
-                        onClick={() => {
-                            console.log("BOARD BEFORE SENDING TO APP:", this.state.boardData);
-                            this.props.onStartBattle(
-                                this.state.boardData,
-                                this.state.myShips,
-                            );
-                        }}
-                        style={{
-                            padding: "16px 32px",
-                            fontSize: "18px",
-                            fontWeight: "600",
-                            cursor: "pointer",
-                        }}
+                        disabled={disabled}
+                        onClick={() => onBoardChange(randomBoard())}
                     >
-                        {t('game.start')}
+                        Random placement
                     </button>
-                    {/* xslobok00: layer for replase and rotate in process */}
-                    {draggingShip && (
-                        <div
-                            style={{
-                                position: "fixed",
-                                pointerEvents: "none",
-                                left: `${mousePos.x - 15}px`,
-                                top: `${mousePos.y - 15}px`,
-                                zIndex: 9999,
-                            }}
-                        >
-                            <BattleShip
-                                size={draggingShip.size}
-                                isVertical={draggingShip.isVertical}
-                                isDraggable={false}
-                            />
-                        </div>
-                    )}
+                    <button
+                        disabled={disabled}
+                        onClick={() => onBoardChange(createBoard())}
+                    >
+                        Reset fleet
+                    </button>
+                    <button
+                        disabled={busy || this.props.disabled}
+                        onClick={onLeaveGame}
+                    >
+                        Leave lobby
+                    </button>
+                    <p>Hold and drag a ship. R rotates it while dragging. Escape cancels.</p>
+                    <p>Opponent: {game.players.opponent.ready ? "Ready" : "Placing ships"}</p>
+                    {error && <p role="alert">{error}</p>}
                 </div>
+                <div id="containerForField">
+                    <Battlefield
+                        title="Your fleet"
+                        board={board}
+                        boardRef={this.boardRef}
+                        disabled={disabled}
+                        preview={preview}
+                        selectedShipId={selectedShip?.id}
+                        onCellPointerDown={this.takeShip}
+                    >
+                        {unplacedShips.map((config) => (
+                            <button
+                                key={config.id}
+                                className="dock-ship"
+                                aria-label={`Place ${config.id}`}
+                                disabled={disabled}
+                                onPointerDown={(event) => {
+                                    const rect = event.currentTarget.getBoundingClientRect();
+                                    const offset = Math.min(
+                                        config.size - 1,
+                                        Math.floor(
+                                            (event.clientX - rect.left) /
+                                                (rect.width / config.size),
+                                        ),
+                                    );
+                                    this.startDrag(event, { ...config, vertical: false }, offset);
+                                }}
+                            >
+                                <BattleShip size={config.size} />
+                            </button>
+                        ))}
+                        {unplacedShips.length === 0 && (
+                            <button
+                                className="readyToGoButton"
+                                disabled={busy || this.props.disabled}
+                                onClick={this.changeReady}
+                            >
+                                {ready ? "Cancel ready" : "Ready to go"}
+                            </button>
+                        )}
+                    </Battlefield>
+                </div>
+                {selectedShip && pointer && (
+                    <div
+                        id="draggingShip"
+                        style={{ left: pointer.x + 12, top: pointer.y + 12 }}
+                    >
+                        <BattleShip
+                            size={selectedShip.size}
+                            vertical={selectedShip.vertical}
+                        />
+                    </div>
+                )}
             </>
         );
     }
 }
-
-export default GetReady;

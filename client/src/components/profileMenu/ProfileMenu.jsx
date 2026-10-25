@@ -1,14 +1,16 @@
 // File was created by Vladyslav Doroshenko
 
 import { useLanguage } from '../../i18n/useLanguage.js';
+import { useNavigate } from "react-router";
 import { useEffect, useRef, useState } from "react";
 
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
 
 
-function ProfileMenu({ onNavigateStatistics }) {
+function ProfileMenu() {
     const { t } = useLanguage();
+    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const containerRef = useRef(null);
@@ -125,8 +127,8 @@ function ProfileMenu({ onNavigateStatistics }) {
                             onClick={ () => {
                                 setIsOpen(false)
                                 
-                                if (label === "Statistics") {
-                                    onNavigateStatistics?.();
+                                if (label === "account.statistics") {
+                                    navigate("/statistics");
                                 }
                             } }
                         >

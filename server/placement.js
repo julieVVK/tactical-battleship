@@ -80,7 +80,7 @@ export const prepareFleet = (board) => {
                 if (typeof key !== "string" || key?.length < 1) return {error: "board matrix cell contains invalid value"};
 
                 if (!shipDepo.has(key)) {
-                    shipDepo.set(key, {cells: []});
+                    shipDepo.set(key, {id: key, cells: []});
                 }
                 shipDepo.get(key).cells.push({row: i, col: j, hit: false});
             }
@@ -101,6 +101,39 @@ export const prepareFleet = (board) => {
 
     const fleet = Array.from(shipDepo.values());
     if (fleet.length !== 10) return {error: "fleet has invalid size"};
+
+    for (const ship of fleet) {
+        const first = ship.cells[0];
+        const horizontal = ship.cells.every(cell => cell.row === first.row);
+        const vertical = ship.cells.every(cell => cell.col === first.col);
+
+        if (!horizontal && !vertical) {
+            return {error: "Ships must be straight."};
+        }
+
+        for (let i = 0; i < ship.cells.length; i++) {
+            const cell = ship.cells[i];
+            const expectedRow = horizontal ? first.row : first.row + i;
+            const expectedCol = horizontal ? first.col + i : first.col;
+
+            if (cell.row !== expectedRow || cell.col !== expectedCol) {
+                return {error: "Ship cells must be connected."};
+            }
+
+            for (let row = cell.row - 1; row <= cell.row + 1; row++) {
+                for (let col = cell.col - 1; col <= cell.col + 1; col++) {
+                    if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) {
+                        continue;
+                    }
+
+                    const neighbor = board[row][col];
+                    if (neighbor !== null && neighbor !== ship.id) {
+                        return {error: "Ships cannot touch."};
+                    }
+                }
+            }
+        }
+    }
 
     return fleet;
 };

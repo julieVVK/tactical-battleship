@@ -1,6 +1,18 @@
 // File was created by Vladyslav Doroshenko
 
-export async function initializeSession() {
+let pendingSession = null;
+
+export function initializeSession() {
+    // StrictMode can mount App twice while the first request is still pending.
+    if (!pendingSession) {
+        pendingSession = loadSession().finally(() => {
+            pendingSession = null;
+        });
+    }
+    return pendingSession;
+}
+
+async function loadSession() {
     const savedToken = localStorage.getItem('token');
 
     if (savedToken) {

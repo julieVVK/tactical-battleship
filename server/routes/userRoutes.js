@@ -6,6 +6,8 @@ import { createSession, removeSession } from "../sessions.js"
 import requireSession from "../sessionMiddleware.js"
 import fail from "../error.js"
 import { statistics } from "../statistics.js"
+import {getGames, leaveGame} from "../games.js"
+import publishGame from "../gameEvents.js"
 
 
 export default function createUserRouter(io) {
@@ -50,6 +52,14 @@ export default function createUserRouter(io) {
 
     // Delete the session identified by this request's token.
     router.get('/signout', requireSession, (req, res) => {
+        for (const game of getGames()) {
+            const isPlayer = game.players.some(player => player.id === req.userId)
+            if (!isPlayer || game.phase === "finished" || game.phase === "cancelled") continue
+
+            leaveGame(game.id, req.userId)
+            publishGame(io, game.id)
+        }
+
         removeSession(req.sessionToken)
 
         for (const socket of io.sockets.sockets.values()) {

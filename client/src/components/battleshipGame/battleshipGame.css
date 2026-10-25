@@ -1,23 +1,54 @@
-/**
- * @file battleshipGame.css
- * @description Responsive layout for the duel arena grids.
- * @author xhaziyh00
- */
-
-/* author:xhaziyh00 - Default horizontal desktop arena: player left, opponent right */
+/* Two-board layout from Gosha, with height determined by its contents. */
 .battleContainer {
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-start;
-  gap: 24px;
-  width: 100%;
-  margin-left: 5px;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 16px;
 }
 
-/* author:xhaziyh00 - Mobile & narrow screen breakpoint: stack vertically with enemy on top */
-@media (max-width: 860px) {
-  .battleContainer {
-    flex-direction: column-reverse; 
-    align-items: center;
-  }
+#draggingShip {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.game-controls {
+    text-align: center;
+    padding: 12px;
+}
+
+.game-controls button {
+    margin: 4px;
+    padding: 8px 12px;
+    border: 1px solid var(--ship-border);
+    border-radius: 6px;
+    background: var(--page-bg);
+    color: var(--text-btn-color);
+    cursor: pointer;
+}
+
+.game-controls button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.game-controls p {
+    margin: 8px 0;
+}
+
+.gadget-hint {
+    min-height: 3em;
+}
+
+.game-message {
+    padding: 12px;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .battleContainer {
+        flex-direction: column-reverse;
+        align-items: center;
+    }
 }

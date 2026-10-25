@@ -20,9 +20,30 @@ export const SHIPS_CONFIG = [
 ];
 
 export const GADGETS = [
-    {id: 'radar', nameKey: 'gadget.radar', descKey: 'gadget.radarDescription', name: 'radar (3x3)', icon: '', desc: 'scans square 3x3'},
-    {id: 'mine', nameKey: 'gadget.mine', descKey: 'gadget.mineDescription', name: 'mine', icon: '', desc: 'damages opponent when got hit'},
-    {id: 'relocate', nameKey: 'gadget.relocate', descKey: 'gadget.relocateDescription', name: 'relocate', icon: '', desc: 'relocates ship to another position'},
+    {
+        id: 'radar',
+        nameKey: 'gadget.radar',
+        descKey: 'gadget.radarDescription',
+        name: 'radar (3x3)',
+        icon: '📡',
+        desc: 'Reveals exact ship cells in a 3x3 area',
+    },
+    {
+        id: 'mine',
+        nameKey: 'gadget.mine',
+        descKey: 'gadget.mineDescription',
+        name: 'mine',
+        icon: '💣',
+        desc: 'Damages the opponent when hit',
+    },
+    {
+        id: 'relocate',
+        nameKey: 'gadget.relocate',
+        descKey: 'gadget.relocateDescription',
+        name: 'relocate',
+        icon: '⚓',
+        desc: 'Moves an undamaged ship to another position',
+    },
 ];
 
 export const TURN_MESSAGES = {

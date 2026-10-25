@@ -4,6 +4,7 @@
 //     - Added foreign languages support by adding
 //       LanguageProvider component with useContext hook
 
+import { BrowserRouter } from "react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
@@ -13,7 +14,9 @@ import LanguageProvider from "./i18n/LanguageProvider.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <LanguageProvider>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </LanguageProvider>
   </StrictMode>,
 );

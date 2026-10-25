@@ -1,41 +1,74 @@
-/*File was created by xslobok00*/
-
 .enemy-ships-tracker {
   background-color: var(--ship-bg, #eef2f3);
-  padding: 15px 10px;
-  border-radius: 8px;
+  padding: 10px 10px;
+  border-radius: 12px;
   border: 1px solid #ccc;
-  width: 150px;
   box-sizing: border-box;
-  margin-top: 130px; 
-  /*margin-top: 190px; */
+  margin-top: 15px;
+  width: 100%;
+  max-width: 440px;
+
+
+  height: 125px;
+  container-type: size;
 }
+
 .enemy-ships-tracker h3 {
   margin-top: 0;
-  font-size: 16px;
   text-align: center;
+  margin-bottom: 4cqh;
+
+  font-size: 16cqh;
+  color: var(--text-btn-color, #2c3e50);
 }
+
+.ships-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  column-gap: 6cqw;
+  row-gap: 6cqh;
+}
+
 .ship-status-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+
+
+  justify-content: flex-start;
+
+
+  gap: 4cqw;
+
+  background-color: rgba(255, 255, 255, 0.4);
+  padding: 4cqh 10px;
+  border-radius: 6px;
 }
+
 .ship-status-row.all-dead {
-  opacity: 0.4;
+  opacity: 0.3;
   text-decoration: line-through;
 }
+
 .ship-preview {
   display: flex;
-  gap: 2px;
+  gap: 3px;
+
+
+  width: 25cqw;
 }
+
 .ship-cube {
-  width: 14px;
-  height: 14px;
+
+  width: 15cqh;
+  height: 15cqh;
   background-color: var(--text-btn-color, #333);
   border: 1px solid #000;
+  border-radius: 2px;
 }
+
 .ship-count {
   font-weight: bold;
-  font-size: 14px;
+  font-size: 14cqh;
+  color: var(--text-btn-color, #333);
+  white-space: nowrap;
 }
