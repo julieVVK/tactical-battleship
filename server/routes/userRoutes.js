@@ -5,6 +5,7 @@ import * as user from "../users.js"
 import { createSession, removeSession } from "../sessions.js"
 import requireSession from "../sessionMiddleware.js"
 import fail from "../error.js"
+import { statistics } from "../statistics.js"
 
 
 export default function createUserRouter(io) {
@@ -26,6 +27,25 @@ export default function createUserRouter(io) {
             token: session.token
         })
     });
+
+
+    // Endpoint just for token validation.
+    // 204 - OK but No content.
+    // May be removed in the future.
+    router.get('/session', requireSession, (req, res) => {
+        return res.sendStatus(204)
+    })
+
+    router.get('/statistics', requireSession, (req, res) => {
+        const { offset = "0", limit = "10" } = req.query
+        const start = Number(offset)
+        const size = Number(limit)
+
+        return res.json({
+            ...statistics,
+            recentMatches: statistics.recentMatches.slice(start, start + size)
+        })
+    })
 
 
     // Delete the session identified by this request's token.

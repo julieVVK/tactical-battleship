@@ -62,4 +62,27 @@ text-align: center ;
     font-size: 10px;
   }
 
+}
+
+.headerDiv {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .headerDiv {
+    grid-template-columns: auto minmax(0, 1fr);
   }
+
+  .buttonContainer,
+  .textContainer {
+    min-width: 0;
+    padding: 12px;
+  }
+
+  #homeButton {
+    height: auto;
+    min-height: 32px;
+    padding: 6px;
+  }
+}

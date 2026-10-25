@@ -5,10 +5,32 @@ import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
 import { useState } from "react";
 import socket from "./socket.js";
-
+import StatisticsPage from "./components/statistics/Statistics.jsx";
+import { useEffect, useState } from "react";
+import { initializeSession } from "./session.js";
 
 function App() {
   const [screen, setScreen] = useState("menu");
+  const [session, setSession] = useState({ status: "loading", error: null });
+
+  // author: Vladyslav Doroshenko
+  // Create random user
+  useEffect(() => {
+    if (session.status !== "loading") return;
+
+    initializeSession().then(
+      () => {
+        setSession({ status: "ready", error: null });
+      },
+      (error) => {
+        setSession({ status: "error", error: error.message });
+      },
+    );
+  }, [session.status]);
+
+  function retrySession() {
+    setSession({ status: "loading", error: null });
+  }
 
   // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
   const [playerBoardData, setPlayerBoardData] = useState(null);
@@ -38,9 +60,25 @@ function App() {
 
   //TODO: Implement React Router
   /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-   *       sound and language will be stored in `const localStorage`.
+   *       sound settings still need persistence.
+   *       Language is handled by LanguageProvider.
    *       Add isDirty, savedProfile, draftProfile
    * */
+
+  // author: Vladyslav Doroshenko
+  if (session.status === "loading") {
+    return <p role="status">Connecting to the server...</p>;
+  }
+  if (session.status === "error") {
+    return (
+      <div role="alert">
+        <p>{session.error}</p>
+        <button type="button" onClick={retrySession}>
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   // author:xhaziyh00 - Declarative client-side screen switcher
   switch (screen) {
@@ -50,6 +88,7 @@ function App() {
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
           onNavigateRules={() => setScreen("rules")}
+          onNavigateStatistics={() => setScreen("statistics")}
         />
       );
 
@@ -60,15 +99,7 @@ function App() {
       return <Rules onNavigateMain={() => setScreen("menu")} />;
 
     case "ready":
-      return (
-        <GetReady
-          onGoHome={() => setScreen("menu")}
-          onStartBattle={handleStartBattle}
-          gameId={testGameId}
-          userId={testUserId}
-          socket={socket}
-        />
-      );
+      return <GetReady onGoHome={() => setScreen("menu")} onStartBattle={handleStartBattle} gameId={testGameId} userId={testUserId} socket={socket} />;
 
     case "battle":
       return (
@@ -83,6 +114,9 @@ function App() {
         />
       );
 
+    case "statistics":
+      return <StatisticsPage onHome={() => setScreen("menu")} />;
+
     default:
       // author:xhaziyh00 - Fallback to main menu if unknown screen state is passed
       return (
@@ -90,6 +124,7 @@ function App() {
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
           onNavigateRules={() => setScreen("rules")}
+          onNavigateStatistics={() => setScreen("statistics")}
         />
       );
   }

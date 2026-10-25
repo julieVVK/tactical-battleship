@@ -6,12 +6,23 @@
  * @author xhaziyh00, xslobok00
  */
 
+// Edited by Vladyslav Doroshenko
+//     - Added foreign languages support
+//       Changed lines: 13, 19, 31, 313, 322, 325, 351
+
+import { LanguageContext } from '../../i18n/LanguageContext.js';
 import React from "react";
 import Header from "../header/Header.jsx";
 import Battlefield from "../battlefield/Battlefield.jsx";
+<<<<<<< HEAD
 import Battleship from "../battleship/BattleShip";
 import { SHIPS_CONFIG } from "../../constants.js";
 import "../battlefield/battlefield.css";
+=======
+import BattleShip from "../battleship/BattleShip.jsx";
+import {SHIPS_CONFIG} from "../../constants.js";
+import "./getReady.css";
+>>>>>>> 9b7a06ffac08f2ad7b3f9b34cfe82279ff0c6c2c
 
 /**
  * GetReady class component.
@@ -24,9 +35,14 @@ import "../battlefield/battlefield.css";
  * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
 class GetReady extends React.Component {
+<<<<<<< HEAD
   // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
   constructor(props) {
     super(props);
+=======
+    static contextType = LanguageContext;
+
+>>>>>>> 9b7a06ffac08f2ad7b3f9b34cfe82279ff0c6c2c
     // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
     this.boardRef = React.createRef();
 
