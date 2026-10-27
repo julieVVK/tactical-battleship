@@ -161,6 +161,7 @@ class Battlefield extends React.Component {
       draggingShip,
       currentHoveredCell,
       canPlaceShip,
+      canShoot,
     } = this.props;
     const shouldDraw = isGetReadyScrn || !isOpponent;
 
@@ -325,11 +326,12 @@ class Battlefield extends React.Component {
                     onDrop={(e) => this.handleDrop(e, rowIndex, colIndex)}
                     onDragOver={(e) => e.preventDefault()}
                     onKeyDown={!shouldDraw ? (e) => this.handleCellKeyDown(e, rowIndex, colIndex) : undefined}
+                    disabled={isOpponent && (!canShoot || cell?.hit || cell?.miss)}
 
                     style={{
                       backgroundColor: cellBackground,
                       backgroundImage: cellBackgroundImage,
-                      cursor: !shouldDraw ? "pointer" : "default",
+                      cursor: isOpponent && canShoot && !cell?.hit && !cell?.miss ? "pointer" : "default",
                     }}>
                     {/* if radar scanned */}
                     {isZoneCenter && isOpponent && <span className="radar-percent">{scannedZone.percent}%</span>}
