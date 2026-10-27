@@ -250,6 +250,33 @@ test("HTTP actions and authenticated Socket.IO subscriptions", { timeout: 30000 
         assert.equal((await request(`/api/games/${gameId}/shots`, other.token, { row: 9, col: 8 })).data.error.code, "BATTLE_NOT_ACTIVE")
     })
 
+    await t.test("robot games accept HTTP shots and automatically return fire after a miss", async () => {
+        const player = await user("Robot")
+        const created = await request("/api/createRobotGame", player.token)
+        assert.equal(created.status, 200)
+
+        const ready = await request(`/api/games/${created.data.id}/ready`, player.token, { board })
+        assert.equal(ready.data.phase, "battle")
+
+        let current = ready.data
+        let row = 0
+        let col = 0
+        while (current.phase === "battle" && current.turnPlayerId === player.id) {
+            const shot = await request(`/api/games/${created.data.id}/shots`, player.token, { row, col })
+            assert.equal(shot.status, 200)
+            current = (await request(`/api/games/${created.data.id}`, player.token, undefined, "GET")).data
+            if (shot.data.result === "miss") break
+
+            col += 1
+            if (col === 10) {
+                row += 1
+                col = 0
+            }
+        }
+
+        assert.ok(current.players.opponent.shots.length > 0 || current.phase === "finished")
+    })
+
     await t.test("automatic reconnection re-subscribes and restores updates missed while offline", async () => {
         const { alice, bob, aliceSocket, gameId } = await match()
         await request(`/api/games/${gameId}/ready`, alice.token, { board })
