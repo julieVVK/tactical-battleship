@@ -523,16 +523,8 @@ class GetReady extends React.Component {
   };
 
   handleReadyToGo = (boardData, ships) => {
-    const payload = {
-      gameId: this.props.gameId,
-      playerId: this.props.userId,
-      board: boardData.map((row) => row.map((cell) => (cell.hasShip ? cell.shipId : null))),
-    };
-
-    console.log("send board:", payload);
-    this.props.socket.emit("readyPlayer", payload);
     if (this.props.onStartBattle) {
-      this.props.onStartBattle(boardData, ships, payload.board);
+      this.props.onStartBattle(boardData, ships);
     }
   };
 
@@ -547,6 +539,7 @@ class GetReady extends React.Component {
     return (
       <>
         <Header onGoHome={this.props.onGoHome} />
+        {this.props.gameError && <p role="alert">{this.props.gameError}</p>}
 
         <div id="containerForField">
           <Battlefield
