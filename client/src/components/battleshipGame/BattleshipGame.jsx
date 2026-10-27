@@ -52,6 +52,9 @@ class BatlleshipGame extends React.Component {
       opponentBoard: Array(10)
         .fill(null)
         .map(() => Array(10).fill({ hit: false, miss: false })),
+      gameView: props.initialGameView,
+      isFiring: false,
+      gameError: props.gameError,
       usedGadgets: [],
       scannedZones: [],
       draggingGadget: null,
@@ -60,6 +63,53 @@ class BatlleshipGame extends React.Component {
       hoveredField: null,
     };
   }
+
+  /**
+   * Updates the visual state of a game using the latest information received.
+   * 
+   * @author Marie Pindorová
+   * @param {*} view 
+   */
+  updateGameView = (view) => {
+    // shots player fired at the opponent
+    const ownShots = view.players.you.shots || [];
+    // shots fired at player
+    const incomingShots = view.players.opponent?.shots || [];
+    // creates an empty opponent board
+    const opponentBoard = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => ({ hit: false, miss: false })));
+
+    // mark player's shots at the opponent's board
+    ownShots.forEach((shot) => {
+      opponentBoard[shot.row][shot.col] = { hit: shot.result !== "miss", miss: shot.result === "miss" };
+    });
+
+    // prepare player's board
+    const boardData = this.state.boardData.map((row) => row.map((cell) => ({ ...cell, hit: false, miss: false })));
+    
+    // mark opponent's shots on player's board
+    incomingShots.forEach((shot) => {
+      boardData[shot.row][shot.col] = {
+        ...boardData[shot.row][shot.col],
+        hit: shot.result !== "miss",
+        miss: shot.result === "miss",
+      };
+    });
+
+    // count the enemy ships that have been sunk
+    const sunkCounts = new Map();
+    ownShots
+      .filter((shot) => shot.result === "sunk")
+      .forEach((shot) => sunkCounts.set(shot.cells.length, (sunkCounts.get(shot.cells.length) || 0) + 1));
+    const markedSunk = new Map();
+    const enemyShips = SHIPS_CONFIG.map((ship) => {
+      const alreadyMarked = markedSunk.get(ship.size) || 0;
+      const isKilled = alreadyMarked < (sunkCounts.get(ship.size) || 0);
+      if (isKilled) markedSunk.set(ship.size, alreadyMarked + 1);
+      return { ...ship, isKilled };
+    });
+
+    this.setState({ gameView: view, boardData, opponentBoard, enemyShips, isFiring: false, gameError: null });
+  };
 
   handleMouseMove = (e) => {
     if (!this.state.draggingGadget && !this.state.draggingShip) return;
@@ -351,8 +401,9 @@ class BatlleshipGame extends React.Component {
     });
   };
 
-  handleShot = (row, col) => {
-    const { opponentBoard } = this.state;
+  handleShot = async (row, col) => {
+    const { opponentBoard, gameView, isFiring } = this.state;
+    if (isFiring || gameView?.phase !== "battle" || gameView.turnPlayerId !== gameView.players.you.id) return;
 
     if (opponentBoard && opponentBoard[row] && opponentBoard[row][col]) {
       const targetCell = opponentBoard[row][col];
@@ -362,17 +413,35 @@ class BatlleshipGame extends React.Component {
       }
     }
 
-    const payload = {
-      gameId: this.props.gameId,
-      playerId: this.props.userId,
-      row: row,
-      col: col,
-    };
+    // author: Marie Pindorová
+    // handle failures
+    this.setState({ isFiring: true, gameError: null });
+    try {
+      const headers = {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json",
+      };
+      const response = await fetch(`/api/games/${this.props.gameId}/shots`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ row, col }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error?.message || "The shot was rejected.");
+      }
 
-    console.log("send shot on server:", payload);
-
-    if (this.props.socket) {
-      this.props.socket.emit("fireShot", payload);
+      // refresh the game state after the shot
+      const stateResponse = await fetch(`/api/games/${this.props.gameId}`, {
+        headers: { Authorization: headers.Authorization },
+      });
+      const view = await stateResponse.json();
+      if (!stateResponse.ok) {
+        throw new Error(view.error?.message || "Could not load the updated game.");
+      }
+      this.updateGameView(view);
+    } catch (error) {
+      this.setState({ isFiring: false, gameError: error.message });
     }
   };
   componentDidMount() {
@@ -399,10 +468,21 @@ class BatlleshipGame extends React.Component {
 
   render() {
     const { t } = this.context;
+    const { gameView } = this.state;
+    const isYourTurn = gameView?.phase === "battle" && gameView.turnPlayerId === gameView.players.you.id;
+    const turnMessage =
+      gameView?.phase === "finished"
+        ? gameView.winnerPlayerId === gameView.players.you.id
+          ? "turn.won"
+          : "turn.lost"
+        : isYourTurn
+          ? "turn.my_turn"
+          : "turn.opponent_turn";
     return (
       <div>
         <Header onGoHome={this.props.onGoHome} />
-
+        {this.state.gameError && <p role="alert">{this.state.gameError}</p>}
+        <p role="status">{t(turnMessage)}</p>
         <div className="battleContainer">
           <Battlefield
             title={t("game.yourFleet")}
@@ -430,7 +510,7 @@ class BatlleshipGame extends React.Component {
             scannedZones={this.state.scannedZones}
             draggingGadget={this.state.draggingGadget}
             currentHoveredCell={this.state.hoveredField === "opponent" ? this.state.currentHoveredCell : null}
-
+            canShoot={isYourTurn && !this.state.isFiring}
             onCellClick={this.handleShot}
           />
         </div>
