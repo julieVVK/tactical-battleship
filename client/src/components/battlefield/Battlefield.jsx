@@ -9,6 +9,7 @@ import React from "react";
 import { LETTERS, NUMBERS, GADGETS } from "../../constants";
 import BattleShip from "../battleship/BattleShip.jsx";
 import EnemyShipsList from "../battleshipGame/EnemyShipsList.jsx"; //xslobok00: component of enemies
+import { LanguageContext } from "../../i18n/LanguageContext.js";
 import "./battlefield.css";
 
 /**
@@ -26,6 +27,7 @@ import "./battlefield.css";
  * @property {Function} [props.onShipDragStart] - Callback when dragging a ship begins.
  */
 class Battlefield extends React.Component {
+  static contextType = LanguageContext;
   /**
    * Handles keyboard arrow navigation across the 10x10 opponent grid.
    *
@@ -148,6 +150,7 @@ class Battlefield extends React.Component {
    * @returns {JSX.Element} Grid board element.
    */
   render() {
+    const { t } = this.context;
     const {
       title,
       isOpponent,
@@ -375,7 +378,7 @@ class Battlefield extends React.Component {
                     this.props.onStartBattle(boardData, ships);
                   }
                 }}>
-                Ready to go
+                {t("game.start")}
               </button>
             ))}
 

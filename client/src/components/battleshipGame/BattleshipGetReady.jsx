@@ -10,19 +10,13 @@
 //     - Added foreign languages support
 //       Changed lines: 13, 19, 31, 313, 322, 325, 351
 
-import { LanguageContext } from '../../i18n/LanguageContext.js';
+import { LanguageContext } from "../../i18n/LanguageContext.js";
 import React from "react";
 import Header from "../header/Header.jsx";
 import Battlefield from "../battlefield/Battlefield.jsx";
-<<<<<<< HEAD
 import Battleship from "../battleship/BattleShip";
 import { SHIPS_CONFIG } from "../../constants.js";
 import "../battlefield/battlefield.css";
-=======
-import BattleShip from "../battleship/BattleShip.jsx";
-import {SHIPS_CONFIG} from "../../constants.js";
-import "./getReady.css";
->>>>>>> 9b7a06ffac08f2ad7b3f9b34cfe82279ff0c6c2c
 
 /**
  * GetReady class component.
@@ -35,14 +29,11 @@ import "./getReady.css";
  * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
 class GetReady extends React.Component {
-<<<<<<< HEAD
+  static contextType = LanguageContext;
   // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
   constructor(props) {
     super(props);
-=======
-    static contextType = LanguageContext;
 
->>>>>>> 9b7a06ffac08f2ad7b3f9b34cfe82279ff0c6c2c
     // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
     this.boardRef = React.createRef();
 
@@ -216,7 +207,7 @@ class GetReady extends React.Component {
 
   //xslobok00: rotate on r
   handleKeyDown = (e) => {
-    if (e.key === "r" || e.key === "R" || e.key === "к" || e.key === "К") {
+    if (e.code === "KeyR") {
       const { draggingShip, myShips } = this.state;
 
       // xslobok00: works with mouse + r
@@ -446,6 +437,7 @@ class GetReady extends React.Component {
       }
     }
   };
+
   // author:xhaziyh00 - Randomly place all ships
   randomizeShips = () => {
     const emptyBoard = Array(10)
@@ -505,8 +497,6 @@ class GetReady extends React.Component {
       const originalShip = myShips.find((s) => String(s.id) === String(targetShipId));
       if (!originalShip) return;
 
-      // xslobok00: take it from field
-
       const newBoard = boardData.map((row) =>
         row.map((cell) => {
           if (String(cell.shipId) === String(targetShipId)) {
@@ -517,15 +507,12 @@ class GetReady extends React.Component {
               miss: false,
             };
           }
-
           return { ...cell };
         }),
       );
 
-      // xslobok00: not in docs
       const updatedShips = myShips.map((s) => (String(s.id) === String(targetShipId) ? { ...s, isPlaced: true } : s));
 
-      // xslobok00: take a whole ship in cursor
       this.setState({
         boardData: newBoard,
         myShips: updatedShips,
@@ -551,23 +538,19 @@ class GetReady extends React.Component {
 
   /**
    * Renders the game arena: top navigation header and side-by-side battlefields.
-   *
-   * @author xhaziyh00
-   * @returns {JSX.Element} Full getReady screen layout.
    */
   render() {
+    // Взято из ветки main: поддержка переводов
+    const { t } = this.context;
     const { draggingShip, mousePos } = this.state;
 
     return (
       <>
-        {/* author:xhaziyh00 - Top navigation bar with return-to-home callback forwarding */}
         <Header onGoHome={this.props.onGoHome} />
 
-        {/* author:xhaziyh00 - Side-by-side arena container: player's fleet on the left, opponent's grid on the right */}
         <div id="containerForField">
-          {/* Player's board displaying own ship positions and reserve setup dock */}
           <Battlefield
-            title="Your fleet"
+            title={t("game.yourFleet")}
             isOpponent={false}
             isGetReadyScrn={true}
             ships={this.state.myShips}
@@ -584,7 +567,6 @@ class GetReady extends React.Component {
             canPlaceShip={this.canPlaceShip}
           />
 
-          {/* xslobok00: layer for replase and rotate in process */}
           {draggingShip && (
             <div
               style={{
@@ -602,4 +584,5 @@ class GetReady extends React.Component {
     );
   }
 }
+
 export default GetReady;

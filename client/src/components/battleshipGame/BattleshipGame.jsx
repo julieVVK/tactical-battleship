@@ -398,6 +398,7 @@ class BatlleshipGame extends React.Component {
    */
 
   render() {
+    const { t } = this.context;
     return (
       <div>
         <Header onGoHome={this.props.onGoHome} />
@@ -421,7 +422,7 @@ class BatlleshipGame extends React.Component {
           />
 
           <Battlefield
-            title="Opponent"
+            title={t("game.opponent")}
             isOpponent={true}
             boardData={this.state.opponentBoard}
             enemyShips={this.state.enemyShips}

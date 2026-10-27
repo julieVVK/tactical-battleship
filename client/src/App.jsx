@@ -3,7 +3,6 @@ import Settings from "./components/settings/Settings.jsx";
 import Rules from "./components/rulesPage/Rules.jsx";
 import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
 import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
-import { useState } from "react";
 import socket from "./socket.js";
 import StatisticsPage from "./components/statistics/Statistics.jsx";
 import { useEffect, useState } from "react";
