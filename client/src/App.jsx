@@ -11,25 +11,35 @@ function App() {
   const [screen, setScreen] = useState("menu");
   const [session, setSession] = useState({ status: "loading", error: null });
   const [robotGameId, setRobotGameId] = useState(null);
+  const [robotUserId, setRobotUserId] = useState(null);
+  const [gameView, setGameView] = useState(null);
+  const [gameError, setGameError] = useState(null);
 
   // author: Vladyslav Doroshenko
   // Create random user
   useEffect(() => {
-    if (session.status !== "loading")
-      return;
+    if (session.status !== "loading") return;
 
-    initializeSession().then( () => {
-      setSession({ status: "ready", error: null });
-    }, (error) => {
-      setSession({ status: "error", error: error.message });
-    });
+    initializeSession().then(
+      () => {
+        setSession({ status: "ready", error: null });
+      },
+      (error) => {
+        setSession({ status: "error", error: error.message });
+      },
+    );
   }, [session.status]);
 
   function retrySession() {
     setSession({ status: "loading", error: null });
   }
 
+  /**
+   * @author Marie Pindorová
+   * @returns {Promise<void>} Creates the game and navigates to the ship placement screen. 
+   */
   async function handlePlayWithPC() {
+    setGameError(null);
     try {
       const token = localStorage.getItem("token");
 
@@ -45,13 +55,14 @@ function App() {
       }
 
       const game = await response.json();
-      console.log("Robot game created:", game);
-
       setRobotGameId(game.id);
+      setRobotUserId(game.players.you.id);
+      setGameView(game);
       setScreen("ready");
 
     } catch (error) {
       console.error("Could not start robot game:", error);
+      setGameError(error.message);
     }
   }
 
@@ -61,7 +72,6 @@ function App() {
 
   // author:xhaziyh00 - Persisted player ships registry holding orientation and placement states
   const [playerShips, setPlayerShips] = useState(null);
-
   /**
    * Transition callback from preparation dock to active combat arena.
    * Caches finalized fleet configuration and triggers battle screen mount.
@@ -71,17 +81,44 @@ function App() {
    * @param {Array<Object>} ships - List of configured ship entities.
    */
 
-  const handleStartBattle = (boardData, ships) => {
-    setPlayerBoardData(boardData);
-    setPlayerShips(ships);
-    setScreen("battle");
+  // author: Marie Pindorová
+  const handleStartBattle = async (boardData, ships) => {
+    setGameError(null);
+    try {
+      if (!robotGameId) {
+        throw new Error("Create a game against the computer before starting battle.");
+      }
+
+      const board = boardData.map((row) => row.map((cell) => (cell.hasShip ? String(cell.shipId) : null)));
+      const response = await fetch(`/api/games/${robotGameId}/ready`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ board }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error?.message || "Could not submit your fleet.");
+      }
+
+      setPlayerBoardData(boardData);
+      setPlayerShips(ships);
+      setGameView(result);
+      setScreen("battle");
+    } catch (error) {
+      console.error("Could not start battle:", error);
+      setGameError(error.message);
+    }
   };
 
   //TODO: Implement React Router
   /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-  *       sound and language will be stored in `const localStorage`.
-  *       Add isDirty, savedProfile, draftProfile
-  * */
+   *       sound settings still need persistence.
+   *       Language is handled by LanguageProvider.
+   *       Add isDirty, savedProfile, draftProfile
+   * */
 
   // author: Vladyslav Doroshenko
   if (session.status === "loading") {
@@ -91,7 +128,9 @@ function App() {
     return (
       <div role="alert">
         <p>{session.error}</p>
-        <button type="button" onClick={retrySession}>Try again</button>
+        <button type="button" onClick={retrySession}>
+          Try again
+        </button>
       </div>
     );
   }
@@ -102,6 +141,7 @@ function App() {
       return (
         <MainPage
           onPlayWithPC={handlePlayWithPC}
+          gameError={gameError}
           onStartGame={() => setScreen("ready")}
           onNavigateSettings={() => setScreen("settings")}
           onNavigateRules={() => setScreen("rules")}
@@ -116,13 +156,7 @@ function App() {
       return <Rules onNavigateMain={() => setScreen("menu")} />;
 
     case "ready":
-      return (
-        <GetReady
-          gameId={robotGameId}
-          onGoHome={() => setScreen("menu")}
-          onStartBattle={handleStartBattle}
-        />
-      );
+      return <GetReady onGoHome={() => setScreen("menu")} onStartBattle={handleStartBattle} gameError={gameError} />;
 
     case "battle":
       return (
@@ -130,15 +164,15 @@ function App() {
           onGoHome={() => setScreen("menu")}
           initialBoardData={playerBoardData}
           initialShips={playerShips}
+          initialGameView={gameView}
+          gameId={robotGameId}
+          userId={robotUserId}
+          gameError={gameError}
         />
       );
 
     case "statistics":
-      return (
-        <StatisticsPage
-          onHome={() => setScreen("menu")}
-        />
-      );
+      return <StatisticsPage onHome={() => setScreen("menu")} />;
 
     default:
       // author:xhaziyh00 - Fallback to main menu if unknown screen state is passed

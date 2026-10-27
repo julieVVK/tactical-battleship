@@ -11,13 +11,76 @@
   align-items: flex-start;
   gap: 24px;
   width: 100%;
-  margin-left: 5px;
+  height: 650px;
+}
+#draggingGadget{
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    font-size: 40px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+}
+#draggingShip{
+z-index: 9999;
+position: fixed;
+pointer-events: none;
+
 }
 
 /* author:xhaziyh00 - Mobile & narrow screen breakpoint: stack vertically with enemy on top */
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .battleContainer {
     flex-direction: column-reverse; 
     align-items: center;
+    height: 1500px;
+  }
+}
+  @media (max-height: 620px) {
+  
+  .mainField{
+    
+  width: 290px;
+  }
+  .battleContainer{
+    height: 400px;
+  }
+  #containerForField,#root{
+    height: 90%;
+  }
+  }
+  @media (max-width: 450px) {
+  
+  .mainField{
+    width: 315px;
+  }
+  .battleContainer{
+    height: 1300px;
+  }
+}
+
+@media (max-width: 320px) {
+  
+  .mainField{
+    
+  width: 290px;
+  }
+  .battleContainer{
+    height: 1200px;
+  }
+  }
+  @media (max-width: 450px) {
+  
+  .mainField{
+    width: 315px;
+  }
+  .battleContainer{
+    height: 1300px;
   }
 }
