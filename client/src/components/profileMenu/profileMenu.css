@@ -3,10 +3,14 @@ File was created by Vladyslav Doroshenko
 */
 
 .profile-menu {
+    position: absolute;
+    top: 3rem;
+    right: 1.5rem;
+    z-index: 2;
     display: flex;
     justify-content: flex-end;
     width: 16rem;
-    max-width: calc(100vw - 20rem);
+    max-width: calc(100vw - 3rem);
 }
 
 .profile-menu-toggle {

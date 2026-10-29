@@ -1,35 +1,10 @@
 /* author: Marie Pindorová xpindom00 */
 
 .htp-wrap {
-    --text-btn-color: #243E59;
-    --page-bg: #F5F3EB;
-    --avatar-bg: #E4EDF0;
-    --hit-mark: #C56A4D;
-    --ship-border: #375F76;
-    --ship-bg: #A9C6D2;
-    --btn-hover-bg: #284866;
-    --btn-hover-text: #F0EEE5;
-    --text-subtitle: #697E8C;
-    --frame-border: #B4C5CC;
-}
-
-.htp-wrap,
-.htp-wrap * {
-  box-sizing: border-box;
-  font-family: 'IBM Plex Sans', sans-serif;
-}
-
-.htp-wrap {
-  margin: 0;
-  background-color: var(--page-bg);
-}
-
-.htp-wrap {
   width: 100%;
-  background: var(--page-bg);
-  padding: 32px 5vw 48px;
+  background: var(--signout-bg);
+  padding: 3rem 5vw 48px;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--text-btn-color);
 }
 
@@ -37,58 +12,26 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 3.5rem;
   margin-bottom: 32px;
 }
 
 .htp-wrap .home-btn {
-  height: 50px;
-  width: 100px;
+  display: inline-flex;
+  justify-content: center;
+  text-decoration: none;
   align-items: center;
   gap: 6px;
   padding: 10px 18px;
   border: 1px solid var(--text-btn-color);
   border-radius: 3px;
-  background: transparent;
-  color: var(--text-btn-color);
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-.htp-wrap .home-btn:hover {
-  background-color: var(--btn-hover-bg);
-  color: var(--btn-hover-text);
-  border-color: var(--btn-hover-bg);
-}
-
-.htp-wrap .home-btn:active {
-  transform: translateY(1px) scale(0.97);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
-}
-
-.htp-wrap .avatar-btn {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: 1px solid var(--text-btn-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-btn-color);
-  background-color: var(--avatar-bg);
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.htp-wrap .avatar-btn:hover {
-  background-color: var(--btn-hover-bg);
-  color: var(--btn-hover-text);
-}
-
-.htp-wrap .avatar-btn:active {
-  transform: scale(0.93);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+.htp-wrap .profile-menu-panel {
+  width: 16rem;
+  max-width: calc(100vw - 36px);
 }
 
 .htp-wrap h1 {
@@ -98,7 +41,7 @@
 
 .htp-wrap .subtitle {
   margin: 0 0 24px;
-  color: var(--text-subtitle);
+  color: var(--text-btn-color);
   font-size: 15px;
 }
 
@@ -110,7 +53,8 @@
 }
 
 .step-card {
-  border: 1px solid var(--frame-border);
+  background: var(--page-bg);
+  border: 1px solid var(--text-btn-color);
   border-radius: 3px;
   padding: 24px 28px;
 }
@@ -135,7 +79,7 @@
 }
 
 .step-card .lead {
-  color: var(--text-subtitle);
+  color: var(--text-btn-color);
   font-size: 14px;
   margin-bottom: 18px;
 }
@@ -195,7 +139,7 @@
 .ship-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--text-btn-color);
 }
 
 .shot-legend {
@@ -207,7 +151,7 @@
 }
 
 .shot-legend .hit { color: var(--hit-mark); }
-.shot-legend .miss { color: var(--text-subtitle); }
+.shot-legend .miss { color: var(--text-btn-color); }
 
 .info-banner {
   background: var(--avatar-bg);
@@ -224,10 +168,10 @@
 .info-banner p {
   margin: 0;
   font-size: 14px;
-  color: var(--text-dark);
+  color: var(--text-btn-color);
 }
 
 @media (max-width: 760px) {
   .step-grid { grid-template-columns: 1fr; }
-  .htp-wrap { padding: 24px 18px 32px; }
+  .htp-wrap { padding: 3rem 18px 32px; }
 }

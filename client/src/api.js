@@ -1,4 +1,6 @@
 /*
+File was created by Yuliia Vovk
+
 api.js will be the place where your frontend sends game requests to the backend.
 
 Each request needs to:
@@ -11,55 +13,76 @@ Each request needs to:
 
 */
 
-async function request(path, options = {method: 'GET', body}) {
-    const token = localStorage.getItem('token');
+async function request(path, { method = "GET", body } = {}) {
+    const token = localStorage.getItem('token')
     if (!token) {
-        throw new Error('No token found.');}
-    const headers = { Authorization: `Bearer ${token}` };
-    if (body != undefined) {
-        headers['Content-Type'] = 'application/json';
-        options.body = JSON.stringify(body);
+        throw new Error('No token found.')}
+    const headers = { Authorization: `Bearer ${token}` }
+
+    if (body !== undefined) {
+        headers['Content-Type'] = 'application/json'
     }
-    const response = await fetch('/api${path}', {
+
+    const response = await fetch(`/api${path}`, {
         method,
         headers,
-        body: body != undefined ? JSON.stringify(body) : undefined
-    });
-    const data = response.status === 204 ? null : await response.json();
+        body: body !== undefined ? JSON.stringify(body) : undefined
+    })
+
+    const data = response.status === 204 ? null : await response.json()
     if (!response.ok) {
-        const error = new Error(`Request failed with status ${response.status}`);
-        error.status = response.status;
-        error.code = response.status;
-        error.data = data;
-        throw error;
+        const error = new Error(data?.error?.message ?? `Request failed with status ${response.status}`)
+        error.status = response.status
+        error.code = data?.error?.code
+        error.data = data
+        throw error
     }
-    return data;
+    return data
+}
+
+// author: Vladyslav Doroshenko
+export function getGameCode(value) {
+    let code = value.trim()
+
+    // - ^          means start of the string
+    // - http       means just http text
+    // - s?         means that s can but must not be there
+    // - \/\/       two '/' symbols
+    // - i          case insensitive
+    // .test(code)  returns true or false whether a string passed regex or not
+    if (/^https?:\/\//i.test(code)) {
+        // extract code from th url string we got
+        code = new URL(code).searchParams.get("code") ?? ""
+    }
+
+    if (!/^[a-f0-9]{6}$/i.test(code)) {
+        throw new Error("Enter a six-character game code or a lobby invitation link.")
+    }
+    return code.toUpperCase()
 }
 
 export function createGame() {
     return request("/createGames", {
         method: "POST",
-    });
+    })
 }
 
 export function joinGame(gameId) {
-    const code = encodeURIComponent(gameId.trim().toUpperCase());
-
-    return request(`/games/${code}/join`, {
+    return request(`/games/${gameId}/join`, {
         method: "POST",
-    });
+    })
 }
 
 export function getGame(gameId) {
-    const code = encodeURIComponent(gameId.trim().toUpperCase());
+    const code = getGameCode(gameId)
 
-    return request(`/games/${code}`);
+    return request(`/games/${code}`)
 }
 
 export function unreadyGame(gameId) {
-    const code = encodeURIComponent(gameId.trim().toUpperCase());
+    const code = getGameCode(gameId)
 
     return request(`/games/${code}/unready`, {
         method: "POST",
-    });
+    })
 }

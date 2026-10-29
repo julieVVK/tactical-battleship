@@ -5,12 +5,11 @@ import Ship from "../ship/Ship.jsx";
 import ProfileMenu from "../profileMenu/ProfileMenu.jsx";
 import Button from "../button/Button.jsx";
 import "./mainPage.css";
-import { useLocation, useNavigate } from "react-router";
+import { Navigate, useLocation, useNavigate } from "react-router";
 
 
-function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigateStatistics }) {
+function MainPage({ lobby }) {
     const { t } = useLanguage();
-
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -23,83 +22,62 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
 
     const lobbyView = pathToView[location.pathname] ?? "home";
 
-    const [lobbyCode, setLobbyCode] = useState("");
-
-    const [lobby, setLobby] = useState({
-        code: "",
-        status: "idle", // statuses: "idle", "created", "joined", "error"
-        players: []
-        //error: null
-    });
-
+    const [lobbyCode, setLobbyCode] = useState(() =>
+        new URLSearchParams(location.search).get("code") ?? ""
+    );
+    const { game, pending, error, connectionError, openLobby } = lobby;
     const [message, setMessage] = useState("");
 
-    const handleCopy = async () => {
-    if (!lobby.code) return;
+    const handleCopy = async (value) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            setMessage("Copied!");
+        } catch {
+            setMessage("Could not copy. You can select and copy the code above.");
+        }
+    };
 
-    try {
-        await navigator.clipboard.writeText(lobby.code);
-        setMessage("Lobby code copied!");
-    } 
-        catch {
-        setMessage("Could not copy the lobby code.");
+    const handleCreate = async () => {
+        setMessage("");
+        const view = await openLobby();
+        if (view) navigate("/lobby/create");
+    };
+
+    const handleJoin = async (event) => {
+        event.preventDefault();
+        setMessage("");
+        const view = await openLobby(lobbyCode);
+        if (view) navigate("/lobby/create");
+    };
+
+    if (lobbyView === "create" && game?.players.opponent) {
+        return <Navigate to="/ready" replace />;
     }
-    };
-
-    const handleCreate = () => {
-        // https://www.geeksforgeeks.org/reactjs/how-to-generate-random-number-in-react-js/
-        // https://stackoverflow.com/questions/1349404/generate-a-string-of-random-characters
-        const generateCode = (Math.random()+1).toString(36).substring(2, 8).toUpperCase();
-        setLobby({
-            code: generateCode,
-            status: "created",
-            players: ["Player 1"]
-            //error: null
-        });
-    setMessage(`Lobby created! Code: ${generateCode}`);
-    navigate("/lobby/create");
-    };
-
-    const handleJoin = (e) => {
-        e.preventDefault();
-        const code = lobbyCode.trim().toUpperCase();
-        if (!code) return;
-        setLobby({
-            code: code,
-            status: "joined",
-            players: ["Player 1", "Player 2"]
-            //error: null
-        });
-        setMessage(`Joined lobby with code: ${code}`);
-        navigate("/lobby/join");
-    };  
-    
-    const handleLeave = () => {
-    setLobby({
-        code: "",
-        status: "idle",
-        players: []
-        //error: null
-    });
-    setLobbyCode("");
-    setMessage("");
-    navigate("/lobby");
-    };
-
 
 
     return (
         <>
             <div className="main-page">
                 <Ship />
-                <ProfileMenu onNavigateStatistics={onNavigateStatistics}/>
+                <ProfileMenu />
 
 
                 <div className="main-page-content">
                 <h1 className="main-page-title">{t("app.title")}</h1>
 
+                {error && (
+                    <div role="alert" className="lobby-message">
+                        <p>{error}</p>
+                    </div>
+                )}
+                {connectionError && (
+                    <div role="alert" className="lobby-message">
+                        <p>{connectionError}</p>
+                    </div>
+                )}
+
                 {/* STATE 1 - HOME */}
-                {lobbyView == "home" && (
+                {lobbyView === "home" && (
                     <>
                         <div className="main-page-dialogue">
                             <h2 className="mainPageh1">{t("menu.play")}</h2>
@@ -111,7 +89,7 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
 
                                 <Button
                                     variant="dark"
-                                    onClick={() => navigate("/lobby")}
+                                    to="/lobby"
                                 >
                                     {t("menu.twoPlayers")}
                                 </Button>
@@ -126,7 +104,7 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                             <Button
                                 className="main-page-rules"
                                 variant="light"
-                                onClick={onNavigateRules}
+                                to="/rules"
                             >
                                 {t("nav.rules")}
                             </Button>
@@ -134,7 +112,7 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                             <Button
                                 className="main-page-rules"
                                 variant="light"
-                                onClick={onNavigateSettings}
+                                to="/settings"
                             >
                                 {t("nav.settings")}
                             </Button>
@@ -143,7 +121,7 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                 )}
 
                 {/* STATE 2 - LOBBY */}
-                {lobbyView == "lobby" && (
+                {lobbyView === "lobby" && (
                     <>
                         <div className="main-page-dialogue lobby-dialogue">
                             <h2 className="mainPageh1">Lobby</h2>
@@ -158,7 +136,7 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                                 }}>
                                 <Button style={{ width: "100%", padding: "0.5rem 1rem" }}
                                     variant="light"
-                                    onClick={() => navigate("/lobby/join")}
+                                    to="/lobby/join"
                                 >
                                     Join
                                 </Button>
@@ -166,8 +144,9 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                                 <Button style={{ width: "100%", padding: "0.5rem 1rem" }}
                                     variant="dark"
                                     onClick={handleCreate}
+                                    disabled={pending}
                                 >
-                                    Create
+                                    {pending ? "Connecting..." : game ? "Open lobby" : "Create"}
                                 </Button>
                             </div>
                             </div>
@@ -176,12 +155,8 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                 )}
 
                 {/* STATE 3 - JOIN LOBBY */}
-                {lobbyView == "join" && (
+                {lobbyView === "join" && (
                     <>
-                        <p className="lobby-subtitle">
-                            A classic game of hide and seek at sea
-                        </p>
-
                         <div className="main-page-dialogue lobby-dialogue" >
                             <form className="lobby-form" onSubmit={handleJoin}>
 
@@ -194,12 +169,12 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                                 <input 
                                     style={{ textTransform: "uppercase",
                                              alignContent: "center",
-                                             width: "100%",
-                                             height: "2rem"}}
+                                             width: "100%"}}
                                     id="lobby-code"
                                     type="text"
                                     value={lobbyCode}
-                                    onChange={(e) => setLobbyCode(e.target.value)}
+                                    onChange={(e) => { setLobbyCode(e.target.value); setMessage(""); }}
+                                    disabled={pending}
                                     placeholder="ABC123 or paste a lobby link"
                                     required
                                 />
@@ -208,8 +183,8 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                                     Both formats work. Paste the full invitation link.
                                 </p>
 
-                                <Button variant="dark" type="submit" style={{ width: "100%", padding: "0.5rem 1rem" }}>
-                                    Join lobby
+                                <Button variant="dark" type="submit" disabled={pending} style={{ width: "100%", padding: "0.5rem 1rem" }}>
+                                    {pending ? "Joining..." : "Join lobby"}
                                 </Button>
                                 {message && (
                                 <p role="status" className="lobby-message">
@@ -222,73 +197,62 @@ function MainPage({ onNavigateSettings, onNavigateRules, onStartGame, onNavigate
                 )}
 
                 {/* STATE 4 - CREATE LOBBY */}
-                {lobbyView == "create" && (
+                {lobbyView === "create" && (
                     <>
-                        <p className="lobby-subtitle">
-                            A classic game of hide and seek at sea.
-                        </p>
-
                         <div className="main-page-dialogue lobby-dialogue">
                             <div className="lobby-form">
-                                <h2 className="mainPageh1">Create a lobby</h2>
+                                <h2 className="mainPageh1">{game ? "Your lobby" : "Create a lobby"}</h2>
 
                                 <label htmlFor="invite-code">
                                     Your lobby code
                                 </label>
 
-                                <input  style={{ textTransform: "uppercase",
-                                             alignContent: "center",
-                                             width: "100%",
-                                             height: "2rem"}}
+                                <button
+                                    type="button"
                                     id="invite-code"
                                     className="lobby-generated-code"
-                                    value={lobby.code}
-                                    readOnly
-                                />
+                                    disabled={!game}
+                                    aria-label="Copy lobby code"
+                                    title="Click to copy code"
+                                    onClick={() => handleCopy(game.id)}
+                                >
+                                    {game?.id ?? ""}
+                                </button>
                                 
-                                {lobby.status === "created" && (
-                                    <div className="lobby-info">
-                                        <p>Status: Lobby created</p>
-                                        <p>Players: {lobby.players.join(", ")}</p>
-                                    </div>
-                )}
+                                {game ? (
+                                    <>
+                                        <Button
+                                            variant="light"
+                                            style={{ alignSelf: "center" }}
+                                            onClick={() => handleCopy(`${window.location.origin}/lobby/join?code=${game.id}`)}>
+                                            Copy invitation link
+                                        </Button>
 
-                                <p className="lobby-hint">
-                                    Share this code with a friend to invite them.
-                                </p>
-
-                                <Button variant="dark" onClick={handleCopy} style={{ width: "100%", padding: "0.5rem 1rem" }}>
-                                    Copy code
-                                </Button>
-
-                                {message && (
-                                <p role="status" className="lobby-message">
-                                    {message}
-                                </p>
+                                        <p className="lobby-hint">
+                                            Share this code or an invitation link with a friend.
+                                        </p>
+                                        {message && <p role="status" className="lobby-message">{message}</p>}
+                                        <p role="status" className="lobby-waiting">Waiting for another player...</p>
+                                    </>
+                                ) : (
+                                    <Button variant="dark" onClick={handleCreate} disabled={pending}>
+                                        {pending ? "Connecting..." : "Create lobby"}
+                                    </Button>
                                 )}
-                                <p className="lobby-waiting">
-                                    o Waiting for another player...
-                                </p>
                             </div>
                         </div>
                     </>
                 )}
 
                 {/* BACK BUTTON */}
-                {lobbyView != "home" && (
-                    <button style={{ width: "40%", padding: "0.5rem 1rem" }}
-                        type="button"
+                {lobbyView !== "home" && (
+                    <Button style={{ width: "40%", padding: "0.5rem 1rem" }}
                         className="lobby-back"
-                        onClick={() => {
-                            if (lobbyView == "lobby") {
-                                navigate("/");
-                            } else {
-                                handleLeave();
-                            }
-                        }}
+                        to={lobbyView === "lobby" ? "/" : "/lobby"}
+                        onClick={() => setMessage("")}
                     >
                         Back
-                    </button>
+                    </Button>
                 )}
                 </div>
             </div>

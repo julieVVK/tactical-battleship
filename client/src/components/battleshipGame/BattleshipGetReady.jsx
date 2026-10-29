@@ -23,7 +23,6 @@ import "./getReady.css";
  *
  * @author xhaziyh00
  * @property {Object} props - Component input properties.
- * @property {Function} props.onGoHome - Callback function to return to the main menu screen.
  * @property {Object} state - Component internal state.
  * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
@@ -142,7 +141,7 @@ class GetReady extends React.Component {
         }
     };
 
-    handleCellDrop = (e, rowIndex, colIndex) => {
+    handleCellDrop = (e) => {
         e.preventDefault();
         !this.handleGlobalMouseUp();
     };
@@ -315,8 +314,7 @@ class GetReady extends React.Component {
 
         return (
             <>
-                {/* author:xhaziyh00 - Top navigation bar with return-to-home callback forwarding */}
-                <Header onGoHome={this.props.onGoHome}/>
+                <Header/>
 
                 {/* author:xhaziyh00 - Side-by-side arena container: player's fleet on the left, opponent's grid on the right */}
                 <div className="preparation-fields">
@@ -338,7 +336,6 @@ class GetReady extends React.Component {
                             console.log("BOARD BEFORE SENDING TO APP:", this.state.boardData);
                             this.props.onStartBattle(
                                 this.state.boardData,
-                                this.state.myShips,
                             );
                         }}
                         style={{

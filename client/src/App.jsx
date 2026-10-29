@@ -1,159 +1,114 @@
-import MainPage from "./components/mainPage/MainPage.jsx";
-import Settings from "./components/settings/Settings.jsx";
-import Rules from "./components/rulesPage/Rules.jsx";
-import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
-import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
-import StatisticsPage from "./components/statistics/Statistics.jsx";
-import { useEffect, useState } from "react";
-import { initializeSession } from "./session.js";
-import {Routes, Route, useNavigate} from "react-router";
+/* @authors:
+    Yuliia Vovk: React Router
+    Haziy Hosha: player board data passing
+    Vladyslav Doroshenko: React Router
+*/
+
+import MainPage from "./components/mainPage/MainPage.jsx"
+import Settings from "./components/settings/Settings.jsx"
+import Rules from "./components/rulesPage/Rules.jsx"
+import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx"
+import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx"
+import StatisticsPage from "./components/statistics/Statistics.jsx"
+import {useEffect, useState} from "react"
+import {initializeSession} from "./session.js"
+import {Navigate, Routes, Route, useNavigate} from "react-router"
+import {useLobby} from "./useLobby.js"
 
 function App() {
-  const navigate = useNavigate();
-  const [screen, setScreen] = useState("menu");
-  const [session, setSession] = useState({ status: "loading", error: null });
-
-  // author: Vladyslav Doroshenko
-  // Create random user
-  useEffect(() => {
-    if (session.status !== "loading")
-      return;
-
-    initializeSession().then( () => {
-      setSession({ status: "ready", error: null });
-    }, (error) => {
-      setSession({ status: "error", error: error.message });
-    });
-  }, [session.status]);
-
-  function retrySession() {
-    setSession({ status: "loading", error: null });
-  }
+    const navigate = useNavigate()
+    const [session, setSession] = useState({status: "loading", error: null})
+    const lobby = useLobby(session.status === "ready")
 
 
-  // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
-  const [playerBoardData, setPlayerBoardData] = useState(null);
+    // author: Vladyslav Doroshenko
+    // Create random user
+    useEffect(() => {
+        if (session.status !== "loading")
+            return
 
-  // author:xhaziyh00 - Persisted player ships registry holding orientation and placement states
-  const [playerShips, setPlayerShips] = useState(null);
+        // Ignore this effect's result after cleanup. The request itself still runs.
+        let cancelled = false
 
-  /**
-   * Transition callback from preparation dock to active combat arena.
-   * Caches finalized fleet configuration and triggers battle screen mount.
-   *
-   * @author xhaziyh00
-   * @param {Array<Array<Object>>} boardData - Populated 10x10 board matrix.
-   * @param {Array<Object>} ships - List of configured ship entities.
-   */
+        initializeSession().then(() => {
 
-  const handleStartBattle = (boardData, ships) => {
-    setPlayerBoardData(boardData);
-    setPlayerShips(ships);
-    setScreen("battle");
-  };
+            if (cancelled) return
+            setSession({status: "ready", error: null})
 
-  //TODO: Implement React Router
-  /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-  *       sound settings still need persistence.
-  *       Language is handled by LanguageProvider.
-  *       Add isDirty, savedProfile, draftProfile
-  * */
+        }, (error) => {
 
-  // author: Vladyslav Doroshenko
-  if (session.status === "loading") {
-    return <p role="status">Connecting to the server...</p>;
-  }
-  if (session.status === "error") {
+            if (cancelled) return
+            setSession({status: "error", error: error.message})
+
+        })
+
+        return () => {
+            cancelled = true
+        }
+
+    }, [session.status])
+
+
+    function retrySession() {
+        setSession({status: "loading", error: null})
+    }
+
+
+    // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
+    const [playerBoardData, setPlayerBoardData] = useState(null)
+
+    const handleStartBattle = (boardData) => {
+        setPlayerBoardData(boardData)
+        navigate("/game")
+    }
+
+
+    /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
+    *       sound settings still need persistence.
+    *  EDIT: cancell saving settings, nobody gives a fuck
+    *        could have done it through local storage or cookies
+    * */
+
+
+    // author: Vladyslav Doroshenko
+    if (session.status === "loading") {
+        return <p role="status">Connecting to the server...</p>
+    }
+    if (session.status === "error") {
+        return (
+            <div role="alert">
+                <p>{session.error}</p>
+                <button type="button" onClick={retrySession}>Try again</button>
+            </div>
+        )
+    }
+
+
+    const menu = <MainPage lobby={lobby}/>
+
+
     return (
-      <div role="alert">
-        <p>{session.error}</p>
-        <button type="button" onClick={retrySession}>Try again</button>
-      </div>
-    );
-  }
-
-
-
-  return(
-    <Routes>
-      <Route path="/" element={
-        <MainPage
-          onNavigateSettings={() => navigate("/settings")}
-          onNavigateRules={() => navigate("/rules")}
-          onNavigateStatistics={() => navigate("/statistics")}
-          onStartGame={() => navigate("/ready")}
-        /> } />
-        <Route
-          path="/lobby" element={<MainPage />} />
-      <Route 
-        path = "/lobby/create" element = {<MainPage />} />
-      <Route
-        path = "/lobby/join" element = {<MainPage />} />
-      <Route
-        path="/settings" element={<Settings onNavigateMain={() => navigate("/")} />} />
-      <Route
-        path="/rules" element={<Rules onNavigateMain={() => navigate("/")} />} />
-      <Route
-        path="/statistics" element={<StatisticsPage onHome={() => navigate("/")} />} />
-      <Route
-        path="/ready" element={<GetReady onGoHome={() => navigate("/")} onStartBattle={handleStartBattle} />} />
-    </Routes>
-  )
-  // author:xhaziyh00 - Declarative client-side screen switcher
-  /*
-  switch (screen) {
-    case "menu":
-      return (
-        <MainPage
-          onStartGame={() => setScreen("ready")}
-          onNavigateSettings={() => setScreen("settings")}
-          onNavigateRules={() => setScreen("rules")}
-          onNavigateStatistics={() => setScreen("statistics")}
-        />
-      );
-
-    case "settings":
-      return <Settings onNavigateMain={() => setScreen("menu")} />;
-
-    case "rules":
-      return <Rules onNavigateMain={() => setScreen("menu")} />;
-
-    case "ready":
-      return (
-        <GetReady
-          onGoHome={() => setScreen("menu")}
-          onStartBattle={handleStartBattle}
-        />
-      );
-
-    case "battle":
-      return (
-        <BattleshipGame
-          onGoHome={() => setScreen("menu")}
-          initialBoardData={playerBoardData}
-          initialShips={playerShips}
-        />
-      );
-
-    case "statistics":
-      return (
-        <StatisticsPage
-          onHome={() => setScreen("menu")}
-        />
-      );
-
-    default:
-      // author:xhaziyh00 - Fallback to main menu if unknown screen state is passed
-      return (
-        <MainPage
-          onStartGame={() => setScreen("ready")}
-          onNavigateSettings={() => setScreen("settings")}
-          onNavigateRules={() => setScreen("rules")}
-          onNavigateStatistics={() => setScreen("statistics")}
-        />
-      );
-  }
+        <Routes>
+            <Route path="/" element={menu}/>
+            <Route path="/lobby" element={menu}/>
+            <Route path="/lobby/create" element={menu}/>
+            <Route path="/lobby/join" element={menu}/>
+            <Route path="/settings" element={<Settings/>}/>
+            <Route path="/rules" element={<Rules/>}/>
+            <Route path="/statistics" element={<StatisticsPage/>}/>
+            <Route path="/ready" element={
+                                     lobby.game?.players.opponent ?
+                                             <GetReady onStartBattle={handleStartBattle}/> :
+                                             <Navigate to="/lobby" replace/>
+                                 }/>
+            <Route path="/game" element={
+                                    playerBoardData ?
+                                        <BattleshipGame initialBoardData={playerBoardData}/> :
+                                        <Navigate to="/ready" replace/>
+                                }/>
+            <Route path="*" element={<Navigate to="/" replace/>}/>
+        </Routes>
+    )
 }
-  */
-}
-export default App;
+
+export default App
