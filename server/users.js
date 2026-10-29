@@ -1,5 +1,6 @@
 // File was created by Vladyslav Doroshenko
 
+import crypto from "node:crypto"
 import fail from "./error.js"
 
 const users = new Map();
@@ -29,6 +30,17 @@ export const createUser = (userId, userName) => {
 
     users.set(user.id, user)
     return {...user}
+}
+
+
+export const createGuest = () => {
+    let userId
+
+    do {
+        userId = crypto.randomUUID()
+    } while (users.has(userId))
+
+    return createUser(userId, "Guest")
 }
 
 
