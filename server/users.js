@@ -39,6 +39,7 @@ export const getUser = (userId) => {
 }
 
 
+// TODO: Current online on the main page?
 export const getUsers = () => {
     return structuredClone(Array.from(users.values()))
 }

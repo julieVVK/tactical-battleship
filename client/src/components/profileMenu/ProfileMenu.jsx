@@ -5,19 +5,19 @@ import { useEffect, useRef, useState } from "react";
 
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
+import { Link } from "react-router";
 
 
-function ProfileMenu({ onNavigateStatistics }) {
+function ProfileMenu() {
     const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const containerRef = useRef(null);
 
-    //TODO: connect React Router to this
     const menu_items = {
-        "account.profile" : "#Profile",
-        "account.statistics": "#Statistics",
-        "account.matchHistory": "#MatchHistory",
+        "nav.settings" : "/settings",
+        "account.statistics": "/statistics",
+        "account.matchHistory": "/statistics#match-history",
     }
 
     useEffect(() => {
@@ -77,9 +77,9 @@ function ProfileMenu({ onNavigateStatistics }) {
             }
 
             localStorage.removeItem("token");
-            localStorage.removeItem("gameId");
             alert(t('account.signedOut'));
-            location.reload();
+            // Reload the app to initialize a new guest after signing out.
+            window.location.replace("/");
         } catch (error) {
             alert(t('account.signOutFailed') + '\n' + t(
                 error.message === 'account.signOutServerError'
@@ -116,22 +116,16 @@ function ProfileMenu({ onNavigateStatistics }) {
 
                 <div className="profile-menu-items">
 
-                    {Object.entries(menu_items).map( ([label]) => {
+                    {Object.entries(menu_items).map( ([label, path]) => {
                      return (
-                        <button
-                            type="button"
+                        <Link
+                            to={path}
                             className="profile-menu-item"
                             key={label}
-                            onClick={ () => {
-                                setIsOpen(false)
-                                
-                                if (label === "Statistics") {
-                                    onNavigateStatistics?.();
-                                }
-                            } }
+                            onClick={() => setIsOpen(false)}
                         >
                             {t(label)}
-                        </button>
+                        </Link>
                      );
                     })}
 

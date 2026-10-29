@@ -17,12 +17,14 @@ import "./battlefield.css";
  * @property {Object} props - Component properties.
  * @property {string} props.title - Field title ("Your fleet", "Opponent").
  * @property {boolean} props.isOpponent - True for enemy field (hides ships, enables targeting clicks).
+ * @property {boolean} [props.isGetReadyScrn=false] - Shows the fleet preparation dock.
  * @property {Array<Array<Object>>} [props.boardData] - 10x10 matrix holding cell statuses (hasShip, hit, miss).
  * @property {Array<Object>} [props.ships=[]] - Array of player ships for the setup dock.
  * @property {Function} [props.onCellClick] - Callback triggered when a cell is clicked.
  * @property {Function} [props.onCellDragOver] - HTML5 drag-over callback for ship placement.
  * @property {Function} [props.onCellDrop] - HTML5 drop callback for ship placement.
  * @property {Function} [props.onShipDragStart] - Callback when dragging a ship begins.
+ * @property {Function} [props.onPlacedShipDragStart] - Callback when taking a placed ship from the board.
  */
 class Battlefield extends React.Component {
   /**
@@ -72,7 +74,7 @@ class Battlefield extends React.Component {
    * @param {number} colIndex - Column coordinate (0-9).
    */
   handleCellClick = (rowIndex, colIndex) => {
-    const { onCellClick } = this.props;
+    const { onCellClick = undefined } = this.props;
     if (onCellClick) onCellClick(rowIndex, colIndex);
   };
 
@@ -85,7 +87,7 @@ class Battlefield extends React.Component {
    * @param {number} colIndex - Target column.
    */
   handleDragOver = (e, rowIndex, colIndex) => {
-    const { isOpponent, onCellDragOver } = this.props;
+    const { isOpponent, onCellDragOver = undefined } = this.props;
     if (!isOpponent && onCellDragOver) {
       e.preventDefault();
       onCellDragOver(e, rowIndex, colIndex);
@@ -101,7 +103,7 @@ class Battlefield extends React.Component {
    * @param {number} colIndex - Target column.
    */
   handleDrop = (e, rowIndex, colIndex) => {
-    const { isOpponent, onCellDrop } = this.props;
+    const { isOpponent, onCellDrop = undefined } = this.props;
     if (!isOpponent && onCellDrop) {
       e.preventDefault();
       onCellDrop(e, rowIndex, colIndex);
@@ -116,7 +118,7 @@ class Battlefield extends React.Component {
    * @param {Object} ship - Ship object configuration.
    */
   handleShipDragStart = (e, ship) => {
-    const { onShipDragStart } = this.props;
+    const { onShipDragStart = undefined } = this.props;
 
     const img = new Image();
     img.src =
@@ -140,8 +142,8 @@ class Battlefield extends React.Component {
     const {
       title,
       isOpponent,
-      isGetReadyScrn,
-      boardData,
+      isGetReadyScrn = false,
+      boardData = undefined,
       ships = [],
     } = this.props;
 
