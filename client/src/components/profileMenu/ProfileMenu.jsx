@@ -11,7 +11,6 @@ import { Link } from "react-router";
 function ProfileMenu() {
     const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
-    const [isSigningOut, setIsSigningOut] = useState(false);
     const containerRef = useRef(null);
 
     const menu_items = {
@@ -36,62 +35,11 @@ function ProfileMenu() {
     }, [isOpen]);
 
 
-
-    /*TODO: Implement this function once the backend and API endpoint are ready.*/
-
-    // USER ACCOUNT DATA TEMPLATE
-    // const userData = () => {
-    //     fetch('/api/userData', {
-    //         method: 'GET',
-    //         userID: null // some function will create session tocken which we will pass here instead of null
-    //     }).then(res => res.json())
-    //         .then((data) => {
-    //             if (data.userID === null) {
-    //                 setIsOpen(false);
-    //             }
-    //         })
-    // }
-
-
-
-    // Save the token under localStorage.token after user creation.
-    const signOut = async () => {
-        if (isSigningOut) return;
-
-        setIsSigningOut(true);
-        try {
-            const token = localStorage.getItem("token");
-            if (token) {
-                const response = await fetch('/api/signout', {
-                    method: 'GET',
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const data = await response.json();
-                const sessionMissing =
-                    response.status === 401 &&
-                    data.error?.code === "SESSION_NOT_FOUND";
-
-                if (!response.ok && !sessionMissing) {
-                    throw new Error('account.signOutServerError');
-                }
-            }
-
-            localStorage.removeItem("token");
-            alert(t('account.signedOut'));
-            // Reload the app to initialize a new guest after signing out.
-            window.location.replace("/");
-        } catch (error) {
-            alert(t('account.signOutFailed') + '\n' + t(
-                error.message === 'account.signOutServerError'
-                    ? 'account.signOutServerError'
-                    : 'account.networkError',
-            ));
-        } finally {
-            setIsSigningOut(false);
-        }
-    }
-
-
+    const signOut = () => {
+        alert(t('account.signedOut'));
+        // Reload the app to create a new guest.
+        window.location.replace("/");
+    };
 
 
     return (
@@ -131,7 +79,6 @@ function ProfileMenu() {
 
                     <button
                         type="button"
-                        disabled={isSigningOut}
                         onClick={() => signOut()}
                         className="profile-menu-item profile-menu-signout">
                         {t('account.signOut')}

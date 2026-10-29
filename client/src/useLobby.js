@@ -6,7 +6,7 @@ import { io } from "socket.io-client"
 import { createGame, getGameCode, joinGame } from "./api.js"
 
 // App owns the lobby so changing routes does not discard it or its connection.
-export function useLobby(sessionReady) {
+export function useLobby(userId) {
     const { pathname } = useLocation()
     const [game, setGame] = useState(null)
     const [pending, setPending] = useState(false)
@@ -22,10 +22,10 @@ export function useLobby(sessionReady) {
     }
 
     useEffect(() => {
-        if (!sessionReady || !gameId) return
+        if (!userId || !gameId) return
         let disposed = false
         const socket = io({
-            auth: { token: localStorage.getItem("token") },
+            auth: { userId },
             autoConnect: false,
             reconnection: false,
         })
@@ -60,10 +60,10 @@ export function useLobby(sessionReady) {
             socket.removeAllListeners()
             socket.disconnect()
         }
-    }, [sessionReady, gameId])
+    }, [userId, gameId])
 
     async function openLobby(code) {
-        if (!sessionReady || pending || requestPending.current) return null
+        if (!userId || pending || requestPending.current) return null
         requestPending.current = true
         setPending(true)
         setError("")
@@ -71,10 +71,10 @@ export function useLobby(sessionReady) {
         try {
             let view
             if (code === undefined) {
-                view = game ?? await createGame()
+                view = game ?? await createGame(userId)
             } else {
                 const gameCode = getGameCode(code)
-                view = game?.id === gameCode ? game : await joinGame(gameCode)
+                view = game?.id === gameCode ? game : await joinGame(gameCode, userId)
             }
             setGame(view)
             return view

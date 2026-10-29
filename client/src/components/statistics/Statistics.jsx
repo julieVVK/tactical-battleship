@@ -29,26 +29,10 @@ function formatDateTime(isoString) {
 }
 
 async function requestStats(offset = 0, limit = 10) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw new Error('No session found. Please reload the page.');
-  }
-
   // Request a portion of match history and the overall statistics.
   const response = await fetch(
-    `/api/statistics?offset=${offset}&limit=${limit}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+    `/api/statistics?offset=${offset}&limit=${limit}`
   );
-
-  if (response.status === 401) {
-    throw new Error(
-      'Your session has expired. Please reload the page.'
-    );
-  }
 
   if (!response.ok) {
     throw new Error('Failed to load statistics.');

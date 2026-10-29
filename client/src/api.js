@@ -5,19 +5,16 @@ api.js will be the place where your frontend sends game requests to the backend.
 
 Each request needs to:
 
-1. Read the token saved by session.js.
-2. Attach it to the Authorization header.
+1. Receive the current guest userId from the caller.
+2. Attach it to the userId header.
 3. Convert any request body into JSON.
 4. Check whether the server accepted the request.
 5. Return the response data or throw an error.
 
 */
 
-async function request(path, { method = "GET", body } = {}) {
-    const token = localStorage.getItem('token')
-    if (!token) {
-        throw new Error('No token found.')}
-    const headers = { Authorization: `Bearer ${token}` }
+async function request(path, { method = "GET", body, userId } = {}) {
+    const headers = { userId }
 
     if (body !== undefined) {
         headers['Content-Type'] = 'application/json'
@@ -61,28 +58,31 @@ export function getGameCode(value) {
     return code.toUpperCase()
 }
 
-export function createGame() {
+export function createGame(userId) {
     return request("/createGames", {
         method: "POST",
+        userId,
     })
 }
 
-export function joinGame(gameId) {
+export function joinGame(gameId, userId) {
     return request(`/games/${gameId}/join`, {
         method: "POST",
+        userId,
     })
 }
 
-export function getGame(gameId) {
+export function getGame(gameId, userId) {
     const code = getGameCode(gameId)
 
-    return request(`/games/${code}`)
+    return request(`/games/${code}`, { userId })
 }
 
-export function unreadyGame(gameId) {
+export function unreadyGame(gameId, userId) {
     const code = getGameCode(gameId)
 
     return request(`/games/${code}/unready`, {
         method: "POST",
+        userId,
     })
 }

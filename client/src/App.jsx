@@ -11,34 +11,34 @@ import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx"
 import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx"
 import StatisticsPage from "./components/statistics/Statistics.jsx"
 import {useEffect, useState} from "react"
-import {initializeSession} from "./session.js"
+import {initializeUser} from "./user.js"
 import {Navigate, Routes, Route, useNavigate} from "react-router"
 import {useLobby} from "./useLobby.js"
 
 function App() {
     const navigate = useNavigate()
-    const [session, setSession] = useState({status: "loading", error: null})
-    const lobby = useLobby(session.status === "ready")
+    const [user, setUser] = useState({status: "loading", error: null})
+    const lobby = useLobby(user.id)
 
 
     // author: Vladyslav Doroshenko
     // Create random user
     useEffect(() => {
-        if (session.status !== "loading")
+        if (user.status !== "loading")
             return
 
         // Ignore this effect's result after cleanup. The request itself still runs.
         let cancelled = false
 
-        initializeSession().then(() => {
+        initializeUser().then((guest) => {
 
             if (cancelled) return
-            setSession({status: "ready", error: null})
+            setUser({status: "ready", error: null, id: guest.id})
 
         }, (error) => {
 
             if (cancelled) return
-            setSession({status: "error", error: error.message})
+            setUser({status: "error", error: error.message})
 
         })
 
@@ -46,11 +46,11 @@ function App() {
             cancelled = true
         }
 
-    }, [session.status])
+    }, [user.status])
 
 
-    function retrySession() {
-        setSession({status: "loading", error: null})
+    function retryUser() {
+        setUser({status: "loading", error: null})
     }
 
 
@@ -71,14 +71,14 @@ function App() {
 
 
     // author: Vladyslav Doroshenko
-    if (session.status === "loading") {
+    if (user.status === "loading") {
         return <p role="status">Connecting to the server...</p>
     }
-    if (session.status === "error") {
+    if (user.status === "error") {
         return (
             <div role="alert">
-                <p>{session.error}</p>
-                <button type="button" onClick={retrySession}>Try again</button>
+                <p>{user.error}</p>
+                <button type="button" onClick={retryUser}>Try again</button>
             </div>
         )
     }
