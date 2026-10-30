@@ -24,6 +24,10 @@ text-align: center ;
 
 }
 #homeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   width: 132px;
   height: 56px;
   font-weight: 500;

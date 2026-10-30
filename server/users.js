@@ -1,5 +1,6 @@
 // File was created by Vladyslav Doroshenko
 
+import crypto from "node:crypto"
 import fail from "./error.js"
 
 const users = new Map();
@@ -32,6 +33,17 @@ export const createUser = (userId, userName) => {
 }
 
 
+export const createGuest = () => {
+    let userId
+
+    do {
+        userId = crypto.randomUUID()
+    } while (users.has(userId))
+
+    return createUser(userId, "Guest")
+}
+
+
 export const getUser = (userId) => {
     const user = users.get(userId)
     if (!user) return undefined
@@ -39,6 +51,7 @@ export const getUser = (userId) => {
 }
 
 
+// TODO: Current online on the main page?
 export const getUsers = () => {
     return structuredClone(Array.from(users.values()))
 }

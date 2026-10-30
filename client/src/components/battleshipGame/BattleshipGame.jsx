@@ -22,7 +22,6 @@ import "./battleshipGame.css";
  *
  * @author xhaziyh00
  * @property {Object} props - Component input properties.
- * @property {Function} props.onGoHome - Callback function to return to the main menu screen.
  * @property {Object} state - Component internal state.
  * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
@@ -418,7 +417,7 @@ class BatlleshipGame extends React.Component {
     this.setState({ isFiring: true, gameError: null });
     try {
       const headers = {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        userId: this.props.userId,
         "Content-Type": "application/json",
       };
       const response = await fetch(`/api/games/${this.props.gameId}/shots`, {
@@ -433,7 +432,7 @@ class BatlleshipGame extends React.Component {
 
       // refresh the game state after the shot
       const stateResponse = await fetch(`/api/games/${this.props.gameId}`, {
-        headers: { Authorization: headers.Authorization },
+        headers: { userId: this.props.userId },
       });
       const view = await stateResponse.json();
       if (!stateResponse.ok) {
@@ -480,7 +479,7 @@ class BatlleshipGame extends React.Component {
           : "turn.opponent_turn";
     return (
       <div>
-        <Header onGoHome={this.props.onGoHome} />
+        <Header />
         {this.state.gameError && <p role="alert">{this.state.gameError}</p>}
         <p role="status">{t(turnMessage)}</p>
         <div className="battleContainer">
