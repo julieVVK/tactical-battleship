@@ -1,8 +1,9 @@
 // File was created by Marie Pindorová (xpindom00) and Vladyslav Doroshenko (xdorosv00)
 // Marie: HTML structure, styles, prepared backend communication here and on backend
-// Vladyslav: fixed all backend communication - requestStats(), loadMoreMatches()
+// Vladyslav: fixed all backend communication - requestStats(), loadMoreMatches(), React Router
 
 import {useEffect, useState} from 'react';
+import {useLocation} from 'react-router';
 import ProfileMenu from '../profileMenu/ProfileMenu.jsx';
 import Button from '../button/Button.jsx';
 import './statistics.css';
@@ -28,26 +29,10 @@ function formatDateTime(isoString) {
 }
 
 async function requestStats(offset = 0, limit = 10) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw new Error('No session found. Please reload the page.');
-  }
-
   // Request a portion of match history and the overall statistics.
   const response = await fetch(
-    `/api/statistics?offset=${offset}&limit=${limit}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+    `/api/statistics?offset=${offset}&limit=${limit}`
   );
-
-  if (response.status === 401) {
-    throw new Error(
-      'Your session has expired. Please reload the page.'
-    );
-  }
 
   if (!response.ok) {
     throw new Error('Failed to load statistics.');
@@ -57,12 +42,20 @@ async function requestStats(offset = 0, limit = 10) {
   return data;
 }
 
-export default function StatisticsPage({onHome}) {
+export default function StatisticsPage() {
+  const {hash} = useLocation();
   // stats will contain the data returned by the backend.
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+
+  // Match history lives on this page and becomes available after loading.
+  useEffect(() => {
+    if (hash === '#match-history' && !loading) {
+      document.getElementById('match-history')?.scrollIntoView();
+    }
+  }, [hash, loading]);
 
   // useEffect runs when this component appears on the page.
   useEffect(() => {
@@ -124,9 +117,17 @@ export default function StatisticsPage({onHome}) {
     }
   }
 
+  const navigation = (
+    <div className="statistic-navigation">
+      <Button className="home-button" to="/">‹ Home</Button>
+      <ProfileMenu />
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="statistic-page">
+        {navigation}
         Loading statistics...
       </div>
     );
@@ -135,11 +136,7 @@ export default function StatisticsPage({onHome}) {
   if (error && !stats) {
     return (
       <div className="statistic-page">
-        <div className="statistic-navigation">
-          <Button className="statistic-home-button" onClick={onHome}>
-            Home
-          </Button>
-        </div>
+        {navigation}
         <p role="alert">Error: {error}</p>
       </div>
     );
@@ -148,6 +145,7 @@ export default function StatisticsPage({onHome}) {
   if (!stats) {
     return (
       <div className="statistic-page">
+        {navigation}
         No statistics available.
       </div>
     );
@@ -179,19 +177,7 @@ export default function StatisticsPage({onHome}) {
     <div className="statistic-page">
 
       {/* Top navigation bar */}
-      <div className="statistic-navigation">
-
-        {/* Go back to the previous browser history entry */}
-        <button
-          className="statistic-home-button"
-          type="button"
-          onClick={onHome}
-        >
-          ‹ Home
-        </button>
-
-        <ProfileMenu />
-      </div>
+      {navigation}
 
       {/* Page title */}
       <h1 className="statistic-title">Your statistics</h1>
@@ -295,7 +281,7 @@ export default function StatisticsPage({onHome}) {
       </div>
 
       {/* Recent matches section */}
-      <div className="statistic-recent-matches">
+      <div id="match-history" className="statistic-recent-matches">
 
         <div className="statistic-recent-header">
           <h2 className="statistic-recent-title">Recent matches</h2>

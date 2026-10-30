@@ -26,12 +26,6 @@ Use `response.ok` and `error.code` to handle errors on the frontend.
 - `INVALID_SHOT_COORDINATES`: row or col is not an integer from 0 to 9.
 - `INVALID_JSON`: the JSON parser could not read the request body.
 
-## HTTP 401
-
-- `SESSION_NOT_FOUND`: no valid Bearer token was provided, or the session is absent.
-
-The response includes `WWW-Authenticate: Bearer`.
-
 ## HTTP 403
 
 - `PLAYER_NOT_IN_GAME`: the requesting user is not a participant in the game.
@@ -61,9 +55,8 @@ The response includes `WWW-Authenticate: Bearer`.
 
 ## Check order and internal calls
 
-Only the first failed check produces an error. The session middleware runs
-before protected route handlers. Within the game functions, phase and turn
-checks may run before action-specific data checks.
+Only the first failed check produces an error. Within the game functions, phase
+and turn checks may run before action-specific data checks.
 
 `joinGame` checks duplicate membership before the phase and the phase before
 player count. After the second player joins, the phase is `"placement"`, so a
@@ -89,10 +82,9 @@ try {
 already been sent, the error handler calls `next(error)`. CORS middleware runs
 before the body parsers so their error responses include CORS headers too.
 
-This format applies to the user, game and signout HTTP routes. The development
+This format applies to the user and game HTTP routes. The development
 fleet route is described separately in [network handlers](server.md).
-Socket.IO uses the same `decodeError` mapping. A rejected connection delivers
-`{code, message}` in `connect_error`'s `error.data`. A rejected `game:subscribe`
+Socket.IO uses the same `decodeError` mapping. A rejected `game:subscribe`
 returns `{ok: false, error: {code, message}}` in its callback, or emits
 `game:error` with `{code, message}` when no callback was supplied.
 See [Socket.IO subscriptions](socket.md).

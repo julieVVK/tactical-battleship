@@ -54,7 +54,7 @@ class BattleShip extends React.Component {
     }
   };
   render() {
-    const { size, isVertical, isDraggable = false, onDragStart } = this.props;
+    const { size = 1, isVertical = false, isDraggable = false, onDragStart = undefined } = this.props;
     const { isHovered, cellSize } = this.state;
 
     // author:xhaziyh00 - Sanitize size input and ensure a fallback to 1 deck

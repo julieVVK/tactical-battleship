@@ -4,20 +4,17 @@
 //     - Added foreign languages support
 
 import { useLanguage } from '../../i18n/useLanguage.js';
+import Button from '../button/Button.jsx';
+import ProfileMenu from '../profileMenu/ProfileMenu.jsx';
 import './rules.css';
 
-export default function HowToPlay({ onNavigateMain }) {
+export default function HowToPlay() {
   const { t } = useLanguage();
   return (
     <div className="htp-wrap">
       <div className="top-bar">
-        <button className="home-btn" type="button" onClick={onNavigateMain}>‹ {t('nav.home')}</button>
-        <button className="avatar-btn" aria-label={t('account.userProfile')}>
-          <svg width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="8" r="4"></circle>
-            <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"></path>
-          </svg>
-        </button>
+        <Button className="home-btn" to="/">‹ {t('nav.home')}</Button>
+        <ProfileMenu />
       </div>
 
       <h1>{t('rules.title')}</h1>

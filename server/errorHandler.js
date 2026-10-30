@@ -19,7 +19,6 @@ const errorStatuses = new Map([
     ["TURN_MISMATCH", 409],
     ["INVALID_SHOT_COORDINATES", 400],
     ["SHOT_DUPLICATE", 409],
-    ["SESSION_NOT_FOUND", 401],
 ])
 
 
@@ -47,7 +46,6 @@ export default function errorHandler(error, req, res, next) {
 
     const {status, code, message} = decodeError(error)
     if (status === 500) console.error(error)
-    if (status === 401) res.set("WWW-Authenticate", "Bearer")
 
     return res.status(status).json({
         error: {code, message}

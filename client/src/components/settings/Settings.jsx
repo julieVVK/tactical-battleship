@@ -8,7 +8,7 @@ import { useState } from 'react';
 import Button from '../button/Button';
 import './settings.css';
 
-export default function Settings({ onNavigateMain }) {
+export default function Settings() {
   // importing context from LanguageProvider.jsx using "custom" useLanguage hook
   const { language, setLanguage, t } = useLanguage();
 
@@ -62,11 +62,10 @@ export default function Settings({ onNavigateMain }) {
 
       <div className="settings-top-nav">
         <Button
-          type="button"
-          className="home-back-button"
-          onClick={onNavigateMain}
+          to="/"
+          className="home-button"
         >
-           {t('nav.home')}
+           ‹ {t('nav.home')}
         </Button>
       </div>
 

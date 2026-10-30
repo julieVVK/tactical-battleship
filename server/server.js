@@ -42,7 +42,7 @@ app.post("/api/dev/fleet", (req, res) => {
     });
 });
 
-app.use("/api", createUserRouter(io))
+app.use("/api", createUserRouter())
 app.use("/api", createGameRouter(io))
 
 

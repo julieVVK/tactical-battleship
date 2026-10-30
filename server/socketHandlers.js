@@ -1,15 +1,13 @@
 // File was created by Vladyslav Doroshenko
 
-import requireSocketSession from "./socketMiddleware.js"
 import { getGameForPlayer } from "./games.js"
 import { decodeError } from "./errorHandler.js"
 
 
 
 export default function socketHandlers(io) {
-    io.use(requireSocketSession)
-
     io.on("connection", (socket) => {
+        socket.data.userId = socket.handshake.auth.userId
         console.log(`User with id "${socket.data.userId}" connected`)
 
         socket.on("game:subscribe", (payload, acknowledge) => {

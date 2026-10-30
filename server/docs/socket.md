@@ -2,27 +2,25 @@
 
 @brief Sends each subscribed player their own game state. Game actions use HTTP.
 
-## Authentication
+## Player identity
 
-Use the token from `POST /api/createUser` in the Socket.IO `auth` object:
+Use the guest ID returned by `POST /api/createUser` in the Socket.IO `auth` object:
 
 ```js
 import { io } from "socket.io-client";
 
 const socket = io("http://127.0.0.1:3000", {
-    auth: { token },
-    autoConnect: false
+    auth: { userId },
+    autoConnect: false,
+    reconnection: false
 });
 ```
 
 Install `socket.io-client` in the frontend project before importing it.
 The explicit backend URL also works when Vite proxies only `/api`.
 
-`socketMiddleware.js` checks the session before allowing the connection.
-It saves `userId` and `sessionToken` in `socket.data`.
-Missing or unknown tokens produce `connect_error` with
-`error.data = {code: "SESSION_NOT_FOUND", message: "..."}`.
-Transport connection failures may have no `error.data`.
+`socketHandlers.js` copies `socket.handshake.auth.userId` to `socket.data.userId`.
+Game membership is checked when subscribing.
 
 ## Subscribe to a game
 
@@ -33,11 +31,10 @@ Event `game:subscribe`, client to server:
 @returns `{ok: true, gameId}` on success, using the normalized uppercase code.
 @emits `game:state` Immediately after a successful subscription.
 
-The server checks game membership using the session's user ID. A client cannot
-subscribe to another player's view by supplying a `userId`.
+The server checks game membership using `socket.data.userId`.
 Each socket has one game subscription. A successful new subscription replaces
 the old one. A rejected subscription preserves the previous subscription.
-Different tabs can independently subscribe using the same token.
+Different tabs can independently subscribe using the same user ID.
 
 On failure the callback receives:
 
@@ -60,13 +57,11 @@ The opponent's ships are omitted. Rejected HTTP actions do not broadcast state.
 Subscribe after creating or joining a game. Creating a game does not subscribe
 existing sockets automatically.
 
-Use a `connect` handler to subscribe on both the initial connection and every
-reconnection. Register the state listener once, outside that handler:
+Use a `connect` handler to subscribe. Register the state listener once, outside
+that handler:
 
 ```js
-// Read saved values after checking that they exist.
-// const token = localStorage.getItem("token");
-// const gameId = localStorage.getItem("gameId");
+// App supplies the current guest ID and game ID.
 socket.on("game:state", view => {
     setGame(view);
 });
@@ -93,20 +88,14 @@ socket.connect();
 // socket.disconnect();
 ```
 
-The immediate snapshot after subscribing contains changes missed while offline.
-The server does not replay earlier events. A page reload needs the saved token
-and game code to open a new connection and subscribe again.
-Socket.IO handles temporary transport disconnections automatically.
-See the [official client API](https://socket.io/docs/v4/client-api/) for `connect`,
-`connect_error` and acknowledgement timeouts.
-
-`GET /api/signout` disconnects every socket using the removed session token.
-This server disconnect does not automatically reconnect. A new valid session
-is required before reconnecting.
+The immediate snapshot after subscribing contains the latest state.
+The server does not replay earlier events. The frontend disables automatic
+reconnection and displays an error after a connection loss.
+A full page reload or Sign out creates a new guest and does not restore the old game.
 
 ## Source and verification
 
-`socketHandlers.js` registers authentication and subscription handlers.
+`socketHandlers.js` registers connection and subscription handlers.
 `gameEvents.js` reads each subscriber's filtered state and emits it.
 `routes/gameRoutes.js` calls `publishGame(io, gameId)` after successful game actions.
 `server.js` creates `io` and passes it into the HTTP router factories.
@@ -114,6 +103,7 @@ is required before reconnecting.
 
 From `server/`, run `npm test` to exercise real HTTP and Socket.IO clients against
 an isolated server on a free port. The tests include a complete battle,
-membership errors, separate games, multiple tabs, reconnection and signout.
+membership errors, separate games, multiple tabs and reconnection.
+Reconnection tests exercise the server with a client that enables it.
 The current suite is in `server/test/`. Older ignored files in `server/tests/`
 use previous fleet and response formats and are outside the current test command.

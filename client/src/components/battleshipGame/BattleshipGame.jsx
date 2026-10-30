@@ -1,14 +1,13 @@
 /**
  * @file BattleshipGame.jsx
  * @description Main gameplay controller component. Manages the dual-board arena layout,
- * initializes player fleet state from SHIPS_CONFIG, and coordinates communication
+ * initializes enemy fleet state from SHIPS_CONFIG, and coordinates communication
  * between the navigation Header and both Battlefield grids.
  * @author xhaziyh00
  */
 
 // Edited by Vladyslav Doroshenko
 //     - Added language context
-//       Changed lines: 13, 32, 70, 88, 106
 
 import { LanguageContext } from "../../i18n/LanguageContext.js";
 import React from "react";
@@ -22,9 +21,7 @@ import "./battleshipGame.css";
  *
  * @author xhaziyh00
  * @property {Object} props - Component input properties.
- * @property {Function} props.onGoHome - Callback function to return to the main menu screen.
  * @property {Object} state - Component internal state.
- * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
 
 class BatlleshipGame extends React.Component {
@@ -37,12 +34,6 @@ class BatlleshipGame extends React.Component {
     this.playerBoardRef = React.createRef();
     this.opponentBoardRef = React.createRef();
     this.state = {
-      myShips: SHIPS_CONFIG.map((ship) => ({
-        ...ship,
-        isVertical: false,
-        isPlaced: false,
-      })),
-
       enemyShips: SHIPS_CONFIG.map((ship) => ({
         //xslobok00: enemy ships
         ...ship,
@@ -408,7 +399,6 @@ class BatlleshipGame extends React.Component {
             title={t("game.yourFleet")}
             isOpponent={false}
             isGetReadyScrn={false}
-            ships={this.state.myShips}
             boardData={this.state.boardData}
             usedGadgets={this.state.usedGadgets}
             onSelectAbility={this.handleGadgetSelect}

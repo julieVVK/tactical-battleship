@@ -7,89 +7,69 @@
 The server listens on `127.0.0.1`, using `PORT` from the environment or `3000`.
 
 Run `npm ci`, then `npm run dev` or `npm start` from `server/`.
-Users, sessions and games are stored in memory and disappear on server restart.
+Users and games are stored in memory and disappear on server restart.
 
 ## HTTP routers
 
-`routes/userRoutes.js` exports `createUserRouter(io)` for user creation, statistics
-and signout.
+`routes/userRoutes.js` exports `createUserRouter()` for user creation and statistics.
 `routes/gameRoutes.js` exports `createGameRouter(io)` for creation, joining,
 readiness, shots and reading a player's game state.
 
 @param `io` The Socket.IO server created in `server.js`. The game router uses it
-for state broadcasts; the user router uses it to disconnect sockets on signout.
+for state broadcasts.
 @returns An Express Router with the corresponding HTTP handlers.
 
 The server mounts both routers under `/api`:
 
 ```js
-app.use("/api", createUserRouter(io));
+app.use("/api", createUserRouter());
 app.use("/api", createGameRouter(io));
 app.use(errorHandler);
 ```
 
 Router paths omit this shared prefix. For example, the game router's
 `/games/:gameId/ready` is available at `/api/games/:gameId/ready`.
-All existing HTTP URLs and response formats are preserved. `requireSession`
-remains attached to each protected route. The public ping and development fleet
-handlers are still in `server.js`. CORS and body parsers run before the routers,
+The public ping and development fleet handlers are in `server.js`. CORS and body parsers run before the routers,
 and the error handler runs after them.
 
-## Sessions
+## Player identity
 
-`POST /api/createUser` is public. All `/api/createGames`, `/api/games/...`,
-`/api/statistics`, `/api/session` and `/api/signout` routes require the token returned by user creation:
+Game requests send the guest's ID in the `userId` header:
 
 ```http
-Authorization: Bearer <token>
+userId: alice
 ```
 
-The middleware reads the session and sets `req.userId` and `req.sessionToken`.
-Game requests do not
-need a `userId` in the body or query. Missing or unknown tokens return HTTP 401
-with `SESSION_NOT_FOUND`.
+The game routes read this header directly. Statistics does not require a user ID.
+The frontend stores the guest in App state. Reloading or signing out creates a
+new guest; the old user and games remain in server memory.
 
 # Game routes
 
-## HTTP `GET /api/session`:
-
-Requires `Authorization: Bearer <token>`. A valid session returns HTTP 204
-without a response body. A missing token or an unknown or removed session returns
-HTTP 401.
-
-The frontend checks a saved token before showing the application pages. If there is no
-token or this endpoint returns 401, it calls `POST /api/createUser` with a random
-user ID and the name `Guest`, then saves the returned token in localStorage.
-Server errors and network failures show a retry action instead of creating a new
-user. App initializes the session in an effect. In development, StrictMode may run
-it twice and create two guests when there is no saved token. The last completed
-creation saves the token used by the frontend.
-
 ## HTTP `POST /api/createUser`:
 
-@param `userId` Nonempty string in the JSON body.
-@param `userName` Nonempty string in the JSON body.
-@returns HTTP 200 with `{id, name, token}`. A duplicate ID returns HTTP 409.
+@param No body is required. The server generates the guest's UUID and name.
+@returns HTTP 200 with `{id, name}`, where `name` is `"Guest"`.
+If a generated UUID is already stored, the server generates another one.
 
 ```json
-{"userId": "alice", "userName": "Alice"}
+{"id": "cba9b04d-f6ac-4185-9fa0-3740439b53b8", "name": "Guest"}
 ```
 
-After checking `response.ok`, save the returned token under
-`localStorage.setItem("token", data.token)`. See [frontend session storage](sessions.md#frontend-storage).
+App saves the returned `id` in React state and passes it to game requests.
+Concurrent startup calls share the guest creation request in `user.js`.
 
 ## HTTP `POST /api/createGames`:
 
-@param No body is required. The creator is taken from the session.
+@param No body is required. The creator is taken from the `userId` header.
 @returns HTTP 200 with the [player view](games.md), including `players.you`
 and `players.opponent`. Initially, `opponent` is `null`.
-After success, save `data.id` under `localStorage.gameId` for page reloads.
+App keeps this game view while navigating between routes.
 
 ## HTTP `POST /api/games/:gameId/join`:
 
 @param `gameId` Game code in the URL. No body is required.
 @returns HTTP 200 with the joining player's view.
-Save this response's `data.id` under `localStorage.gameId` too.
 
 ## HTTP `POST /api/games/:gameId/ready`:
 
@@ -109,7 +89,7 @@ const response = await fetch(`/api/games/${gameId}/ready`, {
     method: "POST",
     headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
+        userId
     },
     body: JSON.stringify({board})
 });
@@ -142,7 +122,7 @@ until replaced by another Ready request.
 
 Creation, joining, Ready, Unready and GET all use the same state shape.
 Successful game actions also send `game:state` to sockets subscribed to that
-game. Each socket receives the view for its authenticated user.
+game. Each socket receives the view for its user ID.
 Errors use `{error: {code, message}}`; see [error codes and statuses](errors.md).
 User creation, Ready and shots require a request body. Missing bodies return
 HTTP 400 with `INVALID_REQUEST_BODY`.
@@ -154,17 +134,16 @@ HTTP 400 with `INVALID_REQUEST_BODY`.
 @brief Returns sample statistics and a requested window of match history.
 `statistics.js` exports the `statistics` constant with fixed totals and 60
 sample matches. The first ten match the statistics page design; the
-remaining fifty are generated sample history. Every authenticated user receives
+remaining fifty are generated sample history. Every caller receives
 the same response for the same query. Game actions do not update this data.
 
-@param Bearer token in the Authorization header. No body or user ID is required.
+@param No body or user ID is required.
 @param `offset` Query parameter, number of matches to skip. Defaults to `0`.
 The frontend supplies a non-negative integer.
 @param `limit` Query parameter, number of matches to return, a positive integer.
 Defaults to `10`.
 @returns HTTP 200 with totals for the full history, a window of matches in newest
 first order. The route assumes valid pagination parameters from the frontend.
-A missing or invalid token returns HTTP 401 with `SESSION_NOT_FOUND`.
 
 Default response from `GET /api/statistics`:
 
@@ -200,7 +179,6 @@ Request examples:
 GET /api/statistics?offset=0&limit=10
 GET /api/statistics?offset=10&limit=10
 GET /api/statistics?offset=20&limit=10
-Authorization: Bearer <token>
 ```
 
 The frontend chooses `limit` based on how many rows it wants to show. For a
@@ -229,33 +207,14 @@ ___
 
 @returns `{message: "pong"}`.
 ___
-## HTTP `GET /api/signout`:
-
-@param Bearer token in the Authorization header. No body is required.
-@returns HTTP 200 with `{message: "Successfully signed out"}` after removing
-the current session. A missing, unknown or already removed token returns
-HTTP 401 with `SESSION_NOT_FOUND`.
-
-The user, games and other sessions remain available. After success the frontend
-should clear its saved token. For example:
-
-```js
-const response = await fetch("/api/signout", {
-    method: "GET",
-    headers: {Authorization: `Bearer ${token}`}
-});
-```
-
-See [sessions](sessions.md) for the storage and middleware functions.
-___
 # Socket.IO:
 
-@brief `socketHandlers.js` is registered in `server.js`. Connections require
-`auth: {token}`. Send `game:subscribe` with `{gameId}` to receive the initial
+@brief `socketHandlers.js` is registered in `server.js`. Connections supply
+`auth: {userId}`. Send `game:subscribe` with `{gameId}` to receive the initial
 `game:state` and later updates after successful HTTP game actions.
 
 See [Socket.IO subscriptions](socket.md) for callback results, errors and the
-frontend example that subscribes again after reconnection.
+frontend subscription example. The frontend disables automatic reconnection.
 ___
 Successful response from `POST /api/dev/fleet`:
 

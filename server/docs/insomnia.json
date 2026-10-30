@@ -2,15 +2,15 @@
   "_type": "export",
   "__export_format": 4,
   "__export_date": "2026-10-05T17:16:59.822545+00:00",
-  "__export_source": "battleships-http-sessions",
+  "__export_source": "battleships-http-users",
   "resources": [
     {
       "_id": "__WORKSPACE_ID__",
       "_type": "workspace",
       "parentId": null,
-      "name": "Battleships: HTTP с сессиями",
+      "name": "Battleships: HTTP с userId",
       "scope": "collection",
-      "description": "Импортируй JSON через Import > File. Запусти сервер командой npm start из main/server.\nВ Collection Runner выбери все запросы и сохрани порядок папок и запросов. Первый Ping генерирует новые ID для каждого полного запуска. Токены и game_id сохраняются автоматически. Можно выполнить несколько последовательных итераций.\nВсе игровые запросы передают Authorization: Bearer <token>. GET не использует тело или userId в query. Коды ошибок проверяются в подходящей стадии игры. Первый ход случайный, current_player_token обновляется из ответа сервера.\nПосле промаха следующий игрок потапливает все десять кораблей. Затем проверяется завершение матча и настоящий signout.\nЭта коллекция проверяет HTTP. Для Socket.IO нужны socket.io-client и game:subscribe, примеры находятся в server/docs/socket.md. Автоматическая проверка HTTP и Socket.IO запускается через npm test из server.\nDebug маршрут не включён. Данные исчезают при перезапуске сервера.\nФормат скриптов: https://developer.konghq.com/insomnia/scripts/"
+      "description": "Коллекция HTTP-запросов для учебного Battleships. Запусти backend из server и выполняй запросы в сохранённом порядке. Пользователи создаются через POST /api/createUser. Игровые запросы передают userId. Первый ход случайный, current_player_id обновляется из ответа сервера. Для проверки Socket.IO запусти npm test из server."
     },
     {
       "_id": "__BASE_ENVIRONMENT_ID__",
@@ -22,15 +22,10 @@
         "alice_id": "",
         "bob_id": "",
         "outsider_id": "",
-        "alice_token": "",
-        "bob_token": "",
-        "outsider_token": "",
         "game_id": "",
         "game_id_lower": "",
         "current_player_id": "",
-        "other_player_id": "",
-        "current_player_token": "",
-        "other_player_token": ""
+        "other_player_id": ""
       },
       "dataPropertyOrder": null
     },
@@ -38,7 +33,7 @@
       "_id": "__request_group_1__",
       "_type": "request_group",
       "parentId": "__WORKSPACE_ID__",
-      "name": "01. Пользователи и токены",
+      "name": "01. Пользователи",
       "description": "Выполняй запросы по порядку.",
       "environment": {},
       "metaSortKey": 1,
@@ -48,7 +43,7 @@
       "_id": "__request_1__",
       "_type": "request",
       "parentId": "__request_group_1__",
-      "name": "01. Ping и новые ID",
+      "name": "01. Ping и сброс ID",
       "method": "GET",
       "url": "{{ _.base_url }}/api/ping",
       "body": {},
@@ -63,8 +58,8 @@
       "authentication": {},
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 1,
-      "preRequestScript": "const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);\nfor (const name of [\"alice\", \"bob\", \"outsider\"]) {\n    insomnia.environment.set(name + \"_id\", \"insomnia_\" + name + \"_\" + suffix);\n    insomnia.environment.set(name + \"_token\", \"\");\n}\nfor (const key of [\"game_id\", \"game_id_lower\", \"current_player_id\", \"other_player_id\", \"current_player_token\", \"other_player_token\"]) insomnia.environment.set(key, \"\");",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"pong\", () => insomnia.expect(data.message).to.eql(\"pong\"));",
+      "preRequestScript": "for (const key of [\"alice_id\", \"bob_id\", \"outsider_id\", \"game_id\", \"game_id_lower\", \"current_player_id\", \"other_player_id\"]) {\n    insomnia.environment.set(key, \"\");\n}",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"pong\", () => insomnia.expect(data.message).to.eql(\"pong\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -77,28 +72,20 @@
       "name": "02. Создать alice",
       "method": "POST",
       "url": "{{ _.base_url }}/api/createUser",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"userId\": \"{{ _.alice_id }}\",\n  \"userName\": \"Alice\"\n}"
-      },
+      "body": {},
       "parameters": [],
       "headers": [
         {
           "name": "Accept",
           "value": "application/json",
           "disabled": false
-        },
-        {
-          "name": "Content-Type",
-          "value": "application/json",
-          "disabled": false
         }
       ],
       "authentication": {},
-      "description": "Ожидаемый HTTP статус 200.",
+      "description": "Ожидаемый HTTP статус 200. Сервер создаёт гостя и возвращает UUID.",
       "metaSortKey": 2,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) insomnia.environment.set(\"alice_token\", data.token);\ninsomnia.test(\"ID\", () => insomnia.expect(data.id).to.eql(insomnia.environment.get(\"alice_id\")));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\ninsomnia.test(\"Guest\", () => insomnia.expect(data.name).to.eql(\"Guest\"));\ninsomnia.test(\"UUID\", () => insomnia.expect(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(data.id)).to.eql(true));\nif (status === 200) insomnia.environment.set(\"alice_id\", data.id);",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -111,28 +98,20 @@
       "name": "03. Создать bob",
       "method": "POST",
       "url": "{{ _.base_url }}/api/createUser",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"userId\": \"{{ _.bob_id }}\",\n  \"userName\": \"Bob\"\n}"
-      },
+      "body": {},
       "parameters": [],
       "headers": [
         {
           "name": "Accept",
           "value": "application/json",
           "disabled": false
-        },
-        {
-          "name": "Content-Type",
-          "value": "application/json",
-          "disabled": false
         }
       ],
       "authentication": {},
-      "description": "Ожидаемый HTTP статус 200.",
+      "description": "Ожидаемый HTTP статус 200. Сервер создаёт гостя и возвращает UUID.",
       "metaSortKey": 3,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) insomnia.environment.set(\"bob_token\", data.token);\ninsomnia.test(\"ID\", () => insomnia.expect(data.id).to.eql(insomnia.environment.get(\"bob_id\")));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\ninsomnia.test(\"Guest\", () => insomnia.expect(data.name).to.eql(\"Guest\"));\ninsomnia.test(\"UUID\", () => insomnia.expect(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(data.id)).to.eql(true));\nif (status === 200) insomnia.environment.set(\"bob_id\", data.id);",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -145,28 +124,20 @@
       "name": "04. Создать outsider",
       "method": "POST",
       "url": "{{ _.base_url }}/api/createUser",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"userId\": \"{{ _.outsider_id }}\",\n  \"userName\": \"Outsider\"\n}"
-      },
+      "body": {},
       "parameters": [],
       "headers": [
         {
           "name": "Accept",
           "value": "application/json",
           "disabled": false
-        },
-        {
-          "name": "Content-Type",
-          "value": "application/json",
-          "disabled": false
         }
       ],
       "authentication": {},
-      "description": "Ожидаемый HTTP статус 200.",
+      "description": "Ожидаемый HTTP статус 200. Сервер создаёт гостя и возвращает UUID.",
       "metaSortKey": 4,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) insomnia.environment.set(\"outsider_token\", data.token);\ninsomnia.test(\"ID\", () => insomnia.expect(data.id).to.eql(insomnia.environment.get(\"outsider_id\")));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\ninsomnia.test(\"Guest\", () => insomnia.expect(data.name).to.eql(\"Guest\"));\ninsomnia.test(\"UUID\", () => insomnia.expect(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(data.id)).to.eql(true));\nif (status === 200) insomnia.environment.set(\"outsider_id\", data.id);",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -176,7 +147,7 @@
       "_id": "__request_5__",
       "_type": "request",
       "parentId": "__request_group_1__",
-      "name": "05. Повторный ID",
+      "name": "05. Сервер не использует переданный ID",
       "method": "POST",
       "url": "{{ _.base_url }}/api/createUser",
       "body": {
@@ -197,10 +168,10 @@
         }
       ],
       "authentication": {},
-      "description": "Ожидаемый HTTP статус 409. Код USER_ALREADY_EXISTS.",
+      "description": "Ожидаемый HTTP статус 200. Новый гость получает другой UUID, существующий пользователь не заменяется.",
       "metaSortKey": 5,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"USER_ALREADY_EXISTS\", () => insomnia.expect(data.error.code).to.eql(\"USER_ALREADY_EXISTS\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\ninsomnia.test(\"Guest\", () => insomnia.expect(data.name).to.eql(\"Guest\"));\ninsomnia.test(\"UUID\", () => insomnia.expect(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(data.id)).to.eql(true));\ninsomnia.test(\"New ID\", () => insomnia.expect(data.id !== insomnia.environment.get(\"alice_id\")).to.eql(true));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -223,10 +194,10 @@
         }
       ],
       "authentication": {},
-      "description": "Ожидаемый HTTP статус 400. Код INVALID_REQUEST_BODY.",
+      "description": "Ожидаемый HTTP статус 200. Тело для создания гостя не требуется.",
       "metaSortKey": 6,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_REQUEST_BODY\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_REQUEST_BODY\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\ninsomnia.test(\"Guest\", () => insomnia.expect(data.name).to.eql(\"Guest\"));\ninsomnia.test(\"UUID\", () => insomnia.expect(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(data.id)).to.eql(true));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -236,7 +207,7 @@
       "_id": "__request_7__",
       "_type": "request",
       "parentId": "__request_group_1__",
-      "name": "07. Пустое имя",
+      "name": "07. Имя гостя задаёт сервер",
       "method": "POST",
       "url": "{{ _.base_url }}/api/createUser",
       "body": {
@@ -257,10 +228,10 @@
         }
       ],
       "authentication": {},
-      "description": "Ожидаемый HTTP статус 400. Код INVALID_USER_NAME.",
+      "description": "Ожидаемый HTTP статус 200. Имя Guest задаёт сервер независимо от тела запроса.",
       "metaSortKey": 7,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 400\", () => insomnia.expect(status).to.eql(400));\ninsomnia.test(\"INVALID_USER_NAME\", () => insomnia.expect(data.error.code).to.eql(\"INVALID_USER_NAME\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\ninsomnia.test(\"Guest\", () => insomnia.expect(data.name).to.eql(\"Guest\"));\ninsomnia.test(\"UUID\", () => insomnia.expect(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(data.id)).to.eql(true));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -314,7 +285,7 @@
       "_id": "__request_9__",
       "_type": "request",
       "parentId": "__request_group_2__",
-      "name": "01. Без токена",
+      "name": "01. Без userId",
       "method": "POST",
       "url": "{{ _.base_url }}/api/createGames",
       "body": {},
@@ -327,10 +298,10 @@
         }
       ],
       "authentication": {},
-      "description": "Ожидаемый HTTP статус 401. Код SESSION_NOT_FOUND.",
+      "description": "Ожидаемый HTTP статус 404. Код USER_NOT_FOUND.",
       "metaSortKey": 1,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 401\", () => insomnia.expect(status).to.eql(401));\ninsomnia.test(\"SESSION_NOT_FOUND\", () => insomnia.expect(data.error.code).to.eql(\"SESSION_NOT_FOUND\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 404\", () => insomnia.expect(status).to.eql(404));\ninsomnia.test(\"USER_NOT_FOUND\", () => insomnia.expect(data.error.code).to.eql(\"USER_NOT_FOUND\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -352,8 +323,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         }
       ],
@@ -361,7 +332,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 2,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) {\n    insomnia.environment.set(\"game_id\", data.id);\n    insomnia.environment.set(\"game_id_lower\", data.id.toLowerCase());\n}\ninsomnia.test(\"waiting\", () => insomnia.expect(data.phase).to.eql(\"waiting\"));\ninsomnia.test(\"Нет соперника\", () => insomnia.expect(data.players.opponent).to.eql(null));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\nif (status === 200) {\n    insomnia.environment.set(\"game_id\", data.id);\n    insomnia.environment.set(\"game_id_lower\", data.id.toLowerCase());\n}\ninsomnia.test(\"waiting\", () => insomnia.expect(data.phase).to.eql(\"waiting\"));\ninsomnia.test(\"Нет соперника\", () => insomnia.expect(data.players.opponent).to.eql(null));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -383,8 +354,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         }
       ],
@@ -392,7 +363,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 3,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -414,8 +385,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.outsider_token }}",
+          "name": "userId",
+          "value": "{{ _.outsider_id }}",
           "disabled": false
         }
       ],
@@ -445,8 +416,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         }
       ],
@@ -476,8 +447,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.bob_token }}",
+          "name": "userId",
+          "value": "{{ _.bob_id }}",
           "disabled": false
         }
       ],
@@ -485,7 +456,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 6,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"placement\", () => insomnia.expect(data.phase).to.eql(\"placement\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"placement\", () => insomnia.expect(data.phase).to.eql(\"placement\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -507,8 +478,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.outsider_token }}",
+          "name": "userId",
+          "value": "{{ _.outsider_id }}",
           "disabled": false
         }
       ],
@@ -538,8 +509,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         }
       ],
@@ -582,8 +553,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         },
         {
@@ -618,8 +589,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         }
       ],
@@ -652,8 +623,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         },
         {
@@ -666,7 +637,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 3,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Ready\", () => insomnia.expect(data.players.you.ready).to.eql(true));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Ready\", () => insomnia.expect(data.players.you.ready).to.eql(true));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -691,8 +662,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         },
         {
@@ -730,8 +701,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.outsider_token }}",
+          "name": "userId",
+          "value": "{{ _.outsider_id }}",
           "disabled": false
         },
         {
@@ -766,8 +737,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         }
       ],
@@ -775,7 +746,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 6,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Unready\", () => insomnia.expect(data.players.you.ready).to.eql(false));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Unready\", () => insomnia.expect(data.players.you.ready).to.eql(false));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -800,8 +771,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         },
         {
@@ -814,7 +785,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 7,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -839,8 +810,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         },
         {
@@ -878,8 +849,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.bob_token }}",
+          "name": "userId",
+          "value": "{{ _.bob_id }}",
           "disabled": false
         },
         {
@@ -892,7 +863,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 9,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"battle\", () => insomnia.expect(data.phase).to.eql(\"battle\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"battle\", () => insomnia.expect(data.phase).to.eql(\"battle\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -927,8 +898,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.other_player_token }}",
+          "name": "userId",
+          "value": "{{ _.other_player_id }}",
           "disabled": false
         },
         {
@@ -966,8 +937,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1002,8 +973,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         }
       ],
@@ -1033,8 +1004,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         }
       ],
@@ -1067,8 +1038,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1081,7 +1052,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 5,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"miss\", () => insomnia.expect(data.result).to.eql(\"miss\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"miss\", () => insomnia.expect(data.result).to.eql(\"miss\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1106,8 +1077,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1120,7 +1091,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 6,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"hit\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"hit\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1145,8 +1116,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1194,8 +1165,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1208,7 +1179,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 1,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1233,8 +1204,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1247,7 +1218,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 2,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1272,8 +1243,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1286,7 +1257,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 3,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1311,8 +1282,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1325,7 +1296,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 4,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1350,8 +1321,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1364,7 +1335,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 5,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1389,8 +1360,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1403,7 +1374,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 6,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1428,8 +1399,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1442,7 +1413,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 7,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1467,8 +1438,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1481,7 +1452,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 8,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1506,8 +1477,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1520,7 +1491,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 9,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1545,8 +1516,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1559,7 +1530,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 10,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1584,8 +1555,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1598,7 +1569,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 11,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1623,8 +1594,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1637,7 +1608,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 12,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1662,8 +1633,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1676,7 +1647,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 13,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1701,8 +1672,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1715,7 +1686,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 14,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"hit\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1740,8 +1711,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1754,7 +1725,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 15,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1779,8 +1750,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1793,7 +1764,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 16,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1818,8 +1789,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1832,7 +1803,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 17,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1857,8 +1828,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1871,7 +1842,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 18,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1896,8 +1867,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -1910,7 +1881,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 19,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));\ninsomnia.test(\"Ход завершён\", () => insomnia.expect(data.turnPlayerId).to.eql(null));\ninsomnia.test(\"Победитель\", () => insomnia.expect(data.winnerPlayerId).to.eql(insomnia.environment.get(\"current_player_id\")));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Результат\", () => insomnia.expect(data.result).to.eql(\"sunk\"));\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));\ninsomnia.test(\"Ход завершён\", () => insomnia.expect(data.turnPlayerId).to.eql(null));\ninsomnia.test(\"Победитель\", () => insomnia.expect(data.winnerPlayerId).to.eql(insomnia.environment.get(\"current_player_id\")));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1920,7 +1891,7 @@
       "_id": "__request_group_6__",
       "_type": "request_group",
       "parentId": "__WORKSPACE_ID__",
-      "name": "06. Завершение и signout",
+      "name": "06. Завершение",
       "description": "Выполняй запросы по порядку.",
       "environment": {},
       "metaSortKey": 6,
@@ -1942,8 +1913,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
+          "name": "userId",
+          "value": "{{ _.alice_id }}",
           "disabled": false
         }
       ],
@@ -1951,7 +1922,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 1,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -1973,8 +1944,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.bob_token }}",
+          "name": "userId",
+          "value": "{{ _.bob_id }}",
           "disabled": false
         }
       ],
@@ -1982,7 +1953,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 2,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"finished\", () => insomnia.expect(data.phase).to.eql(\"finished\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -2007,8 +1978,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.current_player_token }}",
+          "name": "userId",
+          "value": "{{ _.current_player_id }}",
           "disabled": false
         },
         {
@@ -2022,99 +1993,6 @@
       "metaSortKey": 3,
       "preRequestScript": "",
       "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 409\", () => insomnia.expect(status).to.eql(409));\ninsomnia.test(\"BATTLE_NOT_ACTIVE\", () => insomnia.expect(data.error.code).to.eql(\"BATTLE_NOT_ACTIVE\"));",
-      "settingRenderRequestBody": true,
-      "settingEncodeUrl": true,
-      "settingSendCookies": true,
-      "settingStoreCookies": true
-    },
-    {
-      "_id": "__request_55__",
-      "_type": "request",
-      "parentId": "__request_group_6__",
-      "name": "04. Signout Alice",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/signout",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Accept",
-          "value": "application/json",
-          "disabled": false
-        },
-        {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
-          "disabled": false
-        }
-      ],
-      "authentication": {},
-      "description": "Ожидаемый HTTP статус 200.",
-      "metaSortKey": 4,
-      "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}\ninsomnia.test(\"Выход\", () => insomnia.expect(data.message).to.eql(\"Successfully signed out\"));",
-      "settingRenderRequestBody": true,
-      "settingEncodeUrl": true,
-      "settingSendCookies": true,
-      "settingStoreCookies": true
-    },
-    {
-      "_id": "__request_56__",
-      "_type": "request",
-      "parentId": "__request_group_6__",
-      "name": "05. GET с удалённым токеном",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/games/{{ _.game_id }}",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Accept",
-          "value": "application/json",
-          "disabled": false
-        },
-        {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
-          "disabled": false
-        }
-      ],
-      "authentication": {},
-      "description": "Ожидаемый HTTP статус 401. Код SESSION_NOT_FOUND.",
-      "metaSortKey": 5,
-      "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 401\", () => insomnia.expect(status).to.eql(401));\ninsomnia.test(\"SESSION_NOT_FOUND\", () => insomnia.expect(data.error.code).to.eql(\"SESSION_NOT_FOUND\"));",
-      "settingRenderRequestBody": true,
-      "settingEncodeUrl": true,
-      "settingSendCookies": true,
-      "settingStoreCookies": true
-    },
-    {
-      "_id": "__request_57__",
-      "_type": "request",
-      "parentId": "__request_group_6__",
-      "name": "06. Повторный signout",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/signout",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Accept",
-          "value": "application/json",
-          "disabled": false
-        },
-        {
-          "name": "Authorization",
-          "value": "Bearer {{ _.alice_token }}",
-          "disabled": false
-        }
-      ],
-      "authentication": {},
-      "description": "Ожидаемый HTTP статус 401. Код SESSION_NOT_FOUND.",
-      "metaSortKey": 6,
-      "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 401\", () => insomnia.expect(status).to.eql(401));\ninsomnia.test(\"SESSION_NOT_FOUND\", () => insomnia.expect(data.error.code).to.eql(\"SESSION_NOT_FOUND\"));",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
@@ -2136,8 +2014,8 @@
           "disabled": false
         },
         {
-          "name": "Authorization",
-          "value": "Bearer {{ _.bob_token }}",
+          "name": "userId",
+          "value": "{{ _.bob_id }}",
           "disabled": false
         }
       ],
@@ -2145,69 +2023,7 @@
       "description": "Ожидаемый HTTP статус 200.",
       "metaSortKey": 7,
       "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
-      "settingRenderRequestBody": true,
-      "settingEncodeUrl": true,
-      "settingSendCookies": true,
-      "settingStoreCookies": true
-    },
-    {
-      "_id": "__request_59__",
-      "_type": "request",
-      "parentId": "__request_group_6__",
-      "name": "08. Signout Bob",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/signout",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Accept",
-          "value": "application/json",
-          "disabled": false
-        },
-        {
-          "name": "Authorization",
-          "value": "Bearer {{ _.bob_token }}",
-          "disabled": false
-        }
-      ],
-      "authentication": {},
-      "description": "Ожидаемый HTTP статус 200.",
-      "metaSortKey": 8,
-      "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
-      "settingRenderRequestBody": true,
-      "settingEncodeUrl": true,
-      "settingSendCookies": true,
-      "settingStoreCookies": true
-    },
-    {
-      "_id": "__request_60__",
-      "_type": "request",
-      "parentId": "__request_group_6__",
-      "name": "09. Signout outsider",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/signout",
-      "body": {},
-      "parameters": [],
-      "headers": [
-        {
-          "name": "Accept",
-          "value": "application/json",
-          "disabled": false
-        },
-        {
-          "name": "Authorization",
-          "value": "Bearer {{ _.outsider_token }}",
-          "disabled": false
-        }
-      ],
-      "authentication": {},
-      "description": "Ожидаемый HTTP статус 200.",
-      "metaSortKey": 9,
-      "preRequestScript": "",
-      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\", \"token\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
+      "afterResponseScript": "const status = insomnia.response.code;\nconst data = insomnia.response.json();\ninsomnia.test(\"HTTP 200\", () => insomnia.expect(status).to.eql(200));\nif (status === 200 && data.phase) {\n    if (typeof data.turnPlayerId === \"string\") {\n        const current = data.turnPlayerId === insomnia.environment.get(\"alice_id\") ? \"alice\" : \"bob\";\n        const other = current === \"alice\" ? \"bob\" : \"alice\";\n        for (const key of [\"id\"]) {\n            insomnia.environment.set(\"current_player_\" + key, insomnia.environment.get(current + \"_\" + key));\n            insomnia.environment.set(\"other_player_\" + key, insomnia.environment.get(other + \"_\" + key));\n        }\n    }\n}",
       "settingRenderRequestBody": true,
       "settingEncodeUrl": true,
       "settingSendCookies": true,
