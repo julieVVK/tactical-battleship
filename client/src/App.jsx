@@ -14,18 +14,21 @@ import { useEffect, useState } from "react";
 import { initializeUser } from "./user.js";
 import { Navigate, Routes, Route, useNavigate } from "react-router";
 import { useLobby } from "./useLobby.js";
+import { useLanguage } from "./i18n/useLanguage.js";
 
 function App() {
+  // Initialize internationalization hook | Инициализация хука локализации
+  const { t } = useLanguage();
   const navigate = useNavigate();
+
+  // Manage current player user state | Управление состоянием текущего игрока
   const [user, setUser] = useState({ status: "loading", error: null });
   const lobby = useLobby(user.id);
 
-  // author: Vladyslav Doroshenko
-  // Create random user
+  // Initialize random user session on component mount | Инициализация сессии случайного пользователя при монтировании
   useEffect(() => {
     if (user.status !== "loading") return;
 
-    // Ignore this effect's result after cleanup. The request itself still runs.
     let cancelled = false;
 
     initializeUser().then(
@@ -44,41 +47,86 @@ function App() {
     };
   }, [user.status]);
 
+  // Retry user initialization on connection failure | Повторная попытка инициализации пользователя при ошибке
   function retryUser() {
     setUser({ status: "loading", error: null });
   }
 
-  // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
+  // author: xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates | Сохраненная матрица 10x10 с координатами размещенного флота
   const [playerBoardData, setPlayerBoardData] = useState(null);
   const [playerShips, setPlayerShips] = useState(null);
+  const [robotGame, setRobotGame] = useState(null);
+  const [robotFleet, setRobotFleet] = useState(null);
+  const [gameError, setGameError] = useState(null);
+
+  // Handle start of human multiplayer match | Обработка старта сетевого матча
   const handleStartBattle = (boardData, ships) => {
     setPlayerBoardData(boardData);
     setPlayerShips(ships);
     navigate("/game");
   };
 
-  /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-   *       sound settings still need persistence.
-   *  EDIT: cancell saving settings, nobody gives a fuck
-   *        could have done it through local storage or cookies
-   * */
-
-  // author: Vladyslav Doroshenko
-  if (user.status === "loading") {
-    return <p role="status">Connecting to the server...</p>;
+  // Create game session with AI opponent | Создание игровой сессии с ботом
+  async function handlePlayWithPC() {
+    setGameError(null);
+    try {
+      const response = await fetch("/api/createRobotGame", {
+        method: "POST",
+        headers: { userId: user.id },
+      });
+      const view = await response.json();
+      if (!response.ok) {
+        throw new Error(view.error?.message || "Could not create a robot game.");
+      }
+      setRobotGame(view);
+      setRobotFleet(null);
+      navigate("/robot/ready");
+    } catch (error) {
+      setGameError(error.message);
+    }
   }
+
+  // Handle start of battle against AI | Обработка старта боя против бота
+  async function handleStartRobotBattle(boardData, ships) {
+    setGameError(null);
+    try {
+      const board = boardData.map((row) => row.map((cell) => (cell.hasShip ? String(cell.shipId) : null)));
+      const response = await fetch(`/api/games/${robotGame.id}/ready`, {
+        method: "POST",
+        headers: { userId: user.id, "Content-Type": "application/json" },
+        body: JSON.stringify({ board }),
+      });
+      const view = await response.json();
+      if (!response.ok) {
+        throw new Error(view.error?.message || "Could not submit your fleet.");
+      }
+      setRobotGame(view);
+      setRobotFleet({ boardData, ships });
+      navigate("/robot/game");
+    } catch (error) {
+      setGameError(error.message);
+    }
+  }
+
+  // author: Vladyslav Doroshenko - Render loading state | Отображение состояния загрузки
+  if (user.status === "loading") {
+    return <p role="status">{t("connection.loading")}</p>;
+  }
+
+  // Render initialization error state | Отображение ошибки инициализации
   if (user.status === "error") {
     return (
       <div role="alert">
-        <p>{user.error}</p>
+        <p>{t(user.error)}</p>
         <button type="button" onClick={retryUser}>
-          Try again
+          {t("connection.retry")}
         </button>
       </div>
     );
   }
 
-  const menu = <MainPage lobby={lobby} />;
+  // Main menu view instance with lobby and PC game handler | Экземпляр главного меню с поддержкой лобби и игры с ПК
+  const menu = <MainPage lobby={lobby} onPlayWithPC={handlePlayWithPC} gameError={gameError} />;
 
   return (
     <Routes>
@@ -89,6 +137,8 @@ function App() {
       <Route path="/settings" element={<Settings />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/statistics" element={<StatisticsPage />} />
+
+      {/* Multiplayer preparation and gameplay routes | Маршруты подготовки и игры для сетевого режима */}
       <Route
         path="/ready"
         element={
@@ -118,6 +168,41 @@ function App() {
           )
         }
       />
+
+      {/* Robot preparation and gameplay routes | Маршруты подготовки и игры против бота */}
+      <Route
+        path="/robot/ready"
+        element={
+          robotGame ? (
+            robotFleet ? (
+              <Navigate to="/robot/game" replace />
+            ) : (
+              <GetReady onStartBattle={handleStartRobotBattle} gameError={gameError} />
+            )
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      <Route
+        path="/robot/game"
+        element={
+          robotGame && robotFleet ? (
+            <BattleshipGame
+              key={robotGame.id}
+              initialBoardData={robotFleet.boardData}
+              initialShips={robotFleet.ships}
+              initialGameView={robotGame}
+              onGameViewChange={setRobotGame}
+              gameId={robotGame.id}
+              userId={user.id}
+            />
+          ) : (
+            <Navigate to="/robot/ready" replace />
+          )
+        }
+      />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

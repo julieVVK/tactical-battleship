@@ -114,7 +114,25 @@ File was created by Vladyslav Doroshenko
 }
 
 .lobby-dialogue {
-    max-width: 290px;
+    max-width: 28rem;
+}
+
+.lobby-dialogue .mainPageh1 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.lobby-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 18rem;
+}
+
+.lobby-dialogue .button {
+    overflow-wrap: anywhere;
 }
 
 .lobby-form {
@@ -164,6 +182,13 @@ File was created by Vladyslav Doroshenko
 }
 
 @media (max-width: 576px) {
-    .lobby-dialogue {
-        max-width: 100%; }
+    .main-page {
+        height: auto;
+        padding: 8rem 0 2rem;
     }
+
+    .lobby-dialogue {
+        max-width: 100%;
+        padding: 1.5rem 1rem;
+    }
+}

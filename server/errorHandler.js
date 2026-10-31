@@ -19,6 +19,9 @@ const errorStatuses = new Map([
     ["TURN_MISMATCH", 409],
     ["INVALID_SHOT_COORDINATES", 400],
     ["SHOT_DUPLICATE", 409],
+    ["INVALID_GADGET", 400],
+    ["INVALID_GADGET_TARGET", 400],
+    ["GADGET_ALREADY_USED", 409],
 ])
 
 

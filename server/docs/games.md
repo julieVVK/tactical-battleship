@@ -36,12 +36,18 @@ const game = {
   name: "Alice",
   ready: false,
   ships: [],
-  shots: []
+  shots: [],
+  usedGadgets: [],
+  scannedZones: [],
+  mine: null
 }
 ```
 
 `ships` stores that player's own fleet in the format returned by `prepareFleet`.
 `shots` stores that player's outgoing shots at the opponent's board, including misses.
+It also includes shots reflected by that player's mine, marked `source: "mine"`.
+`usedGadgets`, `scannedZones` and `mine` are included only in `players.you`.
+See [gadgets](gadgets.md) for their payloads and shot flags.
 ___
 ## Functions:
 Function `createGame(userId)`:

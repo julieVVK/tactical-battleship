@@ -25,23 +25,24 @@ export default function socketHandlers(io)
         catch (error)
         {
             const {status, code, message} = decodeError(error)
+
             if (status === 500) console.error(error)
 
             if (typeof acknowledge === 'function')
-            acknowledge({ok: false, error: {code, message}})
-            else socket.emit('game:error', {code, message})
+            {
+                acknowledge({ok: false, error: {code, message}})
+            }
+            else
+            {
+                socket.emit('game:error', {code, message})
+            }
         }
     })
 
-        socket.on('ping', (msg) => {
-            console.log('new message: ' + msg)
-            socket.emit('pong', 'pong')
-        })
-
         socket.on('disconnect', (reason, description) => {
             console.log(`User disconnected:
-        reason: ${reason},
-        description: ${description}`)
+            reason: ${reason},
+            description: ${description}`)
         })
     })
 }

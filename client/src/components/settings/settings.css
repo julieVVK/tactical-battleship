@@ -217,6 +217,10 @@
 }
 
 @media (max-width: 760px) {
+  .form-input::placeholder {
+    font-size: 0.9rem;
+  }
+
   .settings-grid,
   .account-form,
   .password-form {

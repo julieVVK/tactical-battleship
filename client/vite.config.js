@@ -18,4 +18,5 @@ export default defineConfig({
       },
     },
   },
+  allowedHosts: true, //necessary for ngrok/cloudflare hosting
 })

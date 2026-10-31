@@ -84,3 +84,45 @@ pointer-events: none;
     height: 1300px;
   }
 }
+  @media (max-height: 620px) {
+  
+  .mainField{
+    
+  width: 290px;
+  }
+  .battleContainer{
+    height: 400px;
+  }
+  #containerForField,#root{
+    height: 90%;
+  }
+  }
+  @media (max-width: 450px) {
+  
+  .mainField{
+    width: 315px;
+  }
+  .battleContainer{
+    height: 1300px;
+  }
+}
+
+@media (max-width: 320px) {
+  
+  .mainField{
+    
+  width: 290px;
+  }
+  .battleContainer{
+    height: 1200px;
+  }
+  }
+  @media (max-width: 450px) {
+  
+  .mainField{
+    width: 315px;
+  }
+  .battleContainer{
+    height: 1300px;
+  }
+}

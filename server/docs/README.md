@@ -5,6 +5,7 @@ Documentation is grouped by topic:
 - [Fleet placement](placement.md), `placement.js`, board format and prepared ship cells.
 - [Games and players](games.md), `games.js`, game structures, joining and readiness.
 - [Shots and match results](battle.md), `games.js`, hits, sunk ships and victory.
+- [Gadgets](gadgets.md), radar cells, reflected mine shots and ship relocation.
 - [Error codes](errors.md), `games.js` codes, thrown exceptions and uncoded failures.
 - [Users](users.md), `users.js`, user structure and functions.
 - [Game rules](rules.md), `rules.js`, board dimensions and fleet sizes.

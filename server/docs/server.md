@@ -115,6 +115,16 @@ until replaced by another Ready request.
 {"row": 0, "col": 0}
 ```
 
+## HTTP `POST /api/games/:gameId/gadgets/:gadget`:
+
+@param `gadget` One of `radar`, `mine`, `relocate`.
+@param JSON target coordinates, documented in [gadgets](gadgets.md).
+@returns HTTP 200 with the requesting player's updated view. Successful actions
+broadcast personal `game:state` views. Gadgets are one-use and require the player's turn.
+
+Gadgets are applied through HTTP only. Socket.IO delivers personal `game:state`
+updates after a successful action; see [gadget state updates](gadgets.md#socketio).
+
 ## HTTP `GET /api/games/:gameId`:
 
 @param `gameId` Game code in the URL. No body or user query is required.
@@ -124,7 +134,7 @@ Creation, joining, Ready, Unready and GET all use the same state shape.
 Successful game actions also send `game:state` to sockets subscribed to that
 game. Each socket receives the view for its user ID.
 Errors use `{error: {code, message}}`; see [error codes and statuses](errors.md).
-User creation, Ready and shots require a request body. Missing bodies return
+Ready, shots and gadgets require a request body. Missing bodies return
 HTTP 400 with `INVALID_REQUEST_BODY`.
 
 ## Other handlers

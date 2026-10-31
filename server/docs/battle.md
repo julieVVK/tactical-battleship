@@ -69,4 +69,13 @@ A miss passes the turn; a hit or sunk ship keeps it until the match ends.
 Each entry saved in `player.shots` contains `row`, `col`, `result` and, for
 `"sunk"`, `cells`. Participant IDs and match fields are added to the response.
 
+Hitting a mine also adds `mineTriggered: true` and `reflectedShot`.
+The reflection targets the same coordinates on the shooter's board. It is saved
+in the mine owner's outgoing shots with `source: "mine"`, so both players receive
+the resulting board marks. See [gadgets](gadgets.md) for examples and restrictions.
+
+Against the robot, the HTTP route plays its automatic turn before returning.
+The result still describes the human's shot, while `phase`, `turnPlayerId` and
+`winnerPlayerId` describe the current match after the robot has responded.
+
 ___

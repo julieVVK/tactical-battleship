@@ -4,22 +4,24 @@
 
 import {useEffect, useState} from 'react';
 import {useLocation} from 'react-router';
+import {useLanguage} from '../../i18n/useLanguage.js';
 import ProfileMenu from '../profileMenu/ProfileMenu.jsx';
 import Button from '../button/Button.jsx';
 import './statistics.css';
 
 // Convert an ISO date string from the backend
-function formatDateTime(isoString) {
+function formatDateTime(isoString, language) {
   const date = new Date(isoString);
+  const locale = language === 'en' ? 'en-GB' : language;
 
-  const datePart = date.toLocaleDateString('en-GB', {
+  const datePart = date.toLocaleDateString(locale, {
     timeZone: 'Europe/Prague',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
 
-  const timePart = date.toLocaleTimeString('en-GB', {
+  const timePart = date.toLocaleTimeString(locale, {
     timeZone: 'Europe/Prague',
     hour: '2-digit',
     minute: '2-digit',
@@ -43,6 +45,7 @@ async function requestStats(offset = 0, limit = 10) {
 }
 
 export default function StatisticsPage() {
+  const {t, language} = useLanguage();
   const {hash} = useLocation();
   // stats will contain the data returned by the backend.
   const [stats, setStats] = useState(null);
@@ -75,11 +78,9 @@ export default function StatisticsPage() {
         if (!cancelled) {
           setStats(data);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
-          setError(
-            err.message || 'An unexpected error occurred.'
-          );
+          setError('stats.loadFailed');
         }
       } finally {
         if (!cancelled) {
@@ -110,8 +111,8 @@ export default function StatisticsPage() {
           ...data.recentMatches,
         ],
       }));
-    } catch (error) {
-      setError(error.message);
+    } catch {
+      setError('stats.loadFailed');
     } finally {
       setLoadingMore(false);
     }
@@ -119,7 +120,7 @@ export default function StatisticsPage() {
 
   const navigation = (
     <div className="statistic-navigation">
-      <Button className="home-button" to="/">‹ Home</Button>
+      <Button className="home-button" to="/">‹ {t('nav.home')}</Button>
       <ProfileMenu />
     </div>
   );
@@ -128,7 +129,7 @@ export default function StatisticsPage() {
     return (
       <div className="statistic-page">
         {navigation}
-        Loading statistics...
+        {t('stats.loading')}
       </div>
     );
   }
@@ -137,7 +138,7 @@ export default function StatisticsPage() {
     return (
       <div className="statistic-page">
         {navigation}
-        <p role="alert">Error: {error}</p>
+        <p role="alert">{t(error)}</p>
       </div>
     );
   }
@@ -146,7 +147,7 @@ export default function StatisticsPage() {
     return (
       <div className="statistic-page">
         {navigation}
-        No statistics available.
+        {t('stats.empty')}
       </div>
     );
   }
@@ -180,10 +181,10 @@ export default function StatisticsPage() {
       {navigation}
 
       {/* Page title */}
-      <h1 className="statistic-title">Your statistics</h1>
+      <h1 className="statistic-title">{t('stats.title')}</h1>
 
       <p className="statistic-subtitle">
-        Every battle counts. Here is how your fleet is doing.
+        {t('stats.subtitle')}
       </p>
 
       {/* Three summary cards */}
@@ -191,26 +192,26 @@ export default function StatisticsPage() {
 
         {/* Number of victories */}
         <div className="statistic-card">
-          <div className="statistic-card-label">Battles won</div>
+          <div className="statistic-card-label">{t('stats.wins')}</div>
           <div className="statistic-card-value statistic-card-value--victory">{battlesWon}</div>
-          <div className="statistic-card-description">Enemy fleets defeated</div>
+          <div className="statistic-card-description">{t('stats.winsDescription')}</div>
         </div>
 
         {/* Number of defeats */}
         <div className="statistic-card">
-          <div className="statistic-card-label">Battles lost</div>
+          <div className="statistic-card-label">{t('stats.losses')}</div>
           <div className="statistic-card-value statistic-card-value--defeat">{battlesLost}</div>
           <div className="statistic-card-description">
-            A chance to try a new strategy
+            {t('stats.lossesDescription')}
           </div>
         </div>
 
         {/* Win percentage */}
         <div className="statistic-card">
-          <div className="statistic-card-label">Win rate</div>
+          <div className="statistic-card-label">{t('stats.rate')}</div>
           <div className="statistic-card-value statistic-card-value--win-rate">{winRate}%</div>
           <div className="statistic-card-description">
-            {battlesWon} wins out of {totalGames} battles
+            {t('stats.rateSummary', {wins: battlesWon, total: totalGames})}
           </div>
         </div>
       </div>
@@ -219,9 +220,9 @@ export default function StatisticsPage() {
       <div className="statistic-overall">
 
         <div className="statistic-overall-header">
-          <h2 className="statistic-overall-title">Overall results</h2>
+          <h2 className="statistic-overall-title">{t('stats.overall')}</h2>
           <span className="statistic-played">
-            {totalGames} battles played
+            {t('stats.played', {total: totalGames})}
           </span>
         </div>
 
@@ -230,10 +231,10 @@ export default function StatisticsPage() {
           {/* Victory ratio displayed as "4 out of 5" */}
           <div className="statistic-ratio">
             <div className="statistic-ratio-value">
-              {ratioOutOf5} out of 5
+              {t('stats.ratio', {count: ratioOutOf5})}
             </div>
             <div className="statistic-ratio-description">
-              battles end in a victory
+              {t('stats.ratioDescription')}
             </div>
           </div>
 
@@ -258,7 +259,7 @@ export default function StatisticsPage() {
 
               <span className="statistic-legend-item">
                 <span className="statistic-legend-dot statistic-legend-dot--victory"/>
-                Won
+                {t('stats.wonLabel')}
               </span>
 
               <span className="statistic-legend-values">
@@ -272,7 +273,7 @@ export default function StatisticsPage() {
 
               <span className="statistic-legend-item">
                 <span className="statistic-legend-dot statistic-legend-dot--defeat"/>
-                Lost
+                {t('stats.lostLabel')}
               </span>
 
             </div>
@@ -284,10 +285,10 @@ export default function StatisticsPage() {
       <div id="match-history" className="statistic-recent-matches">
 
         <div className="statistic-recent-header">
-          <h2 className="statistic-recent-title">Recent matches</h2>
+          <h2 className="statistic-recent-title">{t('stats.recent')}</h2>
 
           <span className="statistic-recent-description">
-            Last {recentMatches.length} matches · Newest first
+            {t('stats.recentSummary', {count: recentMatches.length})}
           </span>
         </div>
 
@@ -296,9 +297,9 @@ export default function StatisticsPage() {
 
           {/* Table headings */}
           <div className="statistic-match-row statistic-match-row--head">
-            <div>DATE</div>
-            <div>RESULT</div>
-            <div className="statistic-moves-heading">MOVES</div>
+            <div>{t('stats.date')}</div>
+            <div>{t('stats.result')}</div>
+            <div className="statistic-moves-heading">{t('stats.moves')}</div>
           </div>
 
           {/* Create one row for every match returned by the backend */}
@@ -314,7 +315,7 @@ export default function StatisticsPage() {
 
                 {/* Match date and time */}
                 <div className="statistic-match-date">
-                  {formatDateTime(match.date)}
+                  {formatDateTime(match.date, language)}
                 </div>
 
                 {/* Result badge: green for victory, red for defeat */}
@@ -324,7 +325,7 @@ export default function StatisticsPage() {
                       isVictory ? 'statistic-result--victory' : 'statistic-result--defeat'
                     }`}
                   >
-                    {isVictory ? 'Victory' : 'Defeat'}
+                    {t(isVictory ? 'stats.victory' : 'stats.defeat')}
                   </span>
                 </div>
 
@@ -343,7 +344,7 @@ export default function StatisticsPage() {
           <p role="alert" style={{"display": "flex",
           "margin": "15px",
           justifyContent: "center"}}>
-            {error}
+            {t(error)}
           </p>
         }
 
@@ -352,7 +353,7 @@ export default function StatisticsPage() {
           onClick={loadMoreMatches}
           disabled={loadingMore || recentMatches.length >= battlesPlayed}
         >
-          {loadingMore ? 'Loading...' : 'Load more matches'}
+          {t(loadingMore ? 'stats.loadingMore' : 'stats.loadMore')}
         </Button>
 
       </div>
