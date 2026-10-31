@@ -92,7 +92,24 @@ export default function createGameRouter(io) {
         const response = game.fireShot(gameId, userId, row, col)
         game.playRobotTurn(gameId)
         publishGame(io, gameId)
-        return res.status(200).json(response)
+        const current = game.getGameForPlayer(gameId, userId)
+        return res.status(200).json({
+            ...response,
+            phase: current.phase,
+            turnPlayerId: current.turnPlayerId,
+            winnerPlayerId: current.winnerPlayerId,
+        })
+    })
+
+
+    router.post("/games/:gameId/gadgets/:gadget", (req, res) => {
+        if (!req.body)
+            fail("INVALID_REQUEST_BODY", "Send a JSON request body.")
+
+        const view = game.useGadget(req.params.gameId, req.get("userId"), req.params.gadget, req.body)
+        publishGame(io, view.id)
+
+        return res.status(200).json(view)
     })
 
 
