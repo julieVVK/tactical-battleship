@@ -1,15 +1,13 @@
 // File was created by Vladyslav Doroshenko
 
-import requireSocketSession from "./socketMiddleware.js"
 import { getGameForPlayer } from "./games.js"
 import { decodeError } from "./errorHandler.js"
 
 
 
 export default function socketHandlers(io) {
-    io.use(requireSocketSession)
-
     io.on("connection", (socket) => {
+        socket.data.userId = socket.handshake.auth.userId
         console.log(`User with id "${socket.data.userId}" connected`)
 
         socket.on("game:subscribe", (payload, acknowledge) => {
@@ -22,14 +20,18 @@ export default function socketHandlers(io) {
 
                 if (typeof acknowledge === "function")
                     acknowledge({ ok: true, gameId: view.id })
+
             } catch (error) {
                 const { status, code, message } = decodeError(error)
-                if (status === 500) console.error(error)
 
-                if (typeof acknowledge === "function")
+                if (status === 500)
+                    console.error(error)
+
+                if (typeof acknowledge === "function"){
                     acknowledge({ ok: false, error: { code, message } })
-                else
+                } else {
                     socket.emit("game:error", { code, message })
+                }
             }
         })
 
@@ -40,8 +42,8 @@ export default function socketHandlers(io) {
 
         socket.on("disconnect", (reason, description) => {
             console.log(`User disconnected:
-        reason: ${reason},
-        description: ${description}`)
+            reason: ${reason},
+            description: ${description}`)
         })
     })
 }

@@ -2,7 +2,6 @@
 
 import { Router } from "express"
 import * as game from "../games.js"
-import requireSession from "../sessionMiddleware.js"
 import publishGame from "../gameEvents.js"
 import fail from "../error.js"
 
@@ -10,9 +9,9 @@ import fail from "../error.js"
 export default function createGameRouter(io) {
     const router = Router()
 
-    router.post('/createGames', requireSession, (req, res) => {
+    router.post('/createGames', (req, res) => {
         console.log(req.body)
-        const userId = req.userId
+        const userId = req.get("userId")
         const localGame = game.createGame(userId)
 
         publishGame(io, localGame.id)
@@ -22,8 +21,8 @@ export default function createGameRouter(io) {
 
 
     // create a new game against the robot
-    router.post('/createRobotGame', requireSession, (req, res) => {
-        const userId = req.userId;
+    router.post('/createRobotGame', (req, res) => {
+        const userId = req.get("userId");
 
         // create the game and generate the robot's fleet
         const localGame = game.createRobotGame(userId);
@@ -38,11 +37,11 @@ export default function createGameRouter(io) {
     });
 
 
-    router.post('/games/:gameId/join', requireSession, (req, res) => {
+    router.post('/games/:gameId/join', (req, res) => {
         console.log("req.body:", req.body)
         console.log("req.params:", req.params)
 
-        const userId = req.userId
+        const userId = req.get("userId")
         const gameId = req.params.gameId
 
         const response = game.joinGame(gameId, userId)
@@ -51,13 +50,13 @@ export default function createGameRouter(io) {
     });
 
 
-    router.post("/games/:gameId/ready", requireSession, (req, res) => {
+    router.post("/games/:gameId/ready", (req, res) => {
         console.log("req.body:", req.body)
         console.log("req.params:", req.params)
         if (!req.body)
             fail("INVALID_REQUEST_BODY", "Send a JSON request body.")
 
-        const userId = req.userId
+        const userId = req.get("userId")
         const { board } = req.body
         const gameId = req.params.gameId
 
@@ -67,11 +66,11 @@ export default function createGameRouter(io) {
     });
 
 
-    router.post("/games/:gameId/unready", requireSession, (req, res) => {
+    router.post("/games/:gameId/unready", (req, res) => {
         console.log("req.body:", req.body)
         console.log("req.params:", req.params)
 
-        const userId = req.userId
+        const userId = req.get("userId")
         const gameId = req.params.gameId
 
         const response = game.unreadyPlayer(gameId, userId)
@@ -80,29 +79,46 @@ export default function createGameRouter(io) {
     });
 
 
-    router.post("/games/:gameId/shots", requireSession, (req, res) => {
+    router.post("/games/:gameId/shots", (req, res) => {
         console.log("req.body:", req.body)
         console.log("req.params:", req.params)
         if (!req.body)
             fail("INVALID_REQUEST_BODY", "Send a JSON request body.")
 
-        const userId = req.userId
+        const userId = req.get("userId")
         const { row, col } = req.body
         const gameId = req.params.gameId
 
         const response = game.fireShot(gameId, userId, row, col)
         game.playRobotTurn(gameId)
         publishGame(io, gameId)
-        return res.status(200).json(response)
+        const current = game.getGameForPlayer(gameId, userId)
+        return res.status(200).json({
+            ...response,
+            phase: current.phase,
+            turnPlayerId: current.turnPlayerId,
+            winnerPlayerId: current.winnerPlayerId,
+        })
     })
 
 
-    router.get("/games/:gameId", requireSession, (req, res) => {
+    router.post("/games/:gameId/gadgets/:gadget", (req, res) => {
+        if (!req.body)
+            fail("INVALID_REQUEST_BODY", "Send a JSON request body.")
+
+        const view = game.useGadget(req.params.gameId, req.get("userId"), req.params.gadget, req.body)
+        publishGame(io, view.id)
+
+        return res.status(200).json(view)
+    })
+
+
+    router.get("/games/:gameId", (req, res) => {
         console.log("req.params:", req.params)
         console.log("req.body:", req.body)
 
         const gameId = req.params.gameId
-        const userId = req.userId
+        const userId = req.get("userId")
 
         const localGame = game.getGameForPlayer(gameId, userId)
 

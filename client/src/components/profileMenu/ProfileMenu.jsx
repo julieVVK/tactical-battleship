@@ -5,19 +5,18 @@ import { useEffect, useRef, useState } from "react";
 
 import profileLogo from "../../assets/logo.svg";
 import "./profileMenu.css";
+import { Link } from "react-router";
 
 
-function ProfileMenu({ onNavigateStatistics }) {
+function ProfileMenu() {
     const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
-    const [isSigningOut, setIsSigningOut] = useState(false);
     const containerRef = useRef(null);
 
-    //TODO: connect React Router to this
     const menu_items = {
-        "account.profile" : "#Profile",
-        "account.statistics": "#Statistics",
-        "account.matchHistory": "#MatchHistory",
+        "nav.settings" : "/settings",
+        "account.statistics": "/statistics",
+        "account.matchHistory": "/statistics#match-history",
     }
 
     useEffect(() => {
@@ -36,62 +35,11 @@ function ProfileMenu({ onNavigateStatistics }) {
     }, [isOpen]);
 
 
-
-    /*TODO: Implement this function once the backend and API endpoint are ready.*/
-
-    // USER ACCOUNT DATA TEMPLATE
-    // const userData = () => {
-    //     fetch('/api/userData', {
-    //         method: 'GET',
-    //         userID: null // some function will create session tocken which we will pass here instead of null
-    //     }).then(res => res.json())
-    //         .then((data) => {
-    //             if (data.userID === null) {
-    //                 setIsOpen(false);
-    //             }
-    //         })
-    // }
-
-
-
-    // Save the token under localStorage.token after user creation.
-    const signOut = async () => {
-        if (isSigningOut) return;
-
-        setIsSigningOut(true);
-        try {
-            const token = localStorage.getItem("token");
-            if (token) {
-                const response = await fetch('/api/signout', {
-                    method: 'GET',
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const data = await response.json();
-                const sessionMissing =
-                    response.status === 401 &&
-                    data.error?.code === "SESSION_NOT_FOUND";
-
-                if (!response.ok && !sessionMissing) {
-                    throw new Error('account.signOutServerError');
-                }
-            }
-
-            localStorage.removeItem("token");
-            localStorage.removeItem("gameId");
-            alert(t('account.signedOut'));
-            location.reload();
-        } catch (error) {
-            alert(t('account.signOutFailed') + '\n' + t(
-                error.message === 'account.signOutServerError'
-                    ? 'account.signOutServerError'
-                    : 'account.networkError',
-            ));
-        } finally {
-            setIsSigningOut(false);
-        }
-    }
-
-
+    const signOut = () => {
+        alert(t('account.signedOut'));
+        // Reload the app to create a new guest.
+        window.location.replace("/");
+    };
 
 
     return (
@@ -116,28 +64,21 @@ function ProfileMenu({ onNavigateStatistics }) {
 
                 <div className="profile-menu-items">
 
-                    {Object.entries(menu_items).map( ([label]) => {
+                    {Object.entries(menu_items).map( ([label, path]) => {
                      return (
-                        <button
-                            type="button"
+                        <Link
+                            to={path}
                             className="profile-menu-item"
                             key={label}
-                            onClick={ () => {
-                                setIsOpen(false)
-                                
-                                if (label === "Statistics") {
-                                    onNavigateStatistics?.();
-                                }
-                            } }
+                            onClick={() => setIsOpen(false)}
                         >
                             {t(label)}
-                        </button>
+                        </Link>
                      );
                     })}
 
                     <button
                         type="button"
-                        disabled={isSigningOut}
                         onClick={() => signOut()}
                         className="profile-menu-item profile-menu-signout">
                         {t('account.signOut')}

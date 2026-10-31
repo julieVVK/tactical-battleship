@@ -23,7 +23,6 @@ import "../battlefield/battlefield.css";
  *
  * @author xhaziyh00, xslobok00
  * @property {Object} props - Component input properties.
- * @property {Function} props.onGoHome - Callback function to return to the main menu screen.
  * @property {Function} props.onStartBattle - Callback triggered when the fleet is fully placed.
  * @property {Object} state - Component internal state.
  * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
@@ -538,7 +537,7 @@ class GetReady extends React.Component {
 
     return (
       <>
-        <Header onGoHome={this.props.onGoHome} />
+        <Header />
         {this.props.gameError && <p role="alert">{this.props.gameError}</p>}
 
         <div id="containerForField">

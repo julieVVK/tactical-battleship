@@ -13,19 +13,6 @@
   margin-bottom: 24px;
 }
 
-.home-back-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid var(--text-btn-color);
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: background-color 0.2s ease;
-}
-
 .settings-header {
   margin-bottom: 28px;
 }

@@ -10,7 +10,8 @@
 //       Changed lines: 12, 26, 42, 48, 53, 54
 
 import { LanguageContext } from '../../i18n/LanguageContext.js';
-import React, { useState } from "react";
+import React from "react";
+import { Link } from "react-router";
 import { TURN_MESSAGES } from "../../constants";
 import "./header.css";
 /**
@@ -18,7 +19,6 @@ import "./header.css";
  *
  * @author xhaziyh00
  * @property {Object} props - Component input properties.
- * @property {Function} props.onGoHome - Callback function to navigate back to the main menu.
  * @property {Object} state - Component internal state.
  * @property {string} state.turnStatus - Key representing the current turn phase for the TURN_MESSAGES mapping.
  */
@@ -44,9 +44,9 @@ class Header extends React.Component {
       <div className="headerDiv">
         <div className="buttonContainer">
           {/* author:xhaziyh00 - Navigation section: button to return home */}
-          <button id="homeButton" onClick={this.props.onGoHome}>
+          <Link id="homeButton" to="/">
             {t('nav.home')}
-          </button>
+          </Link>
         </div>
         <div className="textContainer">
           {/* author:xhaziyh00 - Information section: title and dynamic turn status text */}

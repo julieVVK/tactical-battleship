@@ -2,7 +2,7 @@
 
 .statistic-page {
   width: 100%;
-  padding: 32px 5vw 48px;
+  padding: 3rem 5vw 48px;
   min-height: 100vh;
 }
 
@@ -10,33 +10,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 3.5rem;
   margin-bottom: 32px;
-}
-
-.statistic-home-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
-  border: 1px solid var(--text-btn-color);
-  border-radius: 3px;
-  background: transparent;
-  color: var(--text-btn-color);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.statistic-navigation .profile-menu {
-  position: relative;
-  top: auto;
-  right: auto;
-  width: auto;
-  max-width: none;
-}
-
-.statistic-navigation .profile-menu-toggle {
-  margin-right: 0;
 }
 
 .statistic-navigation .profile-menu-panel {
@@ -279,7 +254,7 @@
 
 @media (max-width: 720px) {
   .statistic-cards { grid-template-columns: 1fr; }
-  .statistic-page { padding: 24px 18px 32px; }
+  .statistic-page { padding: 3rem 18px 32px; }
   .statistic-match-row { grid-template-columns: 1fr 1fr 70px; padding: 14px 16px; }
   .statistic-overall { padding: 20px; }
 }

@@ -1,189 +1,179 @@
-import MainPage from "./components/mainPage/MainPage.jsx";
-import Settings from "./components/settings/Settings.jsx";
-import Rules from "./components/rulesPage/Rules.jsx";
-import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx";
-import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx";
-import StatisticsPage from "./components/statistics/Statistics.jsx";
-import { useEffect, useState } from "react";
-import { initializeSession } from "./session.js";
+/* @authors:
+    Yuliia Vovk: React Router
+    Haziy Hosha: player board data passing
+    Vladyslav Doroshenko: React Router
+*/
+
+import MainPage from "./components/mainPage/MainPage.jsx"
+import Settings from "./components/settings/Settings.jsx"
+import Rules from "./components/rulesPage/Rules.jsx"
+import GetReady from "./components/battleshipGame/BattleshipGetReady.jsx"
+import BattleshipGame from "./components/battleshipGame/BattleshipGame.jsx"
+import StatisticsPage from "./components/statistics/Statistics.jsx"
+import {useEffect, useState} from "react"
+import {initializeUser} from "./user.js"
+import {Navigate, Routes, Route, useNavigate} from "react-router"
+import {useLobby} from "./useLobby.js"
 
 function App() {
-  const [screen, setScreen] = useState("menu");
-  const [session, setSession] = useState({ status: "loading", error: null });
-  const [robotGameId, setRobotGameId] = useState(null);
-  const [robotUserId, setRobotUserId] = useState(null);
-  const [gameView, setGameView] = useState(null);
-  const [gameError, setGameError] = useState(null);
+    const navigate = useNavigate()
+    const [user, setUser] = useState({status: "loading", error: null})
+    const lobby = useLobby(user.id)
 
-  // author: Vladyslav Doroshenko
-  // Create random user
-  useEffect(() => {
-    if (session.status !== "loading") return;
 
-    initializeSession().then(
-      () => {
-        setSession({ status: "ready", error: null });
-      },
-      (error) => {
-        setSession({ status: "error", error: error.message });
-      },
-    );
-  }, [session.status]);
+    // author: Vladyslav Doroshenko
+    // Create random user
+    useEffect(() => {
+        if (user.status !== "loading")
+            return
 
-  function retrySession() {
-    setSession({ status: "loading", error: null });
-  }
+        // Ignore this effect's result after cleanup. The request itself still runs.
+        let cancelled = false
 
-  /**
-   * @author Marie Pindorová
-   * @returns {Promise<void>} Creates the game and navigates to the ship placement screen. 
-   */
-  async function handlePlayWithPC() {
-    setGameError(null);
-    try {
-      const token = localStorage.getItem("token");
+        initializeUser().then((guest) => {
 
-      const response = await fetch("/api/createRobotGame", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+            if (cancelled) return
+            setUser({status: "ready", error: null, id: guest.id})
 
-      if (!response.ok) {
-        throw new Error("Failed to create a robot game.");
-      }
+        }, (error) => {
 
-      const game = await response.json();
-      setRobotGameId(game.id);
-      setRobotUserId(game.players.you.id);
-      setGameView(game);
-      setScreen("ready");
+            if (cancelled) return
+            setUser({status: "error", error: error.message})
 
-    } catch (error) {
-      console.error("Could not start robot game:", error);
-      setGameError(error.message);
+        })
+
+        return () => {
+            cancelled = true
+        }
+
+    }, [user.status])
+
+
+    function retryUser() {
+        setUser({status: "loading", error: null})
     }
-  }
 
 
-  // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
-  const [playerBoardData, setPlayerBoardData] = useState(null);
+    // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
+    const [playerBoardData, setPlayerBoardData] = useState(null)
+    const [playerShips, setPlayerShips] = useState(null)
+    const [robotGame, setRobotGame] = useState(null)
+    const [robotFleet, setRobotFleet] = useState(null)
+    const [gameError, setGameError] = useState(null)
 
-  // author:xhaziyh00 - Persisted player ships registry holding orientation and placement states
-  const [playerShips, setPlayerShips] = useState(null);
-  /**
-   * Transition callback from preparation dock to active combat arena.
-   * Caches finalized fleet configuration and triggers battle screen mount.
-   *
-   * @author xhaziyh00
-   * @param {Array<Array<Object>>} boardData - Populated 10x10 board matrix.
-   * @param {Array<Object>} ships - List of configured ship entities.
-   */
-
-  // author: Marie Pindorová
-  const handleStartBattle = async (boardData, ships) => {
-    setGameError(null);
-    try {
-      if (!robotGameId) {
-        throw new Error("Create a game against the computer before starting battle.");
-      }
-
-      const board = boardData.map((row) => row.map((cell) => (cell.hasShip ? String(cell.shipId) : null)));
-      const response = await fetch(`/api/games/${robotGameId}/ready`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ board }),
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error?.message || "Could not submit your fleet.");
-      }
-
-      setPlayerBoardData(boardData);
-      setPlayerShips(ships);
-      setGameView(result);
-      setScreen("battle");
-    } catch (error) {
-      console.error("Could not start battle:", error);
-      setGameError(error.message);
+    const handleStartBattle = (boardData, ships) => {
+        setPlayerBoardData(boardData)
+        setPlayerShips(ships)
+        navigate("/game")
     }
-  };
 
-  //TODO: Implement React Router
-  /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
-   *       sound settings still need persistence.
-   *       Language is handled by LanguageProvider.
-   *       Add isDirty, savedProfile, draftProfile
-   * */
+    async function handlePlayWithPC() {
+        setGameError(null)
+        try {
+            const response = await fetch("/api/createRobotGame", {
+                method: "POST",
+                headers: { userId: user.id },
+            })
+            const view = await response.json()
+            if (!response.ok) {
+                throw new Error(view.error?.message || "Could not create a robot game.")
+            }
+            setRobotGame(view)
+            setRobotFleet(null)
+            navigate("/robot/ready")
+        } catch (error) {
+            setGameError(error.message)
+        }
+    }
 
-  // author: Vladyslav Doroshenko
-  if (session.status === "loading") {
-    return <p role="status">Connecting to the server...</p>;
-  }
-  if (session.status === "error") {
+    async function handleStartRobotBattle(boardData, ships) {
+        setGameError(null)
+        try {
+            const board = boardData.map(row => row.map(cell => cell.hasShip ? String(cell.shipId) : null))
+            const response = await fetch(`/api/games/${robotGame.id}/ready`, {
+                method: "POST",
+                headers: { userId: user.id, "Content-Type": "application/json" },
+                body: JSON.stringify({ board }),
+            })
+            const view = await response.json()
+            if (!response.ok) {
+                throw new Error(view.error?.message || "Could not submit your fleet.")
+            }
+            setRobotGame(view)
+            setRobotFleet({ boardData, ships })
+            navigate("/robot/game")
+        } catch (error) {
+            setGameError(error.message)
+        }
+    }
+
+
+    /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
+    *       sound settings still need persistence.
+    *  EDIT: cancell saving settings, nobody gives a fuck
+    *        could have done it through local storage or cookies
+    * */
+
+
+    // author: Vladyslav Doroshenko
+    if (user.status === "loading") {
+        return <p role="status">Connecting to the server...</p>
+    }
+    if (user.status === "error") {
+        return (
+            <div role="alert">
+                <p>{user.error}</p>
+                <button type="button" onClick={retryUser}>Try again</button>
+            </div>
+        )
+    }
+
+
+    const menu = <MainPage lobby={lobby} onPlayWithPC={handlePlayWithPC} gameError={gameError}/>
+
+
     return (
-      <div role="alert">
-        <p>{session.error}</p>
-        <button type="button" onClick={retrySession}>
-          Try again
-        </button>
-      </div>
-    );
-  }
-
-  // author:xhaziyh00 - Declarative client-side screen switcher
-  switch (screen) {
-    case "menu":
-      return (
-        <MainPage
-          onPlayWithPC={handlePlayWithPC}
-          gameError={gameError}
-          onStartGame={() => setScreen("ready")}
-          onNavigateSettings={() => setScreen("settings")}
-          onNavigateRules={() => setScreen("rules")}
-          onNavigateStatistics={() => setScreen("statistics")}
-        />
-      );
-
-    case "settings":
-      return <Settings onNavigateMain={() => setScreen("menu")} />;
-
-    case "rules":
-      return <Rules onNavigateMain={() => setScreen("menu")} />;
-
-    case "ready":
-      return <GetReady onGoHome={() => setScreen("menu")} onStartBattle={handleStartBattle} gameError={gameError} />;
-
-    case "battle":
-      return (
-        <BattleshipGame
-          onGoHome={() => setScreen("menu")}
-          initialBoardData={playerBoardData}
-          initialShips={playerShips}
-          initialGameView={gameView}
-          gameId={robotGameId}
-          userId={robotUserId}
-          gameError={gameError}
-        />
-      );
-
-    case "statistics":
-      return <StatisticsPage onHome={() => setScreen("menu")} />;
-
-    default:
-      // author:xhaziyh00 - Fallback to main menu if unknown screen state is passed
-      return (
-        <MainPage
-          onStartGame={() => setScreen("ready")}
-          onNavigateSettings={() => setScreen("settings")}
-          onNavigateRules={() => setScreen("rules")}
-          onNavigateStatistics={() => setScreen("statistics")}
-        />
-      );
-  }
+        <Routes>
+            <Route path="/" element={menu}/>
+            <Route path="/lobby" element={menu}/>
+            <Route path="/lobby/create" element={menu}/>
+            <Route path="/lobby/join" element={menu}/>
+            <Route path="/settings" element={<Settings/>}/>
+            <Route path="/rules" element={<Rules/>}/>
+            <Route path="/statistics" element={<StatisticsPage/>}/>
+            <Route path="/ready" element={
+                                     lobby.game?.players.opponent ?
+                                             <GetReady onStartBattle={handleStartBattle}/> :
+                                             <Navigate to="/lobby" replace/>
+                                 }/>
+            <Route path="/game" element={
+                                    playerBoardData ?
+                                        <BattleshipGame initialBoardData={playerBoardData} initialShips={playerShips}/> :
+                                        <Navigate to="/ready" replace/>
+                                }/>
+            <Route path="/robot/ready" element={
+                robotGame ?
+                    robotFleet ?
+                        <Navigate to="/robot/game" replace/> :
+                        <GetReady onStartBattle={handleStartRobotBattle} gameError={gameError}/> :
+                    <Navigate to="/" replace/>
+            }/>
+            <Route path="/robot/game" element={
+                robotGame && robotFleet ?
+                    <BattleshipGame
+                        key={robotGame.id}
+                        initialBoardData={robotFleet.boardData}
+                        initialShips={robotFleet.ships}
+                        initialGameView={robotGame}
+                        onGameViewChange={setRobotGame}
+                        gameId={robotGame.id}
+                        userId={user.id}
+                    /> :
+                    <Navigate to="/robot/ready" replace/>
+            }/>
+            <Route path="*" element={<Navigate to="/" replace/>}/>
+        </Routes>
+    )
 }
-export default App;
+
+export default App
