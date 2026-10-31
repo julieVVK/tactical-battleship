@@ -9,7 +9,7 @@
 //     - Added foreign languages support
 //       Changed lines: 12, 26, 42, 48, 53, 54
 
-import { LanguageContext } from '../../i18n/LanguageContext.js';
+import { LanguageContext } from "../../i18n/LanguageContext.js";
 import React from "react";
 import { Link } from "react-router";
 import { TURN_MESSAGES } from "../../constants";
@@ -29,7 +29,8 @@ class Header extends React.Component {
     super(props);
     // author:xhaziyh00 - Initialize local state with default turn status
     this.state = {
-      turnStatus: "my_turn",
+      turnStatus: props.turnPlayerId,
+      isGetReady: props.isGetReady,
     };
   }
   /**
@@ -45,13 +46,13 @@ class Header extends React.Component {
         <div className="buttonContainer">
           {/* author:xhaziyh00 - Navigation section: button to return home */}
           <Link id="homeButton" to="/">
-            {t('nav.home')}
+            {t("nav.home")}
           </Link>
         </div>
         <div className="textContainer">
           {/* author:xhaziyh00 - Information section: title and dynamic turn status text */}
-          <h1>{t('app.title')}</h1>
-          <p>{t(TURN_MESSAGES[this.state.turnStatus])}</p>
+          <h1>{t("app.title")}</h1>
+          {!this.props.isGetReady && <p>{t(TURN_MESSAGES[this.props.turnStatus])}</p>}
         </div>
       </div>
     );

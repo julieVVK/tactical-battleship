@@ -34,15 +34,14 @@ class BatlleshipGame extends React.Component {
     this.playerBoardRef = React.createRef();
     this.opponentBoardRef = React.createRef();
     this.state = {
+      myShips: props.myShips,
       enemyShips: SHIPS_CONFIG.map((ship) => ({
         //xslobok00: enemy ships
         ...ship,
         isKilled: false,
       })),
       boardData: props.initialBoardData,
-      opponentBoard: Array(10)
-        .fill(null)
-        .map(() => Array(10).fill({ hit: false, miss: false })),
+      opponentBoard: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => ({ hit: false, miss: false }))),
       usedGadgets: [],
       scannedZones: [],
       draggingGadget: null,
@@ -319,7 +318,8 @@ class BatlleshipGame extends React.Component {
 
     if (!targetShipId) return;
 
-    const originalShip = myShips.find((s) => String(s.id) === String(targetShipId));
+    const shipsList = myShips || this?.state?.myShips || this?.props?.ships || [];
+    const originalShip = shipsList.find((s) => String(s.id) === String(targetShipId));
     if (!originalShip) return;
 
     let originalCells = [];
@@ -342,43 +342,142 @@ class BatlleshipGame extends React.Component {
     });
   };
 
-  handleShot = (row, col) => {
+  handleShot = async (row, col) => {
     const { opponentBoard } = this.state;
+    const { userId, gameId, turnPlayerId, gameState } = this.props;
 
-    if (opponentBoard && opponentBoard[row] && opponentBoard[row][col]) {
-      const targetCell = opponentBoard[row][col];
-      if (targetCell.hit || targetCell.miss) {
-        console.log("Not here, here you shot before");
-        return;
-      }
+    // Block shot if the game hasn't started OR it's not the player's turn
+    if (!turnPlayerId || turnPlayerId !== userId) {
+      console.log("Game not started or not your turn! ");
+      return;
     }
 
-    const payload = {
-      gameId: this.props.gameId,
-      playerId: this.props.userId,
-      row: row,
-      col: col,
-    };
+    const myShots = gameState?.players?.you?.shots || [];
+    const alreadyShot = myShots.some((shot) => shot.row === row && shot.col === col);
 
-    console.log("send shot on server:", payload);
+    if (alreadyShot) {
+      console.log("You have already fired at this cell! | Сюда ты уже стрелял!");
+      return;
+    }
 
-    if (this.props.socket) {
-      this.props.socket.emit("fireShot", payload);
+    const payload = { row, col };
+    console.log("send shot via HTTP on server:", payload);
+
+    try {
+      // Use correct /shots endpoint and pass userId in headers
+      const response = await fetch(`/api/games/${gameId}/shots`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          userId: userId,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        console.error("Shot failed | Выстрел не удался", await response.text());
+      }
+    } catch (err) {
+      console.error("Network error on shot | Ошибка сети при выстреле", err);
     }
   };
   componentDidMount() {
     window.addEventListener("mousemove", this.handleMouseMove);
     window.addEventListener("mouseup", this.handleGlobalMouseUp);
     window.addEventListener("keydown", this.handleKeyDown);
-    // this.props.socket.on("radarResult", (data) =>
-    //   this.setState((prev) => ({ scannedZones: [...prev.scannedZones, data] })),
-    // );
   }
 
   componentWillUnmount() {
     window.removeEventListener("mousemove", this.handleMouseMove);
     window.removeEventListener("mouseup", this.handleGlobalMouseUp);
     window.removeEventListener("keydown", this.handleKeyDown);
+  }
+
+  // author:xhaziyh00 - Calculate enemy ships state on the fly from outgoing shots history
+  getEnemyShips = () => {
+    const myShots = this.props.gameState?.players?.you?.shots || [];
+
+    const sunkSizes = myShots.filter((shot) => shot.result === "sunk" && Array.isArray(shot.cells)).map((shot) => shot.cells.length);
+
+    const enemyShips = SHIPS_CONFIG.map((ship) => ({
+      ...ship,
+      isSunk: false,
+    }));
+
+    sunkSizes.forEach((size) => {
+      const targetShip = enemyShips.find((s) => s.size === size && !s.isSunk);
+      if (targetShip) {
+        targetShip.isSunk = true;
+      }
+    });
+
+    return enemyShips;
+  };
+
+  // author:xhaziyh00 - Sync local board state with incoming full game state
+  componentDidUpdate(prevProps) {
+    const myShots = this.props.gameState?.players?.you?.shots || [];
+    const prevMyShots = prevProps.gameState?.players?.you?.shots || [];
+    const opponentShots = this.props.gameState?.players?.opponent?.shots || [];
+    const prevOpponentShots = prevProps.gameState?.players?.opponent?.shots || [];
+
+    const hasNewShots = myShots.length !== prevMyShots.length || opponentShots.length !== prevOpponentShots.length;
+
+    if (this.props.gameState && (prevProps.gameState !== this.props.gameState || hasNewShots)) {
+      const newOpponentBoard = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => ({ hit: false, miss: false })));
+      myShots.forEach((shot) => {
+        if (shot.row >= 0 && shot.row < 10 && shot.col >= 0 && shot.col < 10) {
+          if (shot.result === "hit" || shot.result === "sunk") {
+            newOpponentBoard[shot.row][shot.col].hit = true;
+
+            if (shot.result === "sunk" && Array.isArray(shot.cells)) {
+              shot.cells.forEach(({ row, col }) => {
+                for (let dx = -1; dx <= 1; dx++) {
+                  for (let dy = -1; dy <= 1; dy++) {
+                    const tr = row + dx;
+                    const tc = col + dy;
+                    if (tr >= 0 && tr < 10 && tc >= 0 && tc < 10) {
+                      if (!newOpponentBoard[tr][tc].hit) {
+                        newOpponentBoard[tr][tc].miss = true;
+                      }
+                    }
+                  }
+                }
+              });
+            }
+          } else if (shot.result === "miss") {
+            newOpponentBoard[shot.row][shot.col].miss = true;
+          }
+        }
+      });
+
+      const newBoardData = this.state.boardData.map((row) => row.map((cell) => ({ ...cell })));
+      opponentShots.forEach((shot) => {
+        if (shot.result === "hit" || shot.result === "sunk") newBoardData[shot.row][shot.col].hit = true;
+
+        if (shot.result === "sunk" && Array.isArray(shot.cells)) {
+          shot.cells.forEach(({ row, col }) => {
+            for (let dx = -1; dx <= 1; dx++) {
+              for (let dy = -1; dy <= 1; dy++) {
+                const tr = row + dx;
+                const tc = col + dy;
+                if (tr >= 0 && tr < 10 && tc >= 0 && tc < 10) {
+                  if (!newBoardData[tr][tc].hit) {
+                    newBoardData[tr][tc].miss = true;
+                  }
+                }
+              }
+            }
+          });
+        }
+        if (shot.result === "miss") newBoardData[shot.row][shot.col].miss = true;
+      });
+
+      this.setState({
+        opponentBoard: newOpponentBoard,
+        boardData: newBoardData,
+      });
+    }
   }
 
   /**
@@ -392,7 +491,7 @@ class BatlleshipGame extends React.Component {
     const { t } = this.context;
     return (
       <div>
-        <Header onGoHome={this.props.onGoHome} />
+        <Header onGoHome={this.props.onGoHome} isGetReady={false} turnStatus={this.props.userId == this.props.turnPlayerId ? "my_turn" : "opponent_turn"} />
 
         <div className="battleContainer">
           <Battlefield
@@ -415,7 +514,7 @@ class BatlleshipGame extends React.Component {
             title={t("game.opponent")}
             isOpponent={true}
             boardData={this.state.opponentBoard}
-            enemyShips={this.state.enemyShips}
+            enemyShips={this.getEnemyShips()}
             containerRef={this.opponentBoardRef}
             scannedZones={this.state.scannedZones}
             draggingGadget={this.state.draggingGadget}

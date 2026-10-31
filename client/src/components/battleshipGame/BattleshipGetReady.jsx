@@ -522,17 +522,32 @@ class GetReady extends React.Component {
     }
   };
 
-  handleReadyToGo = (boardData, ships) => {
+  handleReadyToGo = async (boardData, ships) => {
     const payload = {
-      gameId: this.props.gameId,
-      playerId: this.props.userId,
       board: boardData.map((row) => row.map((cell) => (cell.hasShip ? cell.shipId : null))),
     };
 
-    console.log("send board:", payload);
-    this.props.socket.emit("readyPlayer", payload);
-    if (this.props.onStartBattle) {
-      this.props.onStartBattle(boardData, ships, payload.board);
+    console.log("send board via HTTP:", payload);
+
+    try {
+      const response = await fetch(`/api/games/${this.props.gameId}/ready`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          userId: this.props.userId,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        if (this.props.onStartBattle) {
+          this.props.onStartBattle(boardData, ships, payload.board);
+        }
+      } else {
+        console.error("Failed to ready up | Nepodařilo se nastavit stav připraven", await response.text());
+      }
+    } catch (err) {
+      console.error("Network error on ready up | Chyba sítě", err);
     }
   };
 
@@ -546,7 +561,7 @@ class GetReady extends React.Component {
 
     return (
       <>
-        <Header onGoHome={this.props.onGoHome} />
+        <Header onGoHome={this.props.onGoHome} isGetReady={true} />
 
         <div id="containerForField">
           <Battlefield

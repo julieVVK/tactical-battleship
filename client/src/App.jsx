@@ -50,9 +50,10 @@ function App() {
 
   // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
   const [playerBoardData, setPlayerBoardData] = useState(null);
-
-  const handleStartBattle = (boardData) => {
+  const [playerShips, setPlayerShips] = useState(null);
+  const handleStartBattle = (boardData, ships) => {
     setPlayerBoardData(boardData);
+    setPlayerShips(ships);
     navigate("/game");
   };
 
@@ -88,8 +89,35 @@ function App() {
       <Route path="/settings" element={<Settings />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/statistics" element={<StatisticsPage />} />
-      <Route path="/ready" element={lobby.game?.players.opponent ? <GetReady onStartBattle={handleStartBattle} /> : <Navigate to="/lobby" replace />} />
-      <Route path="/game" element={playerBoardData ? <BattleshipGame initialBoardData={playerBoardData} /> : <Navigate to="/ready" replace />} />
+      <Route
+        path="/ready"
+        element={
+          lobby.game?.players?.opponent ? (
+            <GetReady onStartBattle={handleStartBattle} gameId={lobby.game?.id} userId={user.id} socket={lobby.socket} onGoHome={() => navigate("/")} />
+          ) : (
+            <Navigate to="/lobby" replace />
+          )
+        }
+      />
+      <Route
+        path="/game"
+        element={
+          playerBoardData ? (
+            <BattleshipGame
+              initialBoardData={playerBoardData}
+              myShips={playerShips}
+              gameId={lobby.game?.id}
+              userId={user.id}
+              socket={lobby.socket}
+              turnPlayerId={lobby.game?.turnPlayerId}
+              gameState={lobby.game}
+              onGoHome={() => navigate("/")}
+            />
+          ) : (
+            <Navigate to="/ready" replace />
+          )
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

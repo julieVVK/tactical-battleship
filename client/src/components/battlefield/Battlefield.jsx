@@ -337,13 +337,14 @@ class Battlefield extends React.Component {
                     {isZoneCenter && isOpponent && <span className="radar-percent">{scannedZone.percent}%</span>}
 
                     {/* if has mine */}
-                    {cell?.hasMine && !isOpponent && <span className="mineIcon">{GADGETS.find((g) => g.id === "mine")?.icon}</span>}
-
+                    {cell?.hasMine && !isOpponent && !cell?.miss && <span className="mineIcon">{GADGETS.find((g) => g.id === "mine")?.icon}</span>}
+                    {/* mine got hit */}
+                    {cell?.hasMine && !isOpponent && cell?.miss && <span className="mineIcon">💥</span>}
                     {/* Hit marker */}
                     {cell?.hit && <span className="hitCell">✕</span>}
 
                     {/* Miss marker */}
-                    {cell?.miss && <span className="missCell">•</span>}
+                    {cell?.miss && !cell?.hasMine && <span className="missCell">•</span>}
                   </CellTag>
                 );
               }),
