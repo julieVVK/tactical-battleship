@@ -20,14 +20,18 @@ export default function socketHandlers(io) {
 
                 if (typeof acknowledge === "function")
                     acknowledge({ ok: true, gameId: view.id })
+
             } catch (error) {
                 const { status, code, message } = decodeError(error)
-                if (status === 500) console.error(error)
 
-                if (typeof acknowledge === "function")
+                if (status === 500)
+                    console.error(error)
+
+                if (typeof acknowledge === "function"){
                     acknowledge({ ok: false, error: { code, message } })
-                else
+                } else {
                     socket.emit("game:error", { code, message })
+                }
             }
         })
 
@@ -38,8 +42,8 @@ export default function socketHandlers(io) {
 
         socket.on("disconnect", (reason, description) => {
             console.log(`User disconnected:
-        reason: ${reason},
-        description: ${description}`)
+            reason: ${reason},
+            description: ${description}`)
         })
     })
 }
