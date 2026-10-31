@@ -53,7 +53,9 @@ export function getGameCode(value) {
     }
 
     if (!/^[a-f0-9]{6}$/i.test(code)) {
-        throw new Error("Enter a six-character game code or a lobby invitation link.")
+        const error = new Error("Enter a six-character game code or a lobby invitation link.")
+        error.code = "INVALID_GAME_ID"
+        throw error
     }
     return code.toUpperCase()
 }
