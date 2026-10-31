@@ -58,10 +58,55 @@ function App() {
 
     // author:xhaziyh00 - Persisted 10x10 player board matrix with placed fleet coordinates
     const [playerBoardData, setPlayerBoardData] = useState(null)
+    const [playerShips, setPlayerShips] = useState(null)
+    const [robotGame, setRobotGame] = useState(null)
+    const [robotFleet, setRobotFleet] = useState(null)
+    const [gameError, setGameError] = useState(null)
 
-    const handleStartBattle = (boardData) => {
+    const handleStartBattle = (boardData, ships) => {
         setPlayerBoardData(boardData)
+        setPlayerShips(ships)
         navigate("/game")
+    }
+
+    async function handlePlayWithPC() {
+        setGameError(null)
+        try {
+            const response = await fetch("/api/createRobotGame", {
+                method: "POST",
+                headers: { userId: user.id },
+            })
+            const view = await response.json()
+            if (!response.ok) {
+                throw new Error(view.error?.message || "Could not create a robot game.")
+            }
+            setRobotGame(view)
+            setRobotFleet(null)
+            navigate("/robot/ready")
+        } catch (error) {
+            setGameError(error.message)
+        }
+    }
+
+    async function handleStartRobotBattle(boardData, ships) {
+        setGameError(null)
+        try {
+            const board = boardData.map(row => row.map(cell => cell.hasShip ? String(cell.shipId) : null))
+            const response = await fetch(`/api/games/${robotGame.id}/ready`, {
+                method: "POST",
+                headers: { userId: user.id, "Content-Type": "application/json" },
+                body: JSON.stringify({ board }),
+            })
+            const view = await response.json()
+            if (!response.ok) {
+                throw new Error(view.error?.message || "Could not submit your fleet.")
+            }
+            setRobotGame(view)
+            setRobotFleet({ boardData, ships })
+            navigate("/robot/game")
+        } catch (error) {
+            setGameError(error.message)
+        }
     }
 
 
@@ -86,7 +131,7 @@ function App() {
     }
 
 
-    const menu = <MainPage lobby={lobby}/>
+    const menu = <MainPage lobby={lobby} onPlayWithPC={handlePlayWithPC} gameError={gameError}/>
 
 
     return (
@@ -105,9 +150,29 @@ function App() {
                                  }/>
             <Route path="/game" element={
                                     playerBoardData ?
-                                        <BattleshipGame initialBoardData={playerBoardData}/> :
+                                        <BattleshipGame initialBoardData={playerBoardData} initialShips={playerShips}/> :
                                         <Navigate to="/ready" replace/>
                                 }/>
+            <Route path="/robot/ready" element={
+                robotGame ?
+                    robotFleet ?
+                        <Navigate to="/robot/game" replace/> :
+                        <GetReady onStartBattle={handleStartRobotBattle} gameError={gameError}/> :
+                    <Navigate to="/" replace/>
+            }/>
+            <Route path="/robot/game" element={
+                robotGame && robotFleet ?
+                    <BattleshipGame
+                        key={robotGame.id}
+                        initialBoardData={robotFleet.boardData}
+                        initialShips={robotFleet.ships}
+                        initialGameView={robotGame}
+                        onGameViewChange={setRobotGame}
+                        gameId={robotGame.id}
+                        userId={user.id}
+                    /> :
+                    <Navigate to="/robot/ready" replace/>
+            }/>
             <Route path="*" element={<Navigate to="/" replace/>}/>
         </Routes>
     )

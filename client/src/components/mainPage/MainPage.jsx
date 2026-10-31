@@ -8,7 +8,7 @@ import "./mainPage.css";
 import { Navigate, useLocation, useNavigate } from "react-router";
 
 
-function MainPage({ lobby }) {
+function MainPage({ lobby, onPlayWithPC, gameError }) {
     const { t } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
@@ -65,6 +65,8 @@ function MainPage({ lobby }) {
                 <div className="main-page-content">
                 <h1 className="main-page-title">{t("app.title")}</h1>
 
+                {gameError && <p role="alert" className="lobby-message">{gameError}</p>}
+
                 {error && (
                     <div role="alert" className="lobby-message">
                         <p>{t(error)}</p>
@@ -83,7 +85,7 @@ function MainPage({ lobby }) {
                             <h2 className="mainPageh1">{t("menu.play")}</h2>
 
                             <div className="main-page-button-container">
-                                <Button variant="light">
+                                <Button variant="light" onClick={onPlayWithPC}>
                                     {t("menu.computer")}
                                 </Button>
 
