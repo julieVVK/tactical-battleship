@@ -255,6 +255,12 @@
 @media (max-width: 720px) {
   .statistic-cards { grid-template-columns: 1fr; }
   .statistic-page { padding: 3rem 18px 32px; }
+  .statistic-overall-header,
+  .statistic-recent-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
   .statistic-match-row { grid-template-columns: 1fr 1fr 70px; padding: 14px 16px; }
   .statistic-overall { padding: 20px; }
 }

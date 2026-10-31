@@ -5,6 +5,18 @@ import { useLocation } from "react-router"
 import { io } from "socket.io-client"
 import { createGame, getGameCode, joinGame } from "./api.js"
 
+
+const lobbyErrors = {
+    INVALID_GAME_ID: "lobby.invalidCode",
+    USER_NOT_FOUND: "lobby.userNotFound",
+    GAME_NOT_FOUND: "lobby.notFound",
+    PLAYER_ALREADY_JOINED: "lobby.alreadyJoined",
+    GAME_JOIN_CLOSED: "lobby.joinClosed",
+    GAME_FULL: "lobby.full",
+    PLAYER_NOT_IN_GAME: "lobby.playerNotInGame",
+}
+
+
 // App owns the lobby so changing routes does not discard it or its connection.
 export function useLobby(userId) {
     const { pathname } = useLocation()
@@ -38,19 +50,19 @@ export function useLobby(userId) {
             socket.timeout(5000).emit("game:subscribe", { gameId }, (error, result) => {
                 if (disposed) return
                 if (error) {
-                    setConnectionError("Could not subscribe to lobby updates.")
+                    setConnectionError("lobby.subscribeFailed")
                 } else {
-                    setConnectionError(result.ok ? "" : result.error.message)
+                    setConnectionError(result.ok ? "" : lobbyErrors[result.error.code] ?? "lobby.subscribeFailed")
                 }
             })
         })
 
-        socket.on("connect_error", error => {
-            setConnectionError(error.data?.message ?? "Could not connect to lobby updates.")
+        socket.on("connect_error", () => {
+            setConnectionError("lobby.connectFailed")
         })
 
         socket.on("disconnect", () => {
-            setConnectionError("Connection lost.")
+            setConnectionError("lobby.connectionLost")
         })
 
         socket.connect()
@@ -79,7 +91,7 @@ export function useLobby(userId) {
             setGame(view)
             return view
         } catch (error) {
-            setError(error.message)
+            setError(lobbyErrors[error.code] ?? "lobby.openFailed")
             return null
         } finally {
             requestPending.current = false

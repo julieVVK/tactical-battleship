@@ -14,8 +14,10 @@ import {useEffect, useState} from "react"
 import {initializeUser} from "./user.js"
 import {Navigate, Routes, Route, useNavigate} from "react-router"
 import {useLobby} from "./useLobby.js"
+import {useLanguage} from "./i18n/useLanguage.js"
 
 function App() {
+    const {t} = useLanguage()
     const navigate = useNavigate()
     const [user, setUser] = useState({status: "loading", error: null})
     const lobby = useLobby(user.id)
@@ -72,13 +74,13 @@ function App() {
 
     // author: Vladyslav Doroshenko
     if (user.status === "loading") {
-        return <p role="status">Connecting to the server...</p>
+        return <p role="status">{t("connection.loading")}</p>
     }
     if (user.status === "error") {
         return (
             <div role="alert">
-                <p>{user.error}</p>
-                <button type="button" onClick={retryUser}>Try again</button>
+                <p>{t(user.error)}</p>
+                <button type="button" onClick={retryUser}>{t("connection.retry")}</button>
             </div>
         )
     }
