@@ -2,7 +2,7 @@
 
 // Later modified by Vladyslav Doroshenko
 
-import { LANGUAGES } from '../../i18n/translation.js';
+import { LANGUAGES, COUNTRIES } from '../../i18n/translation.js';
 import { useLanguage } from '../../i18n/useLanguage.js';
 import { useState } from 'react';
 import Button from '../button/Button';
@@ -189,13 +189,9 @@ export default function Settings() {
                 onChange={(event) => setCountry(event.target.value)}
                 className="form-select"
               >
-                {/* TODO: implement map function to map
-                          all supported countries and languages
-                          from a separate dedicated file */}
-                <option value="CZ"> {t('country.CZ')}</option>
-                <option value="UA"> {t('country.UA')}</option>
-                <option value="SK"> {t('country.SK')}</option>
-                <option value="PL"> {t('country.PL')}</option>
+                {COUNTRIES.map((code) => (
+                  <option key={code} value={code}>{t(`country.${code}`)}</option>
+                ))}
               </select>
             </div>
 

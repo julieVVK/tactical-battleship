@@ -1,12 +1,12 @@
 // File was created by Vladyslav Doroshenko
 
-import en from './locales/en.json' with {type: 'json'};
-import cs from './locales/cs.json' with {type: 'json'};
-import sk from './locales/sk.json' with {type: 'json'};
-import ru from './locales/ru.json' with {type: 'json'};
-import uk from './locales/uk.json' with {type: 'json'};
-import pl from './locales/pl.json' with {type: 'json'};
-import de from './locales/de.json' with {type: 'json'};
+import en_js from './locales/en.json' with {type: 'json'};
+import cs_js from './locales/cs.json' with {type: 'json'};
+import sk_js from './locales/sk.json' with {type: 'json'};
+import ru_js from './locales/ru.json' with {type: 'json'};
+import uk_js from './locales/uk.json' with {type: 'json'};
+import pl_js from './locales/pl.json' with {type: 'json'};
+import de_js from './locales/de.json' with {type: 'json'};
 
 export const DEFAULT_LANGUAGE = 'en';
 export const LANGUAGE_STORAGE_KEY = 'battleships.language';
@@ -21,15 +21,17 @@ export const LANGUAGES = [
     {code: 'de', name: 'Deutsch'},
 ];
 
+export const COUNTRIES = ['GB', 'CZ', 'SK', 'RU', 'UA', 'PL', 'DE'];
+
 export const translations =
     {
-        en: en,
-        cs: cs,
-        sk: sk,
-        ru: ru,
-        uk: uk,
-        pl: pl,
-        de: de
+        en: en_js,
+        cs: cs_js,
+        sk: sk_js,
+        ru: ru_js,
+        uk: uk_js,
+        pl: pl_js,
+        de: de_js
     };
 
 
