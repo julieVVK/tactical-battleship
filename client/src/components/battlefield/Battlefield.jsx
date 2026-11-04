@@ -132,11 +132,14 @@ class Battlefield extends React.Component {
   };
   isShipPristine = (shipId) => {
     const { boardData } = this.props;
-
     if (!boardData || !shipId) return false;
+
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 10; c++) {
-        if (String(boardData[r][c]?.shipId) === String(shipId) && boardData[r][c]?.hit) return false;
+        const cell = boardData[r][c];
+        if (String(cell?.shipId) === String(shipId)) {
+          if (cell.hit || cell.isScanned) return false; 
+        }
       }
     }
     return true;
@@ -234,9 +237,7 @@ class Battlefield extends React.Component {
                   }
                 }
 
-                const scannedZone = (this.props.scannedZones || []).find((z) => Math.abs(rowIndex - z.row) <= 1 && Math.abs(colIndex - z.col) <= 1);
-                const isZoneCenter = scannedZone && scannedZone.row === rowIndex && scannedZone.col === colIndex;
-
+                const scannedCell = (this.props.scannedZones || []).find((z) => z.row === rowIndex && z.col === colIndex);
                 if (shouldDraw && draggingShip && currentHoveredCell) {
                   const startX = currentHoveredCell.x;
                   const startY = currentHoveredCell.y;
@@ -271,8 +272,10 @@ class Battlefield extends React.Component {
                 //xslobok00:cell color
                 let cellBackground = "var(--page-bg)";
                 let cellBackgroundImage = "none";
-                if (isOpponent && (isRadarHover || scannedZone)) {
+                if (isOpponent && isRadarHover) {
                   cellBackground = "rgba(0, 255, 255, 0.2)";
+                } else if (isOpponent && scannedCell) {
+                  cellBackground = scannedCell.hasShip ? "rgba(46, 204, 113, 0.4)" : "rgba(0, 255, 255, 0.2)";
                 } else if (!isOpponent && isMineDrag && isHovered) {
                   if (!cell?.hasShip && !cell?.hasMine) {
                     cellBackground = "rgba(46, 204, 113, 0.4)";
@@ -328,16 +331,12 @@ class Battlefield extends React.Component {
                     onDrop={(e) => this.handleDrop(e, rowIndex, colIndex)}
                     onDragOver={(e) => e.preventDefault()}
                     onKeyDown={!shouldDraw ? (e) => this.handleCellKeyDown(e, rowIndex, colIndex) : undefined}
-                    disabled={isOpponent && (!canShoot || cell?.hit || cell?.miss)}
 
                     style={{
                       backgroundColor: cellBackground,
                       backgroundImage: cellBackgroundImage,
                       cursor: isOpponent && canShoot && !cell?.hit && !cell?.miss ? "pointer" : "default",
                     }}>
-                    {/* if radar scanned */}
-                    {isZoneCenter && isOpponent && <span className="radar-percent">{scannedZone.percent}%</span>}
-
                     {/* if has mine */}
                     {cell?.hasMine && !isOpponent && !cell?.miss && <span className="mineIcon">{GADGETS.find((g) => g.id === "mine")?.icon}</span>}
                     {/* mine got hit */}
