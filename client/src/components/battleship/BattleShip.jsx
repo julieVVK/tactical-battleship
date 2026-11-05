@@ -15,7 +15,7 @@ import React from "react";
  * @property {number|string} [props.size=1] - Number of cells the ship occupies (decks).
  * @property {boolean|string} [props.isVertical=false] - Ship orientation (vertical if true, horizontal if false).
  * @property {boolean} [props.isDraggable=false] - Enables drag-and-drop capability.
- * @property {Function} [props.onDragStart] - Callback triggered when dragging starts.
+ * @property {Function} [props.onMouseDown] - Callback triggered when the ship is grabbed (mouse button pressed).
  * @property {Object} state - Component state.
  * @property {boolean} state.isHovered - Tracks mouse hover status for border highlighting.
  */
@@ -54,7 +54,7 @@ class BattleShip extends React.Component {
     }
   };
   render() {
-    const { size = 1, isVertical = false, isDraggable = false, onDragStart = undefined } = this.props;
+    const { size = 1, isVertical = false, isDraggable = false, onMouseDown } = this.props;
     const { isHovered, cellSize } = this.state;
 
     // author:xhaziyh00 - Sanitize size input and ensure a fallback to 1 deck
@@ -68,10 +68,9 @@ class BattleShip extends React.Component {
     const shipWidth = vertical ? cellSize : cellSize * sizeNum;
     const shipHeight = vertical ? cellSize * sizeNum : cellSize;
     return (
-      // author:xhaziyh00 - Outer wrapper managing layout flow and native HTML5 drag events
+      // author:xhaziyh00 - Outer wrapper managing layout flow; dragging is handled by the parent with mouse events
       <div
-        draggable={isDraggable}
-        onDragStart={onDragStart}
+        onMouseDown={isDraggable ? onMouseDown : undefined}
         style={{
           display: "flex",
           flexDirection: isVertical ? "column" : "row",
