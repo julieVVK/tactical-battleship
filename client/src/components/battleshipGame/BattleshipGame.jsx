@@ -479,9 +479,13 @@ class BatlleshipGame extends React.Component {
           : "turn.opponent_turn";
     return (
       <div>
-        <Header />
+        <Header 
+          gameView={this.state.gameView} 
+          userId={this.props.userId} 
+          onGoHome={this.props.onGoHome}/>
         {this.state.gameError && <p role="alert">{this.state.gameError}</p>}
-        <p role="status">{t(turnMessage)}</p>
+
+
         <div className="battleContainer">
           <Battlefield
             title={t("game.yourFleet")}

@@ -40,6 +40,15 @@ class Header extends React.Component {
    */
   render() {
     const { t } = this.context;
+
+    const { gameView, userId } = this.props;
+    const isFinished = gameView?.phase === "finished";
+    const isWinner = isFinished && gameView?.winnerPlayerId === userId;
+
+    let headerStatusKey = this.state.turnStatus;
+    if (isFinished) {
+      headerStatusKey = isWinner ? "turn.won" : "turn.lost";
+    }
     return (
       <div className="headerDiv">
         <div className="buttonContainer">
@@ -51,8 +60,19 @@ class Header extends React.Component {
         <div className="textContainer">
           {/* author:xhaziyh00 - Information section: title and dynamic turn status text */}
           <h1>{t('app.title')}</h1>
-          <p>{t(TURN_MESSAGES[this.state.turnStatus])}</p>
+          <p>{t(TURN_MESSAGES[headerStatusKey] || headerStatusKey)}</p>
         </div>
+        {isFinished && (
+          <div className="game-over-modal-overlay">
+            <div className="game-over-modal">
+              <h2>{isWinner ? "You won!" : "You lost!"}</h2>
+              <p>{isWinner ? "Congratulations, all enemy ships are sunk." : "Better luck next time!"}</p>
+              <Link className="home-button" to="/">
+                {t('nav.home')}
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

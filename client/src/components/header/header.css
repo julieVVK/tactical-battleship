@@ -90,3 +90,53 @@ text-align: center ;
     padding: 6px;
   }
 }
+.game-over-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.game-over-modal {
+  background: #ffffff;
+  padding: 30px 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  width: 90%;
+}
+
+.game-over-modal h2 {
+  margin-top: 0;
+  color: #2c3e50;
+  font-size: 24px;
+}
+
+.game-over-modal p {
+  color: #7f8c8d;
+  margin-bottom: 20px;
+}
+
+.game-over-modal .home-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.2s;
+}
+
+.game-over-modal .home-button:hover {
+  background-color: #2980b9;
+}
