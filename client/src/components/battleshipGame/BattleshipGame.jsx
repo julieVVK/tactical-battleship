@@ -1,364 +1,480 @@
 /**
  * @file BattleshipGame.jsx
- * @description Main gameplay controller component. Manages the dual-board arena layout,
- * initializes player fleet state from SHIPS_CONFIG, and coordinates communication
- * between the navigation Header and both Battlefield grids.
- * @author xhaziyh00
+ * @description Battle screen: both boards, shots, gadgets and ship relocation.
+ * The server is the source of truth - every move is a POST request, new state comes in `props.gameState`.
+ * Coordinates: `x` = ROW, `y` = COLUMN.
+ *
+ * @author xhaziyh00, xslobok00
  */
 
 // Edited by Vladyslav Doroshenko
 //     - Added language context
-//       Changed lines: 13, 32, 70, 88, 106
 
 import { LanguageContext } from "../../i18n/LanguageContext.js";
 import React from "react";
 import Header from "../header/Header.jsx";
 import Battlefield from "../battlefield/Battlefield.jsx";
 import BattleShip from "../battleship/BattleShip.jsx";
-import { SHIPS_CONFIG, GADGETS } from "../../constants.js";
+import { SHIPS_CONFIG, GADGETS, BOARD_SIZE } from "../../constants.js";
 import "./battleshipGame.css";
+
+const GADGET_PREVIEW_OFFSET = 30;
+const SHIP_PREVIEW_OFFSET = 15;
+
+const GADGET_DRAG_RESET = { draggingGadget: null, currentHoveredCell: null, hoveredField: null };
+const SHIP_DRAG_RESET = { draggingShip: null, originalCells: null, currentHoveredCell: null, hoveredField: null };
+
 /**
- * BatlleshipGame class component.
- *
+ * Returns true if the cell (row x, column y) is inside the board.
  * @author xhaziyh00
- * @property {Object} props - Component input properties.
- * @property {Object} state - Component internal state.
- * @property {Array<Object>} state.myShips - Array of player ships initialized with placement and orientation flags.
  */
+const isInBounds = (x, y) => x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
 
-class BatlleshipGame extends React.Component {
+/**
+ * Creates an empty opponent board (we know only our shots there, not the ships).
+ * @author xhaziyh00
+ */
+const createEmptyOpponentBoard = () =>
+  Array.from({ length: BOARD_SIZE }, () =>
+    Array.from({ length: BOARD_SIZE }, () => ({
+      hit: false,
+      miss: false,
+    })),
+  );
+
+/**
+ * Returns a copy of the board, so the state is never changed directly.
+ * @author xhaziyh00
+ */
+const copyBoard = (board) => board.map((row) => row.map((cell) => ({ ...cell })));
+
+/**
+ * Puts a ship on the board copy. Cells are in "row-col" format, e.g. ["2-3", "2-4"].
+ * @author xhaziyh00, xslobok00
+ */
+const placeShipCells = (board, cells, shipId) => {
+  cells.forEach((coord) => {
+    const [r, c] = coord.split("-").map(Number);
+    board[r][c].hasShip = true;
+    board[r][c].shipId = shipId;
+  });
+};
+
+/**
+ * Marks all cells around a sunk ship as misses - there can not be another ship.
+ * @author xslobok00
+ */
+const markAroundSunkShip = (board, cells) => {
+  cells.forEach(({ row, col }) => {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const neighbourRow = row + dx;
+        const neighbourCol = col + dy;
+
+        if (isInBounds(neighbourRow, neighbourCol) && !board[neighbourRow][neighbourCol].hit) {
+          board[neighbourRow][neighbourCol].miss = true;
+        }
+      }
+    }
+  });
+};
+
+/**
+ * Finds the board cell under the cursor, or null if the cursor is not over the board.
+ * @author xhaziyh00, xslobok00
+ */
+const getCellUnderCursor = (element, e) => {
+  if (!element) return null;
+
+  const rect = element.getBoundingClientRect();
+  // Cursor is outside the board
+  const isInside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+  if (!isInside) return null;
+
+  const cellSize = rect.width / BOARD_SIZE;
+  return {
+    x: Math.floor((e.clientY - rect.top) / cellSize),
+    y: Math.floor((e.clientX - rect.left) / cellSize),
+  };
+};
+
+/**
+ * Battle screen component.
+ * @author xhaziyh00, xslobok00
+ */
+class BattleshipGame extends React.Component {
   static contextType = LanguageContext;
+  actionPending = false;
 
+  /**
+   * Initializes both boards, gadgets and drag-and-drop state.
+   * @author xhaziyh00
+   */
   constructor(props) {
     super(props);
-    // author:xhaziyh00 - Initialize fleet state by decorating SHIPS_CONFIG templates with orientation and placement flags
 
     this.playerBoardRef = React.createRef();
     this.opponentBoardRef = React.createRef();
-    this.state = {
-      myShips: SHIPS_CONFIG.map((ship) => ({
-        ...ship,
-        isVertical: false,
-        isPlaced: false,
-      })),
 
-      enemyShips: SHIPS_CONFIG.map((ship) => ({
-        //xslobok00: enemy ships
-        ...ship,
-        isKilled: false,
-      })),
-      boardData: props.initialBoardData,
-      opponentBoard: Array(10)
-        .fill(null)
-        .map(() => Array(10).fill({ hit: false, miss: false })),
-      gameView: props.initialGameView,
-      isFiring: false,
-      gameError: props.gameError,
-      usedGadgets: [],
-      scannedZones: [],
+    this.state = {
+      ...this.buildGameState(props.gameState),
+
       draggingGadget: null,
+      draggingShip: null,
+      dragOffset: { x: SHIP_PREVIEW_OFFSET, y: SHIP_PREVIEW_OFFSET },
+      originalCells: null,
+      relocationMode: false,
       mousePos: { x: 0, y: 0 },
       currentHoveredCell: null,
-      hoveredField: null,
+      hoveredField: null, // "player" | "opponent" | null
     };
   }
 
   /**
-   * Updates the visual state of a game using the latest information received.
-   * 
-   * @author Marie Pindorová
-   * @param {*} view 
+   * Registers window listeners.
+   * @author xhaziyh00
    */
-  updateGameView = (view) => {
-    // shots player fired at the opponent
-    const ownShots = view.players.you.shots || [];
-    // shots fired at player
-    const incomingShots = view.players.opponent?.shots || [];
-    // creates an empty opponent board
-    const opponentBoard = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => ({ hit: false, miss: false })));
+  componentDidMount() {
+    window.addEventListener("mousemove", this.handleMouseMove);
+    window.addEventListener("mouseup", this.handleGlobalMouseUp);
+    window.addEventListener("keydown", this.handleKeyDown);
+  }
 
-    // mark player's shots at the opponent's board
-    ownShots.forEach((shot) => {
-      opponentBoard[shot.row][shot.col] = { hit: shot.result !== "miss", miss: shot.result === "miss" };
+  /**
+   * Removes window listeners.
+   * @author xhaziyh00
+   */
+  componentWillUnmount() {
+    window.removeEventListener("mousemove", this.handleMouseMove);
+    window.removeEventListener("mouseup", this.handleGlobalMouseUp);
+    window.removeEventListener("keydown", this.handleKeyDown);
+  }
+
+  /**
+   * Rebuilds both boards every time the server sends a new game state.
+   * @author xhaziyh00, xslobok00
+   */
+  componentDidUpdate(prevProps) {
+    if (prevProps.gameState !== this.props.gameState) {
+      this.syncGameState(this.props.gameState);
+    }
+  }
+
+  syncGameState = (gameState) => {
+    this.setState({
+      ...this.buildGameState(gameState),
+      ...SHIP_DRAG_RESET,
+      ...GADGET_DRAG_RESET,
+      relocationMode: false,
     });
-
-    // prepare player's board
-    const boardData = this.state.boardData.map((row) => row.map((cell) => ({ ...cell, hit: false, miss: false })));
-    
-    // mark opponent's shots on player's board
-    incomingShots.forEach((shot) => {
-      boardData[shot.row][shot.col] = {
-        ...boardData[shot.row][shot.col],
-        hit: shot.result !== "miss",
-        miss: shot.result === "miss",
-      };
-    });
-
-    // count the enemy ships that have been sunk
-    const sunkCounts = new Map();
-    ownShots
-      .filter((shot) => shot.result === "sunk")
-      .forEach((shot) => sunkCounts.set(shot.cells.length, (sunkCounts.get(shot.cells.length) || 0) + 1));
-    const markedSunk = new Map();
-    const enemyShips = SHIPS_CONFIG.map((ship) => {
-      const alreadyMarked = markedSunk.get(ship.size) || 0;
-      const isKilled = alreadyMarked < (sunkCounts.get(ship.size) || 0);
-      if (isKilled) markedSunk.set(ship.size, alreadyMarked + 1);
-      return { ...ship, isKilled };
-    });
-
-    this.setState({ gameView: view, boardData, opponentBoard, enemyShips, isFiring: false, gameError: null });
   };
 
+  // Ship ids are local to the board; relocation requests use coordinates.
+  buildGameState = (gameState) => {
+    const { you, opponent } = gameState.players;
+
+    return {
+      myShips: you.ships.map(({ cells }, index) => ({
+        id: String(index + 1),
+        size: cells.length,
+        isVertical: cells.length > 1 && cells[0].col === cells[1].col,
+        isPlaced: true,
+      })),
+      boardData: this.buildPlayerBoard(you, opponent),
+      opponentBoard: this.buildOpponentBoard(you.shots),
+      usedGadgets: [...you.usedGadgets],
+      scannedZones: you.scannedZones,
+    };
+  };
+
+  /**
+   * Builds the opponent's board from our shots ({ row, col, result: "hit" | "sunk" | "miss", cells? }).
+   * @author xslobok00
+   */
+  buildOpponentBoard = (myShots) => {
+    const board = createEmptyOpponentBoard();
+
+    myShots.forEach((shot) => {
+      if (!isInBounds(shot.row, shot.col)) return;
+
+      if (shot.result === "hit" || shot.result === "sunk") {
+        board[shot.row][shot.col].hit = true;
+
+        // Sunk ship - cells around it are surely empty
+        if (shot.result === "sunk" && Array.isArray(shot.cells)) {
+          markAroundSunkShip(board, shot.cells);
+        }
+      } else if (shot.result === "miss") {
+        board[shot.row][shot.col].miss = true;
+      }
+    });
+
+    return board;
+  };
+
+  /**
+   * Builds our board from the server fleet, mine, radar scans and shots.
+   * @author xhaziyh00, xslobok00
+   */
+  buildPlayerBoard = (player, opponent) => {
+    const board = createEmptyOpponentBoard();
+
+    player.ships.forEach(({ cells }, index) => {
+      cells.forEach(({ row, col, hit }) => {
+        board[row][col] = { ...board[row][col], hasShip: true, shipId: String(index + 1), hit };
+      });
+    });
+
+    if (player.mine) {
+      const { row, col, triggered } = player.mine;
+      board[row][col].hasMine = true;
+      board[row][col].miss = triggered;
+    }
+
+    // Cells where the enemy radar found our ship
+    (opponent?.scannedZones ?? []).forEach(({ row, col, hasShip }) => {
+      if (hasShip && isInBounds(row, col)) {
+        board[row][col].isScanned = true;
+      }
+    });
+
+    // One scanned cell = whole ship is found (it can not be relocated anymore)
+    const scannedShipIds = new Set(
+      board
+        .flat()
+        .filter((cell) => cell.isScanned && cell.shipId)
+        .map((cell) => String(cell.shipId)),
+    );
+    board.forEach((row) =>
+      row.forEach((cell) => {
+        if (cell.shipId && scannedShipIds.has(String(cell.shipId))) {
+          cell.isScanned = true;
+        }
+      }),
+    );
+
+    // Opponent's shots
+    (opponent?.shots ?? []).forEach((shot) => {
+      if (shot.result === "hit" || shot.result === "sunk") {
+        board[shot.row][shot.col].hit = true;
+      }
+      if (shot.result === "sunk" && Array.isArray(shot.cells)) {
+        markAroundSunkShip(board, shot.cells);
+      }
+      if (shot.result === "miss") {
+        board[shot.row][shot.col].miss = true;
+      }
+    });
+
+    return board;
+  };
+
+  /**
+   * Returns true if it is our turn now.
+   * @author xhaziyh00
+   */
+  isMyTurn = () => this.props.turnPlayerId == this.props.userId;
+
+  /**
+   * Sends a POST request to /api/games/{gameId}/{path}. The result comes back in props.gameState.
+   * @author xhaziyh00
+   */
+  postGameAction = async (path, body) => {
+    if (this.actionPending) return;
+    this.actionPending = true;
+    const { gameId, userId } = this.props;
+
+    try {
+      const response = await fetch(`/api/games/${gameId}/${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          userId: userId,
+        },
+        body: JSON.stringify(body),
+      });
+
+      // Server rejected the action
+      if (!response.ok) {
+        const data = await response.json();
+        alert(data.error.message);
+        return;
+      }
+
+      if (path.startsWith("gadgets/")) {
+        this.syncGameState(await response.json());
+      }
+
+      // Robot mode has no socket - ask App to reload the game state
+      await this.props.onActionDone?.();
+    } catch (err) {
+      console.error(`Network error on "${path}"`, err);
+      alert(err.message);
+    } finally {
+      this.actionPending = false;
+    }
+  };
+
+  /**
+   * While something is dragged: moves the floating picture and finds the hovered cell on either board.
+   * @author xhaziyh00, xslobok00
+   */
   handleMouseMove = (e) => {
     if (!this.state.draggingGadget && !this.state.draggingShip) return;
 
     this.setState({ mousePos: { x: e.clientX, y: e.clientY } });
 
-    let hoveredField = null;
-    let targetX = null;
-    let targetY = null;
-    if (this.playerBoardRef.current) {
-      const rect = this.playerBoardRef.current.getBoundingClientRect();
-      if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-        hoveredField = "player";
-        const cellSize = rect.width / 10;
-        targetY = Math.floor((e.clientX - rect.left) / cellSize);
-        targetX = Math.floor((e.clientY - rect.top) / cellSize);
-      }
-    }
+    // Our board first, then the opponent's board
+    const playerCell = getCellUnderCursor(this.playerBoardRef.current, e);
+    const opponentCell = playerCell ? null : getCellUnderCursor(this.opponentBoardRef.current, e);
+    const cell = playerCell || opponentCell;
 
-    if (this.opponentBoardRef.current && !hoveredField) {
-      const rect = this.opponentBoardRef.current.getBoundingClientRect();
-      if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-        hoveredField = "opponent";
-        const cellSize = rect.width / 10;
-        targetY = Math.floor((e.clientX - rect.left) / cellSize);
-        targetX = Math.floor((e.clientY - rect.top) / cellSize);
-      }
-    }
-
-    if (hoveredField && targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) {
+    if (cell && isInBounds(cell.x, cell.y)) {
       this.setState({
-        currentHoveredCell: { x: targetX, y: targetY },
-        hoveredField: hoveredField,
+        currentHoveredCell: cell,
+        hoveredField: playerCell ? "player" : "opponent",
       });
     } else {
       this.setState({ currentHoveredCell: null, hoveredField: null });
     }
   };
+
+  /**
+   * Rotates the relocated ship on R (e.code works with any keyboard layout).
+   * @author xhaziyh00, xslobok00
+   */
   handleKeyDown = (e) => {
-    if (e.code === "KeyR") {
-      const { draggingShip } = this.state;
-      if (draggingShip) {
-        this.setState({
-          draggingShip: {
-            ...draggingShip,
-            isVertical: !draggingShip.isVertical,
-          },
-        });
-      }
-    }
+    const { draggingShip, dragOffset } = this.state;
+    if (e.code !== "KeyR" || !draggingShip) return;
+
+    this.setState({
+      draggingShip: { ...draggingShip, isVertical: !draggingShip.isVertical },
+      dragOffset: { x: dragOffset.y, y: dragOffset.x },
+    });
   };
 
+  /**
+   * Checks if a ship can be placed: inside the board, not on a mine, not touching other ships.
+   * @author xhaziyh00, xslobok00
+   */
   canPlaceShip = (startX, startY, size, isVertical, board) => {
     if (!board) return false;
+
     for (let i = 0; i < size; i++) {
-      let currentX = isVertical ? startX + i : startX;
-      let currentY = isVertical ? startY : startY + i;
-
-      if (currentX < 0 || currentX >= 10 || currentY < 0 || currentY >= 10) return false;
-
+      const currentX = isVertical ? startX + i : startX;
+      const currentY = isVertical ? startY : startY + i;
+      // Out of the board, on a mine or on an already shot cell
+      if (!isInBounds(currentX, currentY)) return false;
       if (board[currentX][currentY]?.hasMine) return false;
+      if (board[currentX][currentY]?.miss) return false;
+      if (board[currentX][currentY]?.hit) return false;
 
+      // Any of 8 neighbours belongs to another ship
       for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
-          let checkX = currentX + dx;
-          let checkY = currentY + dy;
-          if (checkX >= 0 && checkX < 10 && checkY >= 0 && checkY < 10) {
-            if (board[checkX][checkY]?.hasShip) return false;
-          }
+          const checkX = currentX + dx;
+          const checkY = currentY + dy;
+
+          if (isInBounds(checkX, checkY) && board[checkX][checkY]?.hasShip) return false;
         }
       }
     }
+
     return true;
   };
 
+  /**
+   * Mouse released anywhere on the page - finishes the current drag operation.
+   * @author xhaziyh00, xslobok00
+   */
   handleGlobalMouseUp = () => {
-    const { draggingGadget, draggingShip, currentHoveredCell, hoveredField, boardData, originalCells, myShips } = this.state;
-
-    if (draggingShip) {
-      let targetX,
-        targetY,
-        isVertical = draggingShip.isVertical;
-      let isValidPlace = false;
-
-      if (currentHoveredCell && hoveredField === "player") {
-        targetX = currentHoveredCell.x;
-        targetY = currentHoveredCell.y;
-        isValidPlace = this.canPlaceShip(targetX, targetY, draggingShip.size, isVertical, boardData);
-      }
-
-      const newBoard = boardData.map((row) => row.map((cell) => ({ ...cell })));
-
-      if (isValidPlace) {
-        let newCells = [];
-        for (let i = 0; i < draggingShip.size; i++) {
-          let curX = isVertical ? targetX + i : targetX;
-          let curY = isVertical ? targetY : targetY + i;
-          newCells.push(`${curX}-${curY}`);
-        }
-
-        const isSamePosition = originalCells.sort().join(",") === newCells.sort().join(",");
-
-        if (isSamePosition) {
-          originalCells.forEach((coord) => {
-            const [r, c] = coord.split("-").map(Number);
-            newBoard[r][c].hasShip = true;
-            newBoard[r][c].shipId = draggingShip.id;
-          });
-
-          this.setState({
-            boardData: newBoard,
-            draggingShip: null,
-            originalCells: null,
-            currentHoveredCell: null,
-            hoveredField: null,
-          });
-        } else {
-          newCells.forEach((coord) => {
-            const [r, c] = coord.split("-").map(Number);
-            newBoard[r][c].hasShip = true;
-            newBoard[r][c].shipId = draggingShip.id;
-          });
-
-          const updatedShips = myShips.map((s) => (String(s.id) === String(draggingShip.id) ? { ...s, isVertical: isVertical } : s));
-
-          this.setState(
-            (prev) => ({
-              boardData: newBoard,
-              myShips: updatedShips,
-              draggingShip: null,
-              originalCells: null,
-              currentHoveredCell: null,
-              hoveredField: null,
-              usedGadgets: [...prev.usedGadgets, "relocate"],
-            }),
-            () => {
-              const [oldRow, oldCol] = originalCells[0].split("-").map(Number);
-
-              const payload = {
-                gameId: this.props.gameId,
-                playerId: this.props.userId,
-                oldRow: oldRow,
-                oldCol: oldCol,
-                newRow: targetX,
-                newCol: targetY,
-                isVertical: isVertical,
-              };
-
-              console.log("push relocation on server:", payload);
-              this.props.socket.emit("relocateShip", payload);
-            },
-          );
-        }
-      } else {
-        originalCells.forEach((coord) => {
-          const [r, c] = coord.split("-").map(Number);
-          newBoard[r][c].hasShip = true;
-          newBoard[r][c].shipId = draggingShip.id;
-        });
-
-        this.setState({
-          boardData: newBoard,
-          draggingShip: null,
-          originalCells: null,
-          currentHoveredCell: null,
-          hoveredField: null,
-        });
-      }
-      return;
-    }
-
-    if (draggingGadget) {
-      if (!currentHoveredCell || !hoveredField) {
-        this.setState({
-          draggingGadget: null,
-          currentHoveredCell: null,
-          hoveredField: null,
-        });
-        return;
-      }
-
-      if (draggingGadget === "radar" && hoveredField === "opponent") {
-        const targetX = currentHoveredCell.x;
-        const targetY = currentHoveredCell.y;
-
-        this.setState(
-          (prev) => ({
-            usedGadgets: [...prev.usedGadgets, draggingGadget],
-            draggingGadget: null,
-            currentHoveredCell: null,
-            hoveredField: null,
-          }),
-          () => {
-            const payload = {
-              gameId: this.props.gameId,
-              playerId: this.props.userId,
-              row: targetX,
-              col: targetY,
-            };
-            console.log("push radar on server:", payload);
-            this.props.socket.emit("useRadar", payload);
-          },
-        );
-      } else if (draggingGadget === "mine" && hoveredField === "player") {
-        // author:xhaziyh00 - Mine placement logic and validation
-        const targetX = currentHoveredCell.x;
-        const targetY = currentHoveredCell.y;
-
-        if (!boardData[targetX][targetY].hasShip && !boardData[targetX][targetY].hasMine) {
-          const newBoard = boardData.map((row) => row.map((cell) => ({ ...cell })));
-          newBoard[targetX][targetY].hasMine = true;
-
-          this.setState(
-            (prev) => ({
-              boardData: newBoard,
-              usedGadgets: [...prev.usedGadgets, draggingGadget],
-              draggingGadget: null,
-              currentHoveredCell: null,
-              hoveredField: null,
-            }),
-            () => {
-              const payload = {
-                gameId: this.props.gameId,
-                playerId: this.props.userId,
-                row: targetX,
-                col: targetY,
-              };
-              console.log("push mine on server:", payload);
-              this.props.socket.emit("placeMine", payload);
-            },
-          );
-        } else {
-          this.setState({
-            draggingGadget: null,
-            currentHoveredCell: null,
-            hoveredField: null,
-          });
-        }
-      } else {
-        this.setState({
-          draggingGadget: null,
-          currentHoveredCell: null,
-          hoveredField: null,
-        });
-      }
+    if (this.state.draggingShip) {
+      this.dropRelocatedShip();
+    } else if (this.state.draggingGadget) {
+      this.dropGadget();
     }
   };
 
+  /**
+   * Finishes ship relocation: valid new place -> ship is moved and gadget is used,
+   * wrong or the same place -> ship goes back and gadget stays available.
+   * @author xhaziyh00, xslobok00
+   */
+  dropRelocatedShip = () => {
+    const { draggingShip, currentHoveredCell, hoveredField, boardData, originalCells } = this.state;
+    const { size, isVertical, id, grabIndex = 0 } = draggingShip;
+    const newBoard = copyBoard(boardData);
+
+    const isOverOwnBoard = currentHoveredCell && hoveredField === "player";
+    const start = currentHoveredCell && {
+      x: currentHoveredCell.x - (isVertical ? grabIndex : 0),
+      y: currentHoveredCell.y - (isVertical ? 0 : grabIndex),
+    };
+    const isValidPlace = isOverOwnBoard && this.isMyTurn() && this.canPlaceShip(start.x, start.y, size, isVertical, boardData);
+
+    const newCells = [];
+    if (isValidPlace) {
+      const { x, y } = start;
+      for (let i = 0; i < size; i++) {
+        newCells.push(isVertical ? `${x + i}-${y}` : `${x}-${y + i}`);
+      }
+    }
+
+    const isSamePosition = [...originalCells].sort().join(",") === [...newCells].sort().join(",");
+
+    // Keep the original position until the server accepts the relocation.
+    placeShipCells(newBoard, originalCells, id);
+    this.setState({ boardData: newBoard, ...SHIP_DRAG_RESET });
+    if (!isValidPlace || isSamePosition) return;
+
+    const [oldRow, oldCol] = originalCells[0].split("-").map(Number);
+
+    return this.postGameAction("gadgets/relocate", {
+      oldRow,
+      oldCol,
+      newRow: start.x,
+      newCol: start.y,
+      isVertical,
+    });
+  };
+
+  /**
+   * Finishes gadget drag: radar on the opponent's board, mine on our own free cell (only on our turn).
+   * Otherwise the gadget stays available.
+   * @author xhaziyh00
+   */
+  dropGadget = () => {
+    const { draggingGadget, currentHoveredCell, hoveredField, boardData } = this.state;
+    this.setState(GADGET_DRAG_RESET);
+
+    // Released outside of both boards
+    if (!currentHoveredCell || !hoveredField) {
+      return;
+    }
+
+    const { x: row, y: col } = currentHoveredCell;
+
+    // Radar - scans 3x3 area on the opponent's board
+    if (draggingGadget === "radar" && hoveredField === "opponent" && this.isMyTurn()) {
+      return this.postGameAction("gadgets/radar", { row, col });
+    }
+
+    // Mine - only on an empty, not shot cell
+    const target = boardData[row][col];
+    const isFreeCell = !target.hasShip && !target.hasMine && !target.hit && !target.miss;
+
+    if (draggingGadget === "mine" && hoveredField === "player" && isFreeCell && this.isMyTurn()) {
+      return this.postGameAction("gadgets/mine", { row, col });
+    }
+  };
+
+  /**
+   * Gadget button pressed: "relocate" toggles relocation mode, other gadgets start dragging.
+   * @author xhaziyh00
+   */
   handleGadgetSelect = (e, gadgetId) => {
     e.preventDefault();
+    if (this.actionPending || this.state.usedGadgets.includes(gadgetId)) return;
 
     if (gadgetId === "relocate") {
       this.setState((prev) => ({ relocationMode: !prev.relocationMode }));
@@ -371,174 +487,160 @@ class BatlleshipGame extends React.Component {
     });
   };
 
+  /**
+   * Takes a placed ship for relocation. Its cells are saved in `originalCells` to put it back on a wrong drop.
+   * @author xhaziyh00, xslobok00
+   */
   handlePlacedShipDragStart = (e, rowIndex, colIndex) => {
-    const { boardData, myShips } = this.state;
-    const targetShipId = boardData[rowIndex]?.[colIndex]?.shipId;
+    if (this.actionPending) return;
+    const { boardData, myShips = [] } = this.state;
 
+    const targetShipId = boardData[rowIndex]?.[colIndex]?.shipId;
     if (!targetShipId) return;
 
-    const originalShip = myShips.find((s) => String(s.id) === String(targetShipId));
+    // ids can be strings or numbers, so compare them as strings
+    const isTargetShip = (shipId) => String(shipId) === String(targetShipId);
+
+    const originalShip = myShips.find((s) => isTargetShip(s.id));
     if (!originalShip) return;
 
-    let originalCells = [];
+    const originalCells = [];
     const newBoard = boardData.map((row, r) =>
       row.map((cell, c) => {
-        if (String(cell.shipId) === String(targetShipId)) {
-          originalCells.push(`${r}-${c}`);
-          return { ...cell, hasShip: false, shipId: null };
-        }
-        return { ...cell };
+        if (!isTargetShip(cell.shipId)) return { ...cell };
+
+        originalCells.push(`${r}-${c}`);
+        return { ...cell, hasShip: false, shipId: null };
       }),
     );
 
+    const grabIndex = originalCells.indexOf(`${rowIndex}-${colIndex}`);
+    const rect = e.currentTarget.getBoundingClientRect();
     this.setState({
       boardData: newBoard,
-      draggingShip: { ...originalShip, isPlaced: true },
-      originalCells: originalCells,
+      draggingShip: { ...originalShip, isPlaced: true, grabIndex },
+      dragOffset: {
+        x: e.clientX - rect.left + (originalShip.isVertical ? 0 : grabIndex * rect.width),
+        y: e.clientY - rect.top + (originalShip.isVertical ? grabIndex * rect.height : 0),
+      },
+      originalCells,
+      currentHoveredCell: { x: rowIndex, y: colIndex },
+      hoveredField: "player",
       mousePos: { x: e.clientX, y: e.clientY },
       relocationMode: false,
     });
   };
 
-  handleShot = async (row, col) => {
-    const { opponentBoard, gameView, isFiring } = this.state;
-    if (isFiring || gameView?.phase !== "battle" || gameView.turnPlayerId !== gameView.players.you.id) return;
+  /**
+   * Shot at the opponent's cell. The result comes back from the server in props.gameState.
+   * @author xslobok00
+   */
+  handleShot = (row, col) => {
+    const { userId, turnPlayerId, gameState } = this.props;
+    const cell = this.state.opponentBoard?.[row]?.[col];
 
-    if (opponentBoard && opponentBoard[row] && opponentBoard[row][col]) {
-      const targetCell = opponentBoard[row][col];
-      if (targetCell.hit || targetCell.miss) {
-        console.log("Not here, here you shot before");
-        return;
-      }
-    }
+    // Block shot if the game hasn't started or it's not the player's turn
+    if (!turnPlayerId || !this.isMyTurn()) return;
+    if (cell?.miss || cell?.hit) return;
 
-    // author: Marie Pindorová
-    // handle failures
-    this.setState({ isFiring: true, gameError: null });
-    try {
-      const headers = {
-        userId: this.props.userId,
-        "Content-Type": "application/json",
-      };
-      const response = await fetch(`/api/games/${this.props.gameId}/shots`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ row, col }),
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error?.message || "The shot was rejected.");
-      }
+    // Do not shoot the same cell twice
+    const myShots = gameState?.players?.you?.shots || [];
+    const isAlreadyShot = myShots.some((shot) => shot.row === row && shot.col === col);
+    if (isAlreadyShot) return;
 
-      // refresh the game state after the shot
-      const stateResponse = await fetch(`/api/games/${this.props.gameId}`, {
-        headers: { userId: this.props.userId },
-      });
-      const view = await stateResponse.json();
-      if (!stateResponse.ok) {
-        throw new Error(view.error?.message || "Could not load the updated game.");
-      }
-      this.updateGameView(view);
-    } catch (error) {
-      this.setState({ isFiring: false, gameError: error.message });
-    }
+    this.postGameAction("shots", { row, col });
   };
-  componentDidMount() {
-    window.addEventListener("mousemove", this.handleMouseMove);
-    window.addEventListener("mouseup", this.handleGlobalMouseUp);
-    window.addEventListener("keydown", this.handleKeyDown);
-    // this.props.socket.on("radarResult", (data) =>
-    //   this.setState((prev) => ({ scannedZones: [...prev.scannedZones, data] })),
-    // );
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener("mousemove", this.handleMouseMove);
-    window.removeEventListener("mouseup", this.handleGlobalMouseUp);
-    window.removeEventListener("keydown", this.handleKeyDown);
-  }
 
   /**
-   * Renders the game arena: top navigation header and side-by-side battlefields.
-   *
+   * Calculates enemy ships state from our shots. Only the size of a sunk ship is known,
+   * so the first not sunk ship of that size is marked.
    * @author xhaziyh00
-   * @returns {JSX.Element} Full match screen layout.
    */
+  getEnemyShips = () => {
+    const myShots = this.props.gameState?.players?.you?.shots || [];
+    const enemyShips = SHIPS_CONFIG.map((ship) => ({ ...ship, isSunk: false }));
 
+    const sunkShots = myShots.filter((shot) => shot.result === "sunk" && Array.isArray(shot.cells));
+
+    sunkShots.forEach((shot) => {
+      const sunkSize = shot.cells.length;
+      const targetShip = enemyShips.find((s) => s.size === sunkSize && !s.isSunk);
+      if (targetShip) targetShip.isSunk = true;
+    });
+
+    return enemyShips;
+  };
+
+  /**
+   * Renders the header, both boards and the floating dragged gadget / ship.
+   * @author xhaziyh00, xslobok00
+   */
   render() {
     const { t } = this.context;
-    const { gameView } = this.state;
-    const isYourTurn = gameView?.phase === "battle" && gameView.turnPlayerId === gameView.players.you.id;
-    const turnMessage =
-      gameView?.phase === "finished"
-        ? gameView.winnerPlayerId === gameView.players.you.id
-          ? "turn.won"
-          : "turn.lost"
-        : isYourTurn
-          ? "turn.my_turn"
-          : "turn.opponent_turn";
+    const { boardData, opponentBoard, usedGadgets, relocationMode, draggingShip, dragOffset, draggingGadget, currentHoveredCell, hoveredField, scannedZones, mousePos } =
+      this.state;
+
     return (
       <div>
-        <Header />
-        {this.state.gameError && <p role="alert">{this.state.gameError}</p>}
-        <p role="status">{t(turnMessage)}</p>
+        <Header onGoHome={this.props.onGoHome} isGetReady={false} turnStatus={this.isMyTurn() ? "my_turn" : "opponent_turn"} />
+
         <div className="battleContainer">
           <Battlefield
             title={t("game.yourFleet")}
             isOpponent={false}
             isGetReadyScrn={false}
-            ships={this.state.myShips}
-            boardData={this.state.boardData}
-            usedGadgets={this.state.usedGadgets}
+            boardData={boardData}
+            usedGadgets={usedGadgets}
             onSelectAbility={this.handleGadgetSelect}
-            relocationMode={this.state.relocationMode}
+            relocationMode={relocationMode}
             onPlacedShipDragStart={this.handlePlacedShipDragStart}
             containerRef={this.playerBoardRef}
-            draggingShip={this.state.draggingShip}
+            draggingShip={draggingShip}
             canPlaceShip={this.canPlaceShip}
-            currentHoveredCell={this.state.hoveredField === "player" ? this.state.currentHoveredCell : null}
-            draggingGadget={this.state.draggingGadget}
+            currentHoveredCell={hoveredField === "player" ? currentHoveredCell : null}
+            draggingGadget={draggingGadget}
           />
 
           <Battlefield
             title={t("game.opponent")}
             isOpponent={true}
-            boardData={this.state.opponentBoard}
-            enemyShips={this.state.enemyShips}
+            boardData={opponentBoard}
+            enemyShips={this.getEnemyShips()}
             containerRef={this.opponentBoardRef}
-            scannedZones={this.state.scannedZones}
-            draggingGadget={this.state.draggingGadget}
-            currentHoveredCell={this.state.hoveredField === "opponent" ? this.state.currentHoveredCell : null}
-            canShoot={isYourTurn && !this.state.isFiring}
+            scannedZones={scannedZones}
+            draggingGadget={draggingGadget}
+            currentHoveredCell={hoveredField === "opponent" ? currentHoveredCell : null}
+            canShoot={this.props.gameState.phase === "battle" && this.isMyTurn()}
             onCellClick={this.handleShot}
           />
         </div>
 
-        {/* just dragging icon */}
-        {this.state.draggingGadget && (
+        {/* Dragged gadget that follows the cursor */}
+        {draggingGadget && (
           <div
             id="draggingGadget"
             style={{
-              left: `${this.state.mousePos.x - 30}px`,
-              top: `${this.state.mousePos.y - 30}px`,
+              left: `${mousePos.x - GADGET_PREVIEW_OFFSET}px`,
+              top: `${mousePos.y - GADGET_PREVIEW_OFFSET}px`,
             }}>
-            {GADGETS.find((g) => g.id === this.state.draggingGadget)?.icon}
+            {GADGETS.find((g) => g.id === draggingGadget)?.icon}
           </div>
         )}
 
-        {/* same for ship relocation  */}
-        {this.state.draggingShip && (
+        {/* Relocated ship that follows the cursor */}
+        {draggingShip && (
           <div
             id="draggingShip"
             style={{
-              left: `${this.state.mousePos.x - 15}px`,
-              top: `${this.state.mousePos.y - 15}px`,
+              left: `${mousePos.x - dragOffset.x}px`,
+              top: `${mousePos.y - dragOffset.y}px`,
             }}>
-            <BattleShip size={this.state.draggingShip.size} isVertical={this.state.draggingShip.isVertical} isDraggable={false} />
+            <BattleShip size={draggingShip.size} isVertical={draggingShip.isVertical} isDraggable={false} />
           </div>
         )}
       </div>
     );
   }
 }
-export default BatlleshipGame;
+
+export default BattleshipGame;

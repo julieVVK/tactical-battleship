@@ -70,7 +70,7 @@ export function saveLanguage(language) {
 
 // parse custom values like {username} and translate them
 export function translate(language, key, values = {}) {
-    const message = translations[normalizeLanguage(language)][key] ?? en[key] ?? key;
+    const message = translations[normalizeLanguage(language)][key] ?? translations[DEFAULT_LANGUAGE][key] ?? key;
 
     /* regex meaning:
      * \{(\w+)\} - matches a placeholder in the form of {name}

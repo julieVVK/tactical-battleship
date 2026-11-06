@@ -11,9 +11,11 @@ File was created by Vladyslav Doroshenko
     justify-content: flex-end;
     width: 16rem;
     max-width: calc(100vw - 3rem);
+    pointer-events: none;
 }
 
 .profile-menu-toggle {
+    pointer-events: auto;
     display: block;
     width: 3.5rem;
     height: 3.5rem;
@@ -32,6 +34,7 @@ File was created by Vladyslav Doroshenko
 }
 
 .profile-menu-panel {
+    pointer-events: auto;
     position: absolute;
     top: calc(100% + 1rem);
     right: 0;
