@@ -20,7 +20,6 @@ function App() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [user, setUser] = useState({ status: "loading", error: null });
-  const lobby = useLobby(user.id);
 
   // author: Vladyslav Doroshenko
   // Create random user
@@ -56,6 +55,11 @@ function App() {
   const [robotGame, setRobotGame] = useState(null);
   const [robotFleet, setRobotFleet] = useState(null);
   const [gameError, setGameError] = useState(null);
+
+  const lobby = useLobby(user.id, () => {
+    setPlayerBoardData(null);
+    setPlayerShips(null);
+  });
 
   const handleStartBattle = (boardData, ships) => {
     setPlayerBoardData(boardData);
@@ -100,6 +104,7 @@ function App() {
       navigate("/robot/game");
     } catch (error) {
       setGameError(error.message);
+      alert(error.message);
     }
   }
 
@@ -116,6 +121,7 @@ function App() {
       setRobotGame(view);
     } catch (error) {
       setGameError(error.message);
+      alert(error.message);
     }
   }
 
@@ -155,7 +161,11 @@ function App() {
         path="/ready"
         element={
           lobby.game?.players?.opponent ? (
-            <GetReady onStartBattle={handleStartBattle} gameId={lobby.game?.id} userId={user.id} socket={lobby.socket} onGoHome={() => navigate("/")} />
+            lobby.game.players.you.ready ? (
+              <Navigate to="/game" replace />
+            ) : (
+              <GetReady onStartBattle={handleStartBattle} gameId={lobby.game?.id} userId={user.id} socket={lobby.socket} onGoHome={() => navigate("/")} />
+            )
           ) : (
             <Navigate to="/lobby" replace />
           )
@@ -164,7 +174,7 @@ function App() {
       <Route
         path="/game"
         element={
-          playerBoardData ? (
+          lobby.game?.players?.you?.ready ? (
             <BattleshipGame
               initialBoardData={playerBoardData}
               myShips={playerShips}

@@ -10,6 +10,7 @@
 import React from "react";
 import { LETTERS, NUMBERS, GADGETS, BOARD_SIZE } from "../../constants";
 import BattleShip from "../battleship/BattleShip.jsx";
+import Button from "../button/Button.jsx";
 import EnemyShipsList from "../battleshipGame/EnemyShipsList.jsx";
 import { LanguageContext } from "../../i18n/LanguageContext.js";
 import "./battlefield.css";
@@ -137,7 +138,9 @@ class Battlefield extends React.Component {
     // Nothing is dragged or cursor is outside the board
     if (!draggingShip || !currentHoveredCell) return preview;
 
-    const { x: startX, y: startY } = currentHoveredCell;
+    const { isVertical, grabIndex = 0 } = draggingShip;
+    const startX = currentHoveredCell.x - (isVertical ? grabIndex : 0);
+    const startY = currentHoveredCell.y - (isVertical ? 0 : grabIndex);
 
     for (let i = 0; i < draggingShip.size; i++) {
       const shipCellX = draggingShip.isVertical ? startX + i : startX;
@@ -213,7 +216,7 @@ class Battlefield extends React.Component {
    * @author xhaziyh00, xslobok00
    */
   renderCell = (rowIndex, colIndex, shouldDraw) => {
-    const { isOpponent, isGetReadyScrn = false, boardData, currentHoveredCell, draggingGadget, relocationMode, scannedZones = [] } = this.props;
+    const { isOpponent, isGetReadyScrn = false, boardData, currentHoveredCell, draggingGadget, relocationMode, scannedZones = [], canShoot } = this.props;
 
     const CellTag = isOpponent ? "button" : "div";
     const cell = boardData ? boardData[rowIndex][colIndex] : null;
@@ -252,7 +255,7 @@ class Battlefield extends React.Component {
         style={{
           backgroundColor: background.color,
           backgroundImage: background.image ?? "none",
-          cursor: "default",
+          cursor: isOpponent && canShoot && !cell?.hit && !cell?.miss ? "pointer" : "default",
         }}>
         {cell?.hasMine && !isOpponent && <span className="mineIcon">{cell.miss ? EXPLODED_MINE_ICON : MINE_ICON}</span>}
 
@@ -269,17 +272,17 @@ class Battlefield extends React.Component {
    */
   renderShipDock = () => {
     const { t } = this.context;
-    const { ships = [], boardData } = this.props;
+    const { ships = [], boardData, draggingShip } = this.props;
 
     const unplacedShips = ships.filter((ship) => !ship.isPlaced);
-    const isFleetReady = ships.length > 0 && unplacedShips.length === 0;
+    const isFleetReady = ships.length > 0 && unplacedShips.length === 0 && !draggingShip;
 
     // All ships placed - show the start button
     if (isFleetReady) {
       return (
-        <button className="readyToGoButton" onClick={() => this.props.onStartBattle?.(boardData, ships)}>
+        <Button variant="dark" className="readyToGoButton" onClick={() => this.props.onStartBattle?.(boardData, ships)}>
           {t("game.start")}
-        </button>
+        </Button>
       );
     }
 
@@ -299,6 +302,7 @@ class Battlefield extends React.Component {
    * @author xhaziyh00
    */
   renderGadgets = () => {
+    const { t } = this.context;
     const { usedGadgets = [], relocationMode, onSelectAbility } = this.props;
 
     return GADGETS.map((gadget) => {
@@ -316,7 +320,7 @@ class Battlefield extends React.Component {
         <button
           className="gadgetButton"
           key={gadget.id}
-          title={`${gadget.name}:\n${gadget.desc}`}
+          title={`${t(gadget.nameKey)}:\n${t(gadget.descKey)}`}
           onMouseDown={(e) => {
             if (!isUsed) onSelectAbility?.(e, gadget.id);
           }}
@@ -337,6 +341,7 @@ class Battlefield extends React.Component {
    * @author xhaziyh00, xslobok00
    */
   render() {
+    const { t } = this.context;
     const { title, isOpponent, isGetReadyScrn = false } = this.props;
 
     const shouldDraw = isGetReadyScrn || !isOpponent;
@@ -346,6 +351,10 @@ class Battlefield extends React.Component {
     return (
       <div className="mainField">
         <p className="owner">{title}</p>
+
+        {isGetReadyScrn && (
+          <p className="placement-hint">{t("game.placementHint")}</p>
+        )}
 
         {/* Numbers 1-10 */}
         <div style={{ display: "flex", marginTop: "18px" }}>

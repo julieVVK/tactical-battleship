@@ -104,6 +104,7 @@ const getCellUnderCursor = (element, e) => {
  */
 class BattleshipGame extends React.Component {
   static contextType = LanguageContext;
+  actionPending = false;
 
   /**
    * Initializes both boards, gadgets and drag-and-drop state.
@@ -116,14 +117,11 @@ class BattleshipGame extends React.Component {
     this.opponentBoardRef = React.createRef();
 
     this.state = {
-      myShips: props.myShips,
-      boardData: props.initialBoardData,
-      opponentBoard: createEmptyOpponentBoard(),
-      usedGadgets: [],
-      scannedZones: [],
+      ...this.buildGameState(props.gameState),
 
       draggingGadget: null,
       draggingShip: null,
+      dragOffset: { x: SHIP_PREVIEW_OFFSET, y: SHIP_PREVIEW_OFFSET },
       originalCells: null,
       relocationMode: false,
       mousePos: { x: 0, y: 0 },
@@ -133,18 +131,13 @@ class BattleshipGame extends React.Component {
   }
 
   /**
-   * Registers window listeners and restores radar results after a page reload.
+   * Registers window listeners.
    * @author xhaziyh00
    */
   componentDidMount() {
     window.addEventListener("mousemove", this.handleMouseMove);
     window.addEventListener("mouseup", this.handleGlobalMouseUp);
     window.addEventListener("keydown", this.handleKeyDown);
-
-    const scannedZones = this.props.gameState?.players?.you?.scannedZones;
-    if (scannedZones?.length > 0) {
-      this.setState({ scannedZones });
-    }
   }
 
   /**
@@ -162,33 +155,37 @@ class BattleshipGame extends React.Component {
    * @author xhaziyh00, xslobok00
    */
   componentDidUpdate(prevProps) {
-    const players = this.props.gameState?.players;
-    const prevPlayers = prevProps.gameState?.players;
-
-    const myShots = players?.you?.shots || [];
-    const opponentShots = players?.opponent?.shots || [];
-    const scannedZones = players?.you?.scannedZones || [];
-    const opponentScannedZones = players?.opponent?.scannedZones || [];
-
-    const prevMyShots = prevPlayers?.you?.shots || [];
-    const prevOpponentShots = prevPlayers?.opponent?.shots || [];
-    const prevOpponentScans = prevPlayers?.opponent?.scannedZones || [];
-
-    const hasNewScannedZones = scannedZones.length > 0 && this.state.scannedZones.length === 0;
-    const hasNewShots = myShots.length !== prevMyShots.length || opponentShots.length !== prevOpponentShots.length;
-    const hasNewOpponentScans = opponentScannedZones.length !== prevOpponentScans.length;
-    const isNewGameState = prevProps.gameState !== this.props.gameState;
-
-    // Nothing new from the server - skip
-    const shouldSync = this.props.gameState && (isNewGameState || hasNewShots || hasNewScannedZones || hasNewOpponentScans);
-    if (!shouldSync) return;
-
-    this.setState({
-      opponentBoard: this.buildOpponentBoard(myShots),
-      boardData: this.buildPlayerBoard(opponentShots, opponentScannedZones),
-      ...(hasNewScannedZones && { scannedZones }),
-    });
+    if (prevProps.gameState !== this.props.gameState) {
+      this.syncGameState(this.props.gameState);
+    }
   }
+
+  syncGameState = (gameState) => {
+    this.setState({
+      ...this.buildGameState(gameState),
+      ...SHIP_DRAG_RESET,
+      ...GADGET_DRAG_RESET,
+      relocationMode: false,
+    });
+  };
+
+  // Ship ids are local to the board; relocation requests use coordinates.
+  buildGameState = (gameState) => {
+    const { you, opponent } = gameState.players;
+
+    return {
+      myShips: you.ships.map(({ cells }, index) => ({
+        id: String(index + 1),
+        size: cells.length,
+        isVertical: cells.length > 1 && cells[0].col === cells[1].col,
+        isPlaced: true,
+      })),
+      boardData: this.buildPlayerBoard(you, opponent),
+      opponentBoard: this.buildOpponentBoard(you.shots),
+      usedGadgets: [...you.usedGadgets],
+      scannedZones: you.scannedZones,
+    };
+  };
 
   /**
    * Builds the opponent's board from our shots ({ row, col, result: "hit" | "sunk" | "miss", cells? }).
@@ -216,14 +213,26 @@ class BattleshipGame extends React.Component {
   };
 
   /**
-   * Builds our board: applies opponent's radar scans and shots to the current board.
+   * Builds our board from the server fleet, mine, radar scans and shots.
    * @author xhaziyh00, xslobok00
    */
-  buildPlayerBoard = (opponentShots, opponentScannedZones) => {
-    const board = copyBoard(this.state.boardData);
+  buildPlayerBoard = (player, opponent) => {
+    const board = createEmptyOpponentBoard();
+
+    player.ships.forEach(({ cells }, index) => {
+      cells.forEach(({ row, col, hit }) => {
+        board[row][col] = { ...board[row][col], hasShip: true, shipId: String(index + 1), hit };
+      });
+    });
+
+    if (player.mine) {
+      const { row, col, triggered } = player.mine;
+      board[row][col].hasMine = true;
+      board[row][col].miss = triggered;
+    }
 
     // Cells where the enemy radar found our ship
-    opponentScannedZones.forEach(({ row, col, hasShip }) => {
+    (opponent?.scannedZones ?? []).forEach(({ row, col, hasShip }) => {
       if (hasShip && isInBounds(row, col)) {
         board[row][col].isScanned = true;
       }
@@ -245,7 +254,7 @@ class BattleshipGame extends React.Component {
     );
 
     // Opponent's shots
-    opponentShots.forEach((shot) => {
+    (opponent?.shots ?? []).forEach((shot) => {
       if (shot.result === "hit" || shot.result === "sunk") {
         board[shot.row][shot.col].hit = true;
       }
@@ -271,6 +280,8 @@ class BattleshipGame extends React.Component {
    * @author xhaziyh00
    */
   postGameAction = async (path, body) => {
+    if (this.actionPending) return;
+    this.actionPending = true;
     const { gameId, userId } = this.props;
 
     try {
@@ -285,14 +296,22 @@ class BattleshipGame extends React.Component {
 
       // Server rejected the action
       if (!response.ok) {
-        console.error(`Request "${path}" failed`, await response.text());
+        const data = await response.json();
+        alert(data.error.message);
         return;
       }
 
+      if (path.startsWith("gadgets/")) {
+        this.syncGameState(await response.json());
+      }
+
       // Robot mode has no socket - ask App to reload the game state
-      this.props.onActionDone?.();
+      await this.props.onActionDone?.();
     } catch (err) {
       console.error(`Network error on "${path}"`, err);
+      alert(err.message);
+    } finally {
+      this.actionPending = false;
     }
   };
 
@@ -325,11 +344,12 @@ class BattleshipGame extends React.Component {
    * @author xhaziyh00, xslobok00
    */
   handleKeyDown = (e) => {
-    const { draggingShip } = this.state;
+    const { draggingShip, dragOffset } = this.state;
     if (e.code !== "KeyR" || !draggingShip) return;
 
     this.setState({
       draggingShip: { ...draggingShip, isVertical: !draggingShip.isVertical },
+      dragOffset: { x: dragOffset.y, y: dragOffset.x },
     });
   };
 
@@ -381,16 +401,20 @@ class BattleshipGame extends React.Component {
    * @author xhaziyh00, xslobok00
    */
   dropRelocatedShip = () => {
-    const { draggingShip, currentHoveredCell, hoveredField, boardData, originalCells, myShips } = this.state;
-    const { size, isVertical, id } = draggingShip;
+    const { draggingShip, currentHoveredCell, hoveredField, boardData, originalCells } = this.state;
+    const { size, isVertical, id, grabIndex = 0 } = draggingShip;
     const newBoard = copyBoard(boardData);
 
     const isOverOwnBoard = currentHoveredCell && hoveredField === "player";
-    const isValidPlace = isOverOwnBoard && this.isMyTurn() && this.canPlaceShip(currentHoveredCell.x, currentHoveredCell.y, size, isVertical, boardData);
+    const start = currentHoveredCell && {
+      x: currentHoveredCell.x - (isVertical ? grabIndex : 0),
+      y: currentHoveredCell.y - (isVertical ? 0 : grabIndex),
+    };
+    const isValidPlace = isOverOwnBoard && this.isMyTurn() && this.canPlaceShip(start.x, start.y, size, isVertical, boardData);
 
     const newCells = [];
     if (isValidPlace) {
-      const { x, y } = currentHoveredCell;
+      const { x, y } = start;
       for (let i = 0; i < size; i++) {
         newCells.push(isVertical ? `${x + i}-${y}` : `${x}-${y + i}`);
       }
@@ -398,34 +422,20 @@ class BattleshipGame extends React.Component {
 
     const isSamePosition = [...originalCells].sort().join(",") === [...newCells].sort().join(",");
 
-    // Wrong place or the same place - put the ship back
-    if (!isValidPlace || isSamePosition) {
-      placeShipCells(newBoard, originalCells, id);
-      this.setState({ boardData: newBoard, ...SHIP_DRAG_RESET });
-      return;
-    }
-
-    placeShipCells(newBoard, newCells, id);
-    const updatedShips = myShips.map((s) => (String(s.id) === String(id) ? { ...s, isVertical } : s));
+    // Keep the original position until the server accepts the relocation.
+    placeShipCells(newBoard, originalCells, id);
+    this.setState({ boardData: newBoard, ...SHIP_DRAG_RESET });
+    if (!isValidPlace || isSamePosition) return;
 
     const [oldRow, oldCol] = originalCells[0].split("-").map(Number);
 
-    this.setState(
-      (prev) => ({
-        boardData: newBoard,
-        myShips: updatedShips,
-        usedGadgets: [...prev.usedGadgets, "relocate"],
-        ...SHIP_DRAG_RESET,
-      }),
-      () =>
-        this.postGameAction("gadgets/relocate", {
-          oldRow,
-          oldCol,
-          newRow: currentHoveredCell.x,
-          newCol: currentHoveredCell.y,
-          isVertical,
-        }),
-    );
+    return this.postGameAction("gadgets/relocate", {
+      oldRow,
+      oldCol,
+      newRow: start.x,
+      newCol: start.y,
+      isVertical,
+    });
   };
 
   /**
@@ -435,29 +445,18 @@ class BattleshipGame extends React.Component {
    */
   dropGadget = () => {
     const { draggingGadget, currentHoveredCell, hoveredField, boardData } = this.state;
+    this.setState(GADGET_DRAG_RESET);
 
     // Released outside of both boards
     if (!currentHoveredCell || !hoveredField) {
-      this.setState(GADGET_DRAG_RESET);
       return;
     }
 
     const { x: row, y: col } = currentHoveredCell;
 
-    const applyGadget = (extraState, path) =>
-      this.setState(
-        (prev) => ({
-          ...extraState,
-          usedGadgets: [...prev.usedGadgets, draggingGadget],
-          ...GADGET_DRAG_RESET,
-        }),
-        () => this.postGameAction(path, { row, col }),
-      );
-
     // Radar - scans 3x3 area on the opponent's board
     if (draggingGadget === "radar" && hoveredField === "opponent" && this.isMyTurn()) {
-      applyGadget({}, "gadgets/radar");
-      return;
+      return this.postGameAction("gadgets/radar", { row, col });
     }
 
     // Mine - only on an empty, not shot cell
@@ -465,13 +464,8 @@ class BattleshipGame extends React.Component {
     const isFreeCell = !target.hasShip && !target.hasMine && !target.hit && !target.miss;
 
     if (draggingGadget === "mine" && hoveredField === "player" && isFreeCell && this.isMyTurn()) {
-      const newBoard = copyBoard(boardData);
-      newBoard[row][col].hasMine = true;
-      applyGadget({ boardData: newBoard }, "gadgets/mine");
-      return;
+      return this.postGameAction("gadgets/mine", { row, col });
     }
-
-    this.setState(GADGET_DRAG_RESET);
   };
 
   /**
@@ -480,6 +474,7 @@ class BattleshipGame extends React.Component {
    */
   handleGadgetSelect = (e, gadgetId) => {
     e.preventDefault();
+    if (this.actionPending || this.state.usedGadgets.includes(gadgetId)) return;
 
     if (gadgetId === "relocate") {
       this.setState((prev) => ({ relocationMode: !prev.relocationMode }));
@@ -497,6 +492,7 @@ class BattleshipGame extends React.Component {
    * @author xhaziyh00, xslobok00
    */
   handlePlacedShipDragStart = (e, rowIndex, colIndex) => {
+    if (this.actionPending) return;
     const { boardData, myShips = [] } = this.state;
 
     const targetShipId = boardData[rowIndex]?.[colIndex]?.shipId;
@@ -518,10 +514,18 @@ class BattleshipGame extends React.Component {
       }),
     );
 
+    const grabIndex = originalCells.indexOf(`${rowIndex}-${colIndex}`);
+    const rect = e.currentTarget.getBoundingClientRect();
     this.setState({
       boardData: newBoard,
-      draggingShip: { ...originalShip, isPlaced: true },
+      draggingShip: { ...originalShip, isPlaced: true, grabIndex },
+      dragOffset: {
+        x: e.clientX - rect.left + (originalShip.isVertical ? 0 : grabIndex * rect.width),
+        y: e.clientY - rect.top + (originalShip.isVertical ? grabIndex * rect.height : 0),
+      },
       originalCells,
+      currentHoveredCell: { x: rowIndex, y: colIndex },
+      hoveredField: "player",
       mousePos: { x: e.clientX, y: e.clientY },
       relocationMode: false,
     });
@@ -573,7 +577,7 @@ class BattleshipGame extends React.Component {
    */
   render() {
     const { t } = this.context;
-    const { boardData, opponentBoard, usedGadgets, relocationMode, draggingShip, draggingGadget, currentHoveredCell, hoveredField, scannedZones, mousePos } =
+    const { boardData, opponentBoard, usedGadgets, relocationMode, draggingShip, dragOffset, draggingGadget, currentHoveredCell, hoveredField, scannedZones, mousePos } =
       this.state;
 
     return (
@@ -606,6 +610,7 @@ class BattleshipGame extends React.Component {
             scannedZones={scannedZones}
             draggingGadget={draggingGadget}
             currentHoveredCell={hoveredField === "opponent" ? currentHoveredCell : null}
+            canShoot={this.props.gameState.phase === "battle" && this.isMyTurn()}
             onCellClick={this.handleShot}
           />
         </div>
@@ -627,8 +632,8 @@ class BattleshipGame extends React.Component {
           <div
             id="draggingShip"
             style={{
-              left: `${mousePos.x - SHIP_PREVIEW_OFFSET}px`,
-              top: `${mousePos.y - SHIP_PREVIEW_OFFSET}px`,
+              left: `${mousePos.x - dragOffset.x}px`,
+              top: `${mousePos.y - dragOffset.y}px`,
             }}>
             <BattleShip size={draggingShip.size} isVertical={draggingShip.isVertical} isDraggable={false} />
           </div>

@@ -59,6 +59,7 @@ class GetReady extends React.Component {
       myShips: SHIPS_CONFIG.map((ship) => ({ ...ship, isVertical: false, isPlaced: false })),
       boardData: createEmptyBoard(),
       draggingShip: null,
+      dragOffset: { x: DRAG_PREVIEW_OFFSET, y: DRAG_PREVIEW_OFFSET },
       currentHoveredCell: null,
       mousePos: { x: 0, y: 0 },
     };
@@ -124,9 +125,15 @@ class GetReady extends React.Component {
    */
   handleShipDragStart = (e, ship) => {
     const updatedShips = this.state.myShips.map((s) => (s.id === ship.id ? { ...s, isPlaced: true } : s));
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dragOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const cellSize = (ship.isVertical ? rect.height : rect.width) / ship.size;
+    const grabIndex = Math.min(ship.size - 1, Math.floor((ship.isVertical ? dragOffset.y : dragOffset.x) / cellSize));
 
     this.setState({
-      draggingShip: ship,
+      draggingShip: { ...ship, grabIndex },
+      dragOffset,
+      currentHoveredCell: null,
       myShips: updatedShips,
       mousePos: { x: e.clientX, y: e.clientY },
     });
@@ -201,7 +208,9 @@ class GetReady extends React.Component {
       return;
     }
 
-    const { x: rowIndex, y: colIndex } = currentHoveredCell;
+    const { isVertical, grabIndex = 0 } = draggingShip;
+    const rowIndex = currentHoveredCell.x - (isVertical ? grabIndex : 0);
+    const colIndex = currentHoveredCell.y - (isVertical ? 0 : grabIndex);
 
     // Released on a wrong place
     if (!this.canPlaceShip(rowIndex, colIndex, draggingShip.size, draggingShip.isVertical, boardData)) {
@@ -248,7 +257,7 @@ class GetReady extends React.Component {
   handleKeyDown = (e) => {
     if (e.code !== "KeyR") return;
 
-    const { draggingShip, myShips } = this.state;
+    const { draggingShip, dragOffset, myShips } = this.state;
 
     // Nothing in hand - random placement
     if (!draggingShip) {
@@ -259,6 +268,7 @@ class GetReady extends React.Component {
     const nextOrientation = !draggingShip.isVertical;
     this.setState({
       draggingShip: { ...draggingShip, isVertical: nextOrientation },
+      dragOffset: { x: dragOffset.y, y: dragOffset.x },
       myShips: myShips.map((s) => (s.id === draggingShip.id ? { ...s, isVertical: nextOrientation } : s)),
     });
   };
@@ -315,19 +325,28 @@ class GetReady extends React.Component {
     const originalShip = myShips.find((s) => isTargetShip(s.id));
     if (!originalShip) return;
 
-    const newBoard = boardData.map((row) =>
-      row.map((cell) => {
+    const shipCells = [];
+    const newBoard = boardData.map((row, r) =>
+      row.map((cell, c) => {
         if (isTargetShip(cell.shipId)) {
+          shipCells.push({ row: r, col: c });
           return { hasShip: false, shipId: null, hit: false, miss: false };
         }
         return { ...cell };
       }),
     );
 
+    const grabIndex = shipCells.findIndex(({ row, col }) => row === rowIndex && col === colIndex);
+    const rect = e.currentTarget.getBoundingClientRect();
     this.setState({
       boardData: newBoard,
       myShips: myShips.map((s) => (isTargetShip(s.id) ? { ...s, isPlaced: true } : s)),
-      draggingShip: { ...originalShip, isPlaced: true },
+      draggingShip: { ...originalShip, isPlaced: true, grabIndex },
+      dragOffset: {
+        x: e.clientX - rect.left + (originalShip.isVertical ? 0 : grabIndex * rect.width),
+        y: e.clientY - rect.top + (originalShip.isVertical ? grabIndex * rect.height : 0),
+      },
+      currentHoveredCell: { x: rowIndex, y: colIndex },
       mousePos: { x: e.clientX, y: e.clientY },
     });
   };
@@ -359,13 +378,15 @@ class GetReady extends React.Component {
 
       // Server rejected the board
       if (!response.ok) {
-        console.error("Failed to ready up", await response.text());
+        const data = await response.json();
+        alert(data.error.message);
         return;
       }
 
       this.props.onStartBattle?.(boardData, ships, payload.board);
     } catch (err) {
       console.error("Network error on ready up", err);
+      alert(err.message);
     }
   };
 
@@ -375,13 +396,13 @@ class GetReady extends React.Component {
    */
   render() {
     const { t } = this.context;
-    const { draggingShip, mousePos, myShips, boardData, currentHoveredCell } = this.state;
+    const { draggingShip, dragOffset, mousePos, myShips, boardData, currentHoveredCell } = this.state;
 
     return (
       <>
         <Header onGoHome={this.props.onGoHome} isGetReady={true} />
 
-        <div id="containerForField">
+        <div id="containerForField" className="fleet-setup">
           <Battlefield
             title={t("game.yourFleet")}
             isOpponent={false}
@@ -404,8 +425,8 @@ class GetReady extends React.Component {
               style={{
                 position: "fixed",
                 pointerEvents: "none",
-                left: `${mousePos.x - DRAG_PREVIEW_OFFSET}px`,
-                top: `${mousePos.y - DRAG_PREVIEW_OFFSET}px`,
+                left: `${mousePos.x - dragOffset.x}px`,
+                top: `${mousePos.y - dragOffset.y}px`,
                 zIndex: 9999,
               }}>
               <Battleship size={draggingShip.size} isVertical={draggingShip.isVertical} isDraggable={false} />

@@ -19,7 +19,7 @@ const lobbyErrors = {
 
 
 // App owns the lobby so changing routes does not discard it or its connection.
-export function useLobby(userId) {
+export function useLobby(userId, onGameChange) {
     const {pathname} = useLocation()
     const [game, setGame] = useState(null)
     const [pending, setPending] = useState(false)
@@ -93,11 +93,12 @@ export function useLobby(userId) {
                 let view
                 if (code === undefined)
                 {
-                    view = game ?? await createGame(userId)
+                    view = game && game.phase !== 'finished' ? game : await createGame(userId)
                 }
                 else {const gameCode = getGameCode(code)
                 view = game?.id === gameCode ? game : await joinGame(gameCode, userId)
             }
+            if (view.id !== game?.id) onGameChange()
             setGame(view)
                 return view
             }

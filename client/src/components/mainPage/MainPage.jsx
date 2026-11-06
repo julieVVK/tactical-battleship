@@ -1,4 +1,8 @@
 // File was created by Vladyslav Doroshenko
+
+// Later edited by Yuliia Vovk
+//   - Added dialog windows
+
 import { useState } from "react";
 import { useLanguage } from '../../i18n/useLanguage.js';
 import Ship from "../ship/Ship.jsx";
@@ -51,7 +55,7 @@ function MainPage({ lobby, onPlayWithPC, gameError }) {
     };
 
     if (lobbyView === "create" && game?.players.opponent) {
-        return <Navigate to="/ready" replace />;
+        return <Navigate to={game.players.you.ready ? "/game" : "/ready"} replace />;
     }
 
 
@@ -143,7 +147,7 @@ function MainPage({ lobby, onPlayWithPC, gameError }) {
                                     onClick={handleCreate}
                                     disabled={pending}
                                 >
-                                    {t(pending ? "lobby.connecting" : game ? "lobby.open" : "lobby.create")}
+                                    {t(pending ? "lobby.connecting" : game && game.phase !== "finished" ? "lobby.open" : "lobby.create")}
                                 </Button>
                             </div>
                         </div>
