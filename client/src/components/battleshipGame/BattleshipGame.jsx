@@ -529,9 +529,11 @@ class BattleshipGame extends React.Component {
    */
   handleShot = (row, col) => {
     const { userId, turnPlayerId, gameState } = this.props;
+    const cell = this.state.opponentBoard?.[row]?.[col];
 
     // Block shot if the game hasn't started or it's not the player's turn
-    if (!turnPlayerId || turnPlayerId !== userId) return;
+    if (!turnPlayerId || !this.isMyTurn()) return;
+    if (cell?.miss || cell?.hit) return;
 
     // Do not shoot the same cell twice
     const myShots = gameState?.players?.you?.shots || [];
