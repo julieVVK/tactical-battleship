@@ -582,7 +582,7 @@ class BattleshipGame extends React.Component {
 
     return (
       <div>
-        <Header onGoHome={this.props.onGoHome} isGetReady={false} turnStatus={this.isMyTurn() ? "my_turn" : "opponent_turn"} />
+        <Header onGoHome={this.props.onGoHome} isGetReady={false} turnStatus={this.isMyTurn() ? "my_turn" : "opponent_turn"} gameState={this.props.gameState} userId={this.props.userId} />
 
         <div className="battleContainer">
           <Battlefield

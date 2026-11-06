@@ -41,7 +41,16 @@ class Header extends React.Component {
    */
   render() {
     const { t } = this.context;
+    const { gameState, gameView, userId, onGoHome } = this.props;
+    const currentGameState = gameState || this.props.gameView;
+    const isFinished = gameState?.phase === "finished";
+    const isWinner = isFinished && gameState?.winnerPlayerId === userId;
+    let statusKey = this.props.turnStatus;
+    if (isFinished) {
+      statusKey = isWinner ? "turn.won" : "turn.lost";
+    }
     return (
+    <>
       <div className="headerDiv">
         <div className="buttonContainer">
           {/* author:xhaziyh00 - Navigation section: button to return home */}
@@ -55,6 +64,25 @@ class Header extends React.Component {
           {!this.props.isGetReady && <p>{t(TURN_MESSAGES[this.props.turnStatus])}</p>}
         </div>
       </div>
+
+      {isFinished && (
+          <div className="game-over-modal-overlay">
+            <div className="game-over-modal">
+              <h2>{isWinner ? "You won!" : "You lost!"}</h2>
+              <p>{isWinner ? "Congratulations, all enemy ships are sunk." : "Better luck next time!"}</p>
+              {onGoHome ? (
+                <button className="home-button" onClick={onGoHome}>
+                  {t("nav.home")}
+                </button>
+              ) : (
+                <Link className="home-button" to="/">
+                  {t("nav.home")}
+                </Link>
+              )}
+            </div>
+          </div>
+      )}
+    </>
     );
   }
 }
