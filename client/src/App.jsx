@@ -103,6 +103,22 @@ function App() {
     }
   }
 
+  // Robot game has no socket - reload its state after every action (robot moves inside the same request)
+  async function refreshRobotGame() {
+    try {
+      const response = await fetch(`/api/games/${robotGame.id}`, {
+        headers: { userId: user.id },
+      });
+      const view = await response.json();
+      if (!response.ok) {
+        throw new Error(view.error?.message || "Could not load the robot game.");
+      }
+      setRobotGame(view);
+    } catch (error) {
+      setGameError(error.message);
+    }
+  }
+
   /*TODO: Fix state reset due to component re-mounting via handling saved settings through props
    *       sound settings still need persistence.
    *  EDIT: cancell saving settings, nobody gives a fuck
@@ -171,7 +187,7 @@ function App() {
             robotFleet ? (
               <Navigate to="/robot/game" replace />
             ) : (
-              <GetReady onStartBattle={handleStartRobotBattle} gameError={gameError} />
+              <GetReady onStartBattle={handleStartRobotBattle} gameError={gameError} onGoHome={() => navigate("/")} />
             )
           ) : (
             <Navigate to="/" replace />
@@ -185,11 +201,13 @@ function App() {
             <BattleshipGame
               key={robotGame.id}
               initialBoardData={robotFleet.boardData}
-              initialShips={robotFleet.ships}
-              initialGameView={robotGame}
-              onGameViewChange={setRobotGame}
+              myShips={robotFleet.ships}
+              gameState={robotGame}
+              turnPlayerId={robotGame.turnPlayerId}
+              onActionDone={refreshRobotGame}
               gameId={robotGame.id}
               userId={user.id}
+              onGoHome={() => navigate("/")}
             />
           ) : (
             <Navigate to="/robot/ready" replace />

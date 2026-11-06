@@ -337,6 +337,12 @@ class GetReady extends React.Component {
    * @author xslobok00
    */
   handleReadyToGo = async (boardData, ships) => {
+    // Robot mode has no gameId here - App sends /ready itself
+    if (!this.props.gameId) {
+      this.props.onStartBattle?.(boardData, ships);
+      return;
+    }
+
     const payload = {
       board: boardData.map((row) => row.map((cell) => (cell.hasShip ? cell.shipId : null))),
     };

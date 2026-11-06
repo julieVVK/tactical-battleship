@@ -286,7 +286,11 @@ class BattleshipGame extends React.Component {
       // Server rejected the action
       if (!response.ok) {
         console.error(`Request "${path}" failed`, await response.text());
+        return;
       }
+
+      // Robot mode has no socket - ask App to reload the game state
+      this.props.onActionDone?.();
     } catch (err) {
       console.error(`Network error on "${path}"`, err);
     }
