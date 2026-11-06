@@ -41,11 +41,10 @@ class Header extends React.Component {
    */
   render() {
     const { t } = this.context;
-    const { gameState, gameView, userId, onGoHome } = this.props;
-    const currentGameState = gameState || this.props.gameView;
+    const { gameState, userId, onGoHome } = this.props;
     const isFinished = gameState?.phase === "finished";
     const isWinner = isFinished && gameState?.winnerPlayerId === userId;
-    let statusKey = this.props.turnStatus;
+    let statusKey = TURN_MESSAGES[this.props.turnStatus];
     if (isFinished) {
       statusKey = isWinner ? "turn.won" : "turn.lost";
     }
@@ -61,15 +60,15 @@ class Header extends React.Component {
         <div className="textContainer">
           {/* author:xhaziyh00 - Information section: title and dynamic turn status text */}
           <h1>{t("app.title")}</h1>
-          {!this.props.isGetReady && <p>{t(TURN_MESSAGES[this.props.turnStatus])}</p>}
+          {!this.props.isGetReady && <p>{t(statusKey)}</p>}
         </div>
       </div>
 
       {isFinished && (
           <div className="game-over-modal-overlay">
             <div className="game-over-modal">
-              <h2>{isWinner ? "You won!" : "You lost!"}</h2>
-              <p>{isWinner ? "Congratulations, all enemy ships are sunk." : "Better luck next time!"}</p>
+              <h2>{t(isWinner ? "game.wonTitle" : "game.lostTitle")}</h2>
+              <p>{t(isWinner ? "game.wonDescription" : "game.lostDescription")}</p>
               {onGoHome ? (
                 <button className="home-button" onClick={onGoHome}>
                   {t("nav.home")}
