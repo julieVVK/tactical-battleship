@@ -10,6 +10,7 @@ import errorHandler from "./errorHandler.js"
 import socketHandlers from "./socketHandlers.js"
 import createUserRouter from "./routes/userRoutes.js"
 import createGameRouter from "./routes/gameRoutes.js"
+import createLanguageRouter from "./routes/languageRoutes.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -44,6 +45,7 @@ app.post("/api/dev/fleet", (req, res) => {
 
 app.use("/api", createUserRouter())
 app.use("/api", createGameRouter(io))
+app.use("/api", createLanguageRouter())
 
 
 app.get('/api/ping', (req, res) => {
