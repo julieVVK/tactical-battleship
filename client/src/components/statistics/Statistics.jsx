@@ -30,10 +30,11 @@ function formatDateTime(isoString, language) {
   return `${datePart} · ${timePart}`;
 }
 
-async function requestStats(offset = 0, limit = 10) {
+async function requestStats(userId, offset = 0, limit = 10) {
   // Request a portion of match history and the overall statistics.
   const response = await fetch(
-    `/api/statistics?offset=${offset}&limit=${limit}`
+    `/api/statistics?offset=${offset}&limit=${limit}`,
+    {headers: {userId}}
   );
 
   if (!response.ok) {
@@ -44,7 +45,7 @@ async function requestStats(offset = 0, limit = 10) {
   return data;
 }
 
-export default function StatisticsPage() {
+export default function StatisticsPage({userId}) {
   const {t, language} = useLanguage();
   const {hash} = useLocation();
   // stats will contain the data returned by the backend.
@@ -72,7 +73,7 @@ export default function StatisticsPage() {
         setLoading(true);
         setError(null);
 
-        const data = await requestStats(0, 10);
+        const data = await requestStats(userId, 0, 10);
 
         // Update React state only if the component is still mounted.
         if (!cancelled) {
@@ -94,7 +95,7 @@ export default function StatisticsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   async function loadMoreMatches() {
     setLoadingMore(true);
@@ -102,7 +103,7 @@ export default function StatisticsPage() {
 
     try {
       const offset = stats.recentMatches.length;
-      const data = await requestStats(offset, 10);
+      const data = await requestStats(userId, offset, 10);
 
       setStats(previouslyFetchedStats => ({
         ...data,

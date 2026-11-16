@@ -156,7 +156,7 @@ function App() {
             <Route path="/lobby/join" element={menu} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/rules" element={<Rules />} />
-            <Route path="/statistics" element={<StatisticsPage />} />
+            <Route path="/statistics" element={<StatisticsPage userId={user.id} />} />
             <Route
                 path="/ready"
                 element={
@@ -229,6 +229,6 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );
-}
-
+  }
+  
 export default App;

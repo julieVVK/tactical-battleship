@@ -1,8 +1,9 @@
-// File was created by Vladyslav Doroshenko
+// File was created by Marie Pindorová
 
 const errorStatuses = new Map([
     ["INVALID_USER_ID", 400],
     ["INVALID_USER_NAME", 400],
+    ["INVALID_PAGINATION", 400],
     ["USER_ALREADY_EXISTS", 409],
     ["INVALID_REQUEST_BODY", 400],
     ["INVALID_FLEET", 400],

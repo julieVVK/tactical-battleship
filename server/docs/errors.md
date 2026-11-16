@@ -17,7 +17,7 @@ Use `response.ok` and `error.code` to handle errors on the frontend.
 
 ## HTTP 400
 
-- `INVALID_USER_ID`: the new user's ID is not a nonempty string.
+- `INVALID_USER_ID`: a user ID is invalid or required for a statistics request.
 - `INVALID_USER_NAME`: the new user's name is not a nonempty string.
 - `INVALID_REQUEST_BODY`: Ready, shots or gadgets received no request body.
 - `INVALID_GAME_ID`: the game code is not a string of six hexadecimal characters
@@ -27,6 +27,7 @@ Use `response.ok` and `error.code` to handle errors on the frontend.
 - `INVALID_GADGET`: unknown gadget name.
 - `INVALID_GADGET_TARGET`: invalid scan/mine coordinates or ship relocation.
 - `INVALID_JSON`: the JSON parser could not read the request body.
+- `INVALID_PAGINATION`: statistics offset or limit is outside the allowed range.
 
 ## HTTP 403
 

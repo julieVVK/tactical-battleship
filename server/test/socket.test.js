@@ -317,10 +317,62 @@ test("HTTP actions and Socket.IO subscriptions by user ID", {timeout: 30000}, as
         assert.deepEqual(view, (await request(`/api/games/${gameId}`, alice.id, undefined, "GET")).data)
     })
 
-    await t.test("statistics work without credentials and session routes are removed", async () => {
-        const response = await request("/api/statistics", null, undefined, "GET")
-        assert.equal(response.status, 200)
-        assert.equal(response.data.recentMatches.length, 10)
+    await t.test("statistics are computed from completed games for the requesting player", async () => {
+        const alice = await user()
+        const bob = await user()
+        const created = await request("/api/createGames", alice.id)
+        assert.equal((await request(`/api/games/${created.data.id}/join`, bob.id)).status, 200)
+        await request(`/api/games/${created.data.id}/ready`, alice.id, {board})
+        const started = await request(`/api/games/${created.data.id}/ready`, bob.id, {board})
+
+        let currentPlayerId = started.data.turnPlayerId
+        let winnerId
+        for (const cell of cells) {
+            const shot = await request(`/api/games/${created.data.id}/shots`, currentPlayerId, cell)
+            assert.equal(shot.status, 200)
+            if (shot.data.phase === "finished") {
+                winnerId = shot.data.winnerPlayerId
+                break
+            }
+            currentPlayerId = shot.data.turnPlayerId
+        }
+
+        assert.ok(winnerId)
+        const loserId = winnerId === alice.id ? bob.id : alice.id
+        const winnerStats = await request("/api/statistics?offset=0&limit=1", winnerId, undefined, "GET")
+        assert.equal(winnerStats.status, 200)
+        assert.equal(winnerStats.data.battlesWon, 1)
+        assert.equal(winnerStats.data.battlesLost, 0)
+        assert.equal(winnerStats.data.battlesPlayed, 1)
+        assert.equal(winnerStats.data.winRate, 100)
+        assert.equal(winnerStats.data.recentMatches.length, 1)
+        assert.equal(winnerStats.data.recentMatches[0].result, "victory")
+        assert.equal(winnerStats.data.recentMatches[0].moves, cells.length)
+        assert.ok(Number.isFinite(Date.parse(winnerStats.data.recentMatches[0].date)))
+
+        const loserStats = await request("/api/statistics", loserId, undefined, "GET")
+        assert.equal(loserStats.data.battlesWon, 0)
+        assert.equal(loserStats.data.battlesLost, 1)
+        assert.equal(loserStats.data.recentMatches[0].result, "defeat")
+
+        const stranger = await user()
+        const emptyStats = await request("/api/statistics", stranger.id, undefined, "GET")
+        assert.deepEqual(emptyStats.data, {
+            battlesWon: 0,
+            battlesLost: 0,
+            battlesPlayed: 0,
+            winRate: 0,
+            recentMatches: [],
+        })
+
+        const nextPage = await request("/api/statistics?offset=1&limit=1", winnerId, undefined, "GET")
+        assert.equal(nextPage.status, 200)
+        assert.deepEqual(nextPage.data.recentMatches, [])
+        assert.equal((await request("/api/statistics", null, undefined, "GET")).data.error.code, "INVALID_USER_ID")
+        assert.equal((await request("/api/statistics?limit=0", winnerId, undefined, "GET")).data.error.code, "INVALID_PAGINATION")
+    })
+
+    await t.test("session routes are removed", async () => {
         for (const path of ["/api/session", "/api/signout"]) {
             assert.equal((await fetch(`${baseUrl}${path}`)).status, 404)
         }
