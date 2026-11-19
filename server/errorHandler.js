@@ -1,4 +1,4 @@
-// File was created by Marie Pindorová
+// File was created by Vladyslav Doroshenko
 
 const errorStatuses = new Map([
     ["INVALID_USER_ID", 400],
