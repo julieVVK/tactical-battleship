@@ -28,6 +28,7 @@ Use `response.ok` and `error.code` to handle errors on the frontend.
 - `INVALID_GADGET_TARGET`: invalid scan/mine coordinates or ship relocation.
 - `INVALID_JSON`: the JSON parser could not read the request body.
 - `INVALID_PAGINATION`: statistics offset or limit is outside the allowed range.
+- `INVALID_MATCH_HISTORY_UPDATE`: invalid favorite or note value for match history.
 
 ## HTTP 403
 
@@ -50,6 +51,7 @@ Use `response.ok` and `error.code` to handle errors on the frontend.
 - `TURN_MISMATCH`: the requesting player does not currently have the turn.
 - `SHOT_DUPLICATE`: the player has already fired at these coordinates.
 - `GADGET_ALREADY_USED`: the requested gadget has already been used in this match.
+- `MATCH_NOT_FINISHED`: match-history settings can only be changed after a game ends.
 
 ## HTTP 413 and 500
 

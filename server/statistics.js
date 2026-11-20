@@ -3,7 +3,7 @@
 import {getGames} from "./games.js"
 
 /**
- * 
+ *
  * @param {string} userId - a user's ID
  * @param {number} offset - how many matches to skip first
  * @param {number} limit - how many matches to return
@@ -17,16 +17,24 @@ export const getStatistics = (userId, offset = 0, limit = 10) => {
             game.phase === "finished" &&
             game.finishedAt &&
             game.players.some(player => player.id === userId))
-        
+        // filter out matches the player deleted
+        .filter(game => {
+            const player = game.players.find(player => player.id === userId)
+            return !player.matchHistory.deleted
+        })
+
         // for each matching game find the player's own game record that contains their shots
         .map(game => {
             const player = game.players.find(player => player.id === userId)
 
             // create an object for the statistics response
             return {
+                gameId: game.id,
                 date: game.finishedAt,
                 result: game.winnerPlayerId === userId ? "victory" : "defeat",
                 moves: player.shots.length, // number of player's shots
+                favorite: player.matchHistory.favorite,
+                note: player.matchHistory.note,
             }
         })
 

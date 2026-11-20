@@ -170,16 +170,36 @@ Response shape:
   "battlesPlayed": 1,
   "winRate": 100,
   "recentMatches": [
-    { "date": "2026-11-15T16:00:00.000Z", "result": "victory", "moves": 20 }
+    {
+      "gameId": "A1B2C3",
+      "date": "2026-11-15T16:00:00.000Z",
+      "result": "victory",
+      "moves": 20,
+      "favorite": false,
+      "note": ""
+    }
   ]
 }
 ```
 
 `winRate` is a rounded percentage from 0 to 100, or 0 when there are no
 completed matches. Match dates are ISO 8601 timestamps; `result` is `"victory"`
-or `"defeat"`. Totals always cover all of the player's completed matches,
-regardless of the requested page. An offset at or beyond the end returns an
-empty `recentMatches` array.
+or `"defeat"`. Each history item also includes `gameId`, `favorite`, and `note`.
+Totals cover the player's visible completed matches, regardless of the requested
+page. An offset at or beyond the end returns an empty `recentMatches` array.
+
+## HTTP `PATCH /api/statistics/:gameId`:
+
+@param `userId` Required request header for a player in the completed match.
+@param `favorite` Optional boolean to mark or unmark the match as a favorite.
+@param `note` Optional text up to 500 characters. An empty string clears it.
+@returns The updated match-history settings for that player only.
+
+## HTTP `DELETE /api/statistics/:gameId`:
+
+@param `userId` Required request header for a player in the completed match.
+@returns Removes the match from this player's statistics and history. The game
+itself and the opponent's history are not deleted.
 
 ___
 ## HTTP `POST /api/dev/fleet`:
