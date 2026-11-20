@@ -279,6 +279,7 @@ const hitCell =
                 game.phase = 'finished'
                 game.winnerPlayerId = player.id
                 game.turnPlayerId = null
+                game.finishedAt = new Date().toISOString()
             }
         }
 

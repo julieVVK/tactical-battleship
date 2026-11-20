@@ -40,9 +40,9 @@ Game requests send the guest's ID in the `userId` header:
 userId: alice
 ```
 
-The game routes read this header directly. Statistics does not require a user ID.
-The frontend stores the guest in App state. Reloading or signing out creates a
-new guest; the old user and games remain in server memory.
+Game and statistics routes read this header directly. The frontend stores the
+guest in App state. Reloading or signing out creates a new guest; the old user
+and games remain in server memory.
 
 # Game routes
 
@@ -141,71 +141,45 @@ HTTP 400 with `INVALID_REQUEST_BODY`.
 
 ## HTTP `GET /api/statistics`:
 
-@brief Returns sample statistics and a requested window of match history.
-`statistics.js` exports the `statistics` constant with fixed totals and 60
-sample matches. The first ten match the statistics page design; the
-remaining fifty are generated sample history. Every caller receives
-the same response for the same query. Game actions do not update this data.
+@brief Computes statistics from completed games for the requesting player.
+Only that player's finished games are included. Results are derived from the
+in-memory game state and are lost when the server restarts.
 
-@param No body or user ID is required.
-@param `offset` Query parameter, number of matches to skip. Defaults to `0`.
-The frontend supplies a non-negative integer.
-@param `limit` Query parameter, number of matches to return, a positive integer.
-Defaults to `10`.
-@returns HTTP 200 with totals for the full history, a window of matches in newest
-first order. The route assumes valid pagination parameters from the frontend.
+@param `userId` Required request header containing an existing guest ID.
+@param `offset` Query parameter, number of matches to skip. Defaults to `0`;
+must be a non-negative integer.
+@param `limit` Query parameter, number of matches to return. Defaults to `10`;
+must be an integer from 1 to 100.
+@returns HTTP 200 with totals for all completed games and a window of matches
+in newest-first order. `moves` is the player's number of shots in that game.
+Missing or unknown user IDs and invalid pagination return a structured error.
 
-Default response from `GET /api/statistics`:
+Request example:
+
+```http
+GET /api/statistics?offset=0&limit=10
+userId: alice
+```
+
+Response shape:
 
 ```json
 {
-  "battlesWon": 48,
-  "battlesLost": 12,
-  "battlesPlayed": 60,
-  "winRate": 80,
+  "battlesWon": 1,
+  "battlesLost": 0,
+  "battlesPlayed": 1,
+  "winRate": 100,
   "recentMatches": [
-    { "date": "2026-09-21T18:42:00+02:00", "result": "victory", "moves": 42 },
-    { "date": "2026-09-21T17:15:00+02:00", "result": "victory", "moves": 38 },
-    { "date": "2026-09-20T21:08:00+02:00", "result": "defeat", "moves": 51 },
-    { "date": "2026-09-20T19:34:00+02:00", "result": "victory", "moves": 35 },
-    { "date": "2026-09-19T22:10:00+02:00", "result": "victory", "moves": 46 },
-    { "date": "2026-09-19T18:56:00+02:00", "result": "victory", "moves": 41 },
-    { "date": "2026-09-18T20:22:00+02:00", "result": "defeat", "moves": 49 },
-    { "date": "2026-09-18T16:40:00+02:00", "result": "victory", "moves": 37 },
-    { "date": "2026-09-17T21:03:00+02:00", "result": "victory", "moves": 44 },
-    { "date": "2026-09-17T19:11:00+02:00", "result": "victory", "moves": 39 }
+    { "date": "2026-11-15T16:00:00.000Z", "result": "victory", "moves": 20 }
   ]
 }
 ```
 
-`winRate` is a percentage from 0 to 100. Match dates use ISO 8601 with a timezone
-offset, and `result` is `"victory"` or `"defeat"`. `recentMatches` contains only
-the requested window. Totals are fixed in the exported constant and stay the
-same across windows: 48 wins, 12 losses and an 80% win rate.
-
-Request examples:
-
-```http
-GET /api/statistics?offset=0&limit=10
-GET /api/statistics?offset=10&limit=10
-GET /api/statistics?offset=20&limit=10
-```
-
-The frontend chooses `limit` based on how many rows it wants to show. For a
-"Load more" button, increase `offset` by the number of returned matches and
-append the next response's matches. For page navigation, use `offset = (page - 1) * limit`
-and replace the displayed rows.
-
-The route returns up to `limit` matches. If six remain and ten are requested,
-it returns six. An offset at or beyond the end returns an empty `recentMatches`
-array with the same overall totals. There are no pagination metadata fields.
-The frontend can check `offset + recentMatches.length < battlesPlayed` to
-decide whether another window exists, including when the final window is full.
-
-The frontend can use `winRate` and `100 - winRate` for the overall results bar
-and its 80% / 20% labels. Reducing `battlesWon / battlesPlayed`, or 48 / 60,
-gives the "4 out of 5" caption. Format match dates in `Europe/Prague` to display
-the dates and times shown in the design.
+`winRate` is a rounded percentage from 0 to 100, or 0 when there are no
+completed matches. Match dates are ISO 8601 timestamps; `result` is `"victory"`
+or `"defeat"`. Totals always cover all of the player's completed matches,
+regardless of the requested page. An offset at or beyond the end returns an
+empty `recentMatches` array.
 
 ___
 ## HTTP `POST /api/dev/fleet`:

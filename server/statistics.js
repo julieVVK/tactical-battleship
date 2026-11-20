@@ -1,70 +1,54 @@
-// File was created by Vladyslav Doroshenko
+// this file was created by Marie Pindorová
 
-export const statistics = {
-    battlesWon: 48,
-    battlesLost: 12,
-    battlesPlayed: 60,
-    winRate: 80,
-    recentMatches: [
-        { date: "2026-09-21T18:42:00+02:00", result: "victory", moves: 42 },
-        { date: "2026-09-21T17:15:00+02:00", result: "victory", moves: 38 },
-        { date: "2026-09-20T21:08:00+02:00", result: "defeat", moves: 51 },
-        { date: "2026-09-20T19:34:00+02:00", result: "victory", moves: 35 },
-        { date: "2026-09-19T22:10:00+02:00", result: "victory", moves: 46 },
-        { date: "2026-09-19T18:56:00+02:00", result: "victory", moves: 41 },
-        { date: "2026-09-18T20:22:00+02:00", result: "defeat", moves: 49 },
-        { date: "2026-09-18T16:40:00+02:00", result: "victory", moves: 37 },
-        { date: "2026-09-17T21:03:00+02:00", result: "victory", moves: 44 },
-        { date: "2026-09-17T19:11:00+02:00", result: "victory", moves: 39 },
-        { date: "2026-09-16T19:11:00+02:00", result: "victory", moves: 34 },
-        { date: "2026-09-16T07:11:00+02:00", result: "victory", moves: 41 },
-        { date: "2026-09-15T19:11:00+02:00", result: "victory", moves: 48 },
-        { date: "2026-09-15T07:11:00+02:00", result: "victory", moves: 55 },
-        { date: "2026-09-14T19:11:00+02:00", result: "defeat", moves: 40 },
-        { date: "2026-09-14T07:11:00+02:00", result: "victory", moves: 47 },
-        { date: "2026-09-13T19:11:00+02:00", result: "victory", moves: 54 },
-        { date: "2026-09-13T07:11:00+02:00", result: "victory", moves: 39 },
-        { date: "2026-09-12T19:11:00+02:00", result: "victory", moves: 46 },
-        { date: "2026-09-12T07:11:00+02:00", result: "defeat", moves: 53 },
-        { date: "2026-09-11T19:11:00+02:00", result: "victory", moves: 38 },
-        { date: "2026-09-11T07:11:00+02:00", result: "victory", moves: 45 },
-        { date: "2026-09-10T19:11:00+02:00", result: "victory", moves: 52 },
-        { date: "2026-09-10T07:11:00+02:00", result: "victory", moves: 37 },
-        { date: "2026-09-09T19:11:00+02:00", result: "defeat", moves: 44 },
-        { date: "2026-09-09T07:11:00+02:00", result: "victory", moves: 51 },
-        { date: "2026-09-08T19:11:00+02:00", result: "victory", moves: 36 },
-        { date: "2026-09-08T07:11:00+02:00", result: "victory", moves: 43 },
-        { date: "2026-09-07T19:11:00+02:00", result: "victory", moves: 50 },
-        { date: "2026-09-07T07:11:00+02:00", result: "defeat", moves: 35 },
-        { date: "2026-09-06T19:11:00+02:00", result: "victory", moves: 42 },
-        { date: "2026-09-06T07:11:00+02:00", result: "victory", moves: 49 },
-        { date: "2026-09-05T19:11:00+02:00", result: "victory", moves: 34 },
-        { date: "2026-09-05T07:11:00+02:00", result: "victory", moves: 41 },
-        { date: "2026-09-04T19:11:00+02:00", result: "defeat", moves: 48 },
-        { date: "2026-09-04T07:11:00+02:00", result: "victory", moves: 55 },
-        { date: "2026-09-03T19:11:00+02:00", result: "victory", moves: 40 },
-        { date: "2026-09-03T07:11:00+02:00", result: "victory", moves: 47 },
-        { date: "2026-09-02T19:11:00+02:00", result: "victory", moves: 54 },
-        { date: "2026-09-02T07:11:00+02:00", result: "defeat", moves: 39 },
-        { date: "2026-09-01T19:11:00+02:00", result: "victory", moves: 46 },
-        { date: "2026-09-01T07:11:00+02:00", result: "victory", moves: 53 },
-        { date: "2026-08-31T19:11:00+02:00", result: "victory", moves: 38 },
-        { date: "2026-08-31T07:11:00+02:00", result: "victory", moves: 45 },
-        { date: "2026-08-30T19:11:00+02:00", result: "defeat", moves: 52 },
-        { date: "2026-08-30T07:11:00+02:00", result: "victory", moves: 37 },
-        { date: "2026-08-29T19:11:00+02:00", result: "victory", moves: 44 },
-        { date: "2026-08-29T07:11:00+02:00", result: "victory", moves: 51 },
-        { date: "2026-08-28T19:11:00+02:00", result: "victory", moves: 36 },
-        { date: "2026-08-28T07:11:00+02:00", result: "defeat", moves: 43 },
-        { date: "2026-08-27T19:11:00+02:00", result: "victory", moves: 50 },
-        { date: "2026-08-27T07:11:00+02:00", result: "victory", moves: 35 },
-        { date: "2026-08-26T19:11:00+02:00", result: "victory", moves: 42 },
-        { date: "2026-08-26T07:11:00+02:00", result: "victory", moves: 49 },
-        { date: "2026-08-25T19:11:00+02:00", result: "defeat", moves: 34 },
-        { date: "2026-08-25T07:11:00+02:00", result: "victory", moves: 41 },
-        { date: "2026-08-24T19:11:00+02:00", result: "victory", moves: 48 },
-        { date: "2026-08-24T07:11:00+02:00", result: "victory", moves: 55 },
-        { date: "2026-08-23T19:11:00+02:00", result: "victory", moves: 40 },
-        { date: "2026-08-23T07:11:00+02:00", result: "defeat", moves: 47 }
-    ]
+import {getGames} from "./games.js"
+
+/**
+ * 
+ * @param {string} userId - a user's ID
+ * @param {number} offset - how many matches to skip first
+ * @param {number} limit - how many matches to return
+ * @returns {object} - user's statistics
+ */
+export const getStatistics = (userId, offset = 0, limit = 10) => {
+    // find a player's completed matches
+    const recentMatches = getGames()
+        // keep only games that have finished, have a finish timestamp and include the requested user as a player
+        .filter(game =>
+            game.phase === "finished" &&
+            game.finishedAt &&
+            game.players.some(player => player.id === userId))
+        
+        // for each matching game find the player's own game record that contains their shots
+        .map(game => {
+            const player = game.players.find(player => player.id === userId)
+
+            // create an object for the statistics response
+            return {
+                date: game.finishedAt,
+                result: game.winnerPlayerId === userId ? "victory" : "defeat",
+                moves: player.shots.length, // number of player's shots
+            }
+        })
+
+        // sort entries by the parsed date, newest first (positive or negative number tells JS which entry should come first)
+        .sort((first, second) => Date.parse(second.date) - Date.parse(first.date))
+
+    // total number of completed matches
+    const battlesPlayed = recentMatches.length
+    // total number of victories
+    const battlesWon = recentMatches.filter(match => match.result === "victory").length
+    // total number of defeats
+    const battlesLost = battlesPlayed - battlesWon
+
+    const winRate = battlesPlayed > 0
+        ? Math.round((battlesWon / battlesPlayed) * 100)
+        : 0
+        
+    return {
+        battlesWon,
+        battlesLost,
+        battlesPlayed,
+        winRate,
+        recentMatches: recentMatches.slice(offset, offset + limit),
+    }
 }
