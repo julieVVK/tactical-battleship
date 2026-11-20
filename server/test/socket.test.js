@@ -346,8 +346,11 @@ test("HTTP actions and Socket.IO subscriptions by user ID", {timeout: 30000}, as
         assert.equal(winnerStats.data.battlesPlayed, 1)
         assert.equal(winnerStats.data.winRate, 100)
         assert.equal(winnerStats.data.recentMatches.length, 1)
+        assert.equal(winnerStats.data.recentMatches[0].gameId, created.data.id)
         assert.equal(winnerStats.data.recentMatches[0].result, "victory")
         assert.equal(winnerStats.data.recentMatches[0].moves, cells.length)
+        assert.equal(winnerStats.data.recentMatches[0].favorite, false)
+        assert.equal(winnerStats.data.recentMatches[0].note, "")
         assert.ok(Number.isFinite(Date.parse(winnerStats.data.recentMatches[0].date)))
 
         const loserStats = await request("/api/statistics", loserId, undefined, "GET")
@@ -355,7 +358,59 @@ test("HTTP actions and Socket.IO subscriptions by user ID", {timeout: 30000}, as
         assert.equal(loserStats.data.battlesLost, 1)
         assert.equal(loserStats.data.recentMatches[0].result, "defeat")
 
+        const favorite = await request(
+            `/api/statistics/${created.data.id}`,
+            winnerId,
+            {favorite: true},
+            "PATCH",
+        )
+        assert.equal(favorite.status, 200)
+        assert.equal(favorite.data.favorite, true)
+
+        const note = await request(
+            `/api/statistics/${created.data.id}`,
+            winnerId,
+            {note: "  Close game  "},
+            "PATCH",
+        )
+        assert.equal(note.data.note, "Close game")
+
+        const updatedWinnerStats = await request("/api/statistics", winnerId, undefined, "GET")
+        assert.equal(updatedWinnerStats.data.recentMatches[0].favorite, true)
+        assert.equal(updatedWinnerStats.data.recentMatches[0].note, "Close game")
+        const unchangedLoserStats = await request("/api/statistics", loserId, undefined, "GET")
+        assert.equal(unchangedLoserStats.data.recentMatches[0].favorite, false)
+        assert.equal(unchangedLoserStats.data.recentMatches[0].note, "")
+
         const stranger = await user()
+        const forbiddenUpdate = await request(
+            `/api/statistics/${created.data.id}`,
+            stranger.id,
+            {favorite: true},
+            "PATCH",
+        )
+        assert.equal(forbiddenUpdate.status, 403)
+        const invalidNote = await request(
+            `/api/statistics/${created.data.id}`,
+            winnerId,
+            {note: "x".repeat(501)},
+            "PATCH",
+        )
+        assert.equal(invalidNote.data.error.code, "INVALID_MATCH_HISTORY_UPDATE")
+
+        const deleted = await request(
+            `/api/statistics/${created.data.id}`,
+            winnerId,
+            undefined,
+            "DELETE",
+        )
+        assert.equal(deleted.status, 200)
+        const deletedWinnerStats = await request("/api/statistics", winnerId, undefined, "GET")
+        assert.equal(deletedWinnerStats.data.battlesPlayed, 0)
+        assert.deepEqual(deletedWinnerStats.data.recentMatches, [])
+        const unaffectedLoserStats = await request("/api/statistics", loserId, undefined, "GET")
+        assert.equal(unaffectedLoserStats.data.battlesPlayed, 1)
+
         const emptyStats = await request("/api/statistics", stranger.id, undefined, "GET")
         assert.deepEqual(emptyStats.data, {
             battlesWon: 0,
