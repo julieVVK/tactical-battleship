@@ -584,7 +584,7 @@ class BattleshipGame extends React.Component {
       <div>
         <Header onGoHome={this.props.onGoHome} isGetReady={false} turnStatus={this.isMyTurn() ? "my_turn" : "opponent_turn"} gameState={this.props.gameState} userId={this.props.userId} />
 
-        <div className="battleContainer">
+        <div className={this.props.chatPanel ? "battleContainer battleContainer--with-chat" : "battleContainer"}>
           <Battlefield
             title={t("game.yourFleet")}
             isOpponent={false}
@@ -601,6 +601,11 @@ class BattleshipGame extends React.Component {
             draggingGadget={draggingGadget}
           />
 
+          {this.props.chatPanel && (
+            <div className="battle-chat-slot">
+              {this.props.chatPanel}
+            </div>
+          )}
           <Battlefield
             title={t("game.opponent")}
             isOpponent={true}

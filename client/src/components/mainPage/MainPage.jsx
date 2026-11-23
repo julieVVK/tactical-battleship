@@ -1,8 +1,6 @@
 // File was created by Vladyslav Doroshenko
 
-// Later edited by Yuliia Vovk
-//   - Added dialog windows
-
+// And later modified by Yuliia Vovk
 import { useState } from "react";
 import { useLanguage } from '../../i18n/useLanguage.js';
 import Ship from "../ship/Ship.jsx";
@@ -14,6 +12,7 @@ import { Navigate, useLocation, useNavigate } from "react-router";
 
 function MainPage({ lobby, onPlayWithPC, gameError }) {
     const { t } = useLanguage();
+
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -32,58 +31,50 @@ function MainPage({ lobby, onPlayWithPC, gameError }) {
     const { game, pending, error, connectionError, openLobby } = lobby;
     const [message, setMessage] = useState("");
 
-    const handleCopy = async (value) => {
+    const handleCopy = async () => {
         try {
-            await navigator.clipboard.writeText(value);
-            setMessage("lobby.copied");
+            await navigator.clipboard.writeText(game.id);
+            setMessage(t("lobby.copied"));
         } catch {
-            setMessage("lobby.copyFailed");
+            setMessage(t("lobby.copyFailed"));
         }
     };
 
     const handleCreate = async () => {
         setMessage("");
-        const view = await openLobby();
-        if (view) navigate("/lobby/create");
+        if (await openLobby()) navigate("/lobby/create");
     };
 
     const handleJoin = async (event) => {
         event.preventDefault();
+        if (await openLobby(lobbyCode)) navigate("/ready");
+    };
+
+    const handleBack = () => {
+        setLobbyCode("");
         setMessage("");
-        const view = await openLobby(lobbyCode);
-        if (view) navigate("/lobby/create");
+        navigate("/lobby");
     };
 
     if (lobbyView === "create" && game?.players.opponent) {
-        return <Navigate to={game.players.you.ready ? "/game" : "/ready"} replace />;
+        return <Navigate to="/ready" replace />;
     }
-
 
     return (
         <>
             <div className="main-page">
                 <Ship />
-                <ProfileMenu />
+                <ProfileMenu onNavigateStatistics={() => navigate("/statistics")} />
 
 
                 <div className="main-page-content">
                 <h1 className="main-page-title">{t("app.title")}</h1>
-
-                {gameError && <p role="alert" className="lobby-message">{gameError}</p>}
-
-                {error && (
-                    <div role="alert" className="lobby-message">
-                        <p>{t(error)}</p>
-                    </div>
-                )}
-                {connectionError && (
-                    <div role="alert" className="lobby-message">
-                        <p>{t(connectionError)}</p>
-                    </div>
+                {(error || connectionError || gameError) && (
+                    <p role="alert" className="lobby-message">{error || connectionError ? t(error || connectionError) : gameError}</p>
                 )}
 
                 {/* STATE 1 - HOME */}
-                {lobbyView === "home" && (
+                {lobbyView == "home" && (
                     <>
                         <div className="main-page-dialogue">
                             <h2 className="mainPageh1">{t("menu.play")}</h2>
@@ -95,7 +86,7 @@ function MainPage({ lobby, onPlayWithPC, gameError }) {
 
                                 <Button
                                     variant="dark"
-                                    to="/lobby"
+                                    onClick={() => navigate("/lobby")}
                                 >
                                     {t("menu.twoPlayers")}
                                 </Button>
@@ -105,9 +96,6 @@ function MainPage({ lobby, onPlayWithPC, gameError }) {
                         <div style={{
                             display: "flex",
                             flexDirection: "row",
-                            flexWrap: "wrap",
-                            justifyContent: "center",
-                            maxWidth: "100%",
                             gap: "0.5rem"
                         }}>
                             <Button
@@ -130,16 +118,24 @@ function MainPage({ lobby, onPlayWithPC, gameError }) {
                 )}
 
                 {/* STATE 2 - LOBBY */}
-                {lobbyView === "lobby" && (
+                {lobbyView == "lobby" && (
                     <>
                         <div className="main-page-dialogue lobby-dialogue">
-                            <h2 className="mainPageh1">{t("lobby.title")}</h2>
-                            <div className="lobby-buttons">
+                            <h2 className="mainPageh1">Lobby</h2>
+                            <div className="lobby-buttons" >
+                            <div style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    width: "8rem",
+                                    minWidth: "8rem",
+                                    alignItems: "stretch",
+                                    gap: "0.5rem"
+                                }}>
                                 <Button style={{ width: "100%", padding: "0.5rem 1rem" }}
                                     variant="light"
-                                    to="/lobby/join"
+                                    onClick={() => navigate("/lobby/join")}
                                 >
-                                    {t("lobby.join")}
+                                    Join
                                 </Button>
 
                                 <Button style={{ width: "100%", padding: "0.5rem 1rem" }}
@@ -147,48 +143,53 @@ function MainPage({ lobby, onPlayWithPC, gameError }) {
                                     onClick={handleCreate}
                                     disabled={pending}
                                 >
-                                    {t(pending ? "lobby.connecting" : game && game.phase !== "finished" ? "lobby.open" : "lobby.create")}
+                                    Create
                                 </Button>
+                            </div>
                             </div>
                         </div>
                     </>
                 )}
 
                 {/* STATE 3 - JOIN LOBBY */}
-                {lobbyView === "join" && (
+                {lobbyView == "join" && (
                     <>
+                        <p className="lobby-subtitle">
+                            A classic game of hide and seek at sea
+                        </p>
+
                         <div className="main-page-dialogue lobby-dialogue" >
                             <form className="lobby-form" onSubmit={handleJoin}>
 
-                                <h2 className="mainPageh1">{t("lobby.joinTitle")}</h2>
+                                <h2 className="mainPageh1">Join a lobby</h2>
 
                                 <label htmlFor="lobby-code">
-                                    {t("lobby.code")}
+                                    Lobby code or invitation link
                                 </label>
 
                                 <input 
                                     style={{ textTransform: "uppercase",
                                              alignContent: "center",
-                                             width: "100%"}}
+                                             width: "100%",
+                                             height: "2rem"}}
                                     id="lobby-code"
                                     type="text"
                                     value={lobbyCode}
-                                    onChange={(e) => { setLobbyCode(e.target.value); setMessage(""); }}
-                                    disabled={pending}
-                                    placeholder={t("lobby.placeholder")}
+                                    onChange={(e) => setLobbyCode(e.target.value)}
+                                    placeholder="ABC123 or paste a lobby link"
                                     required
                                 />
 
                                 <p className="lobby-hint">
-                                    {t("lobby.hint")}
+                                    Both formats work. Paste the full invitation link.
                                 </p>
 
                                 <Button variant="dark" type="submit" disabled={pending} style={{ width: "100%", padding: "0.5rem 1rem" }}>
-                                    {t(pending ? "lobby.joining" : "lobby.joinButton")}
+                                    Join lobby
                                 </Button>
                                 {message && (
                                 <p role="status" className="lobby-message">
-                                    {t(message)}
+                                    {message}
                                 </p>
                                 )}
                             </form>
@@ -197,62 +198,67 @@ function MainPage({ lobby, onPlayWithPC, gameError }) {
                 )}
 
                 {/* STATE 4 - CREATE LOBBY */}
-                {lobbyView === "create" && (
+                {lobbyView == "create" && !game && <Navigate to="/lobby" replace />}
+                {lobbyView == "create" && game && (
                     <>
+                        <p className="lobby-subtitle">
+                            A classic game of hide and seek at sea.
+                        </p>
+
                         <div className="main-page-dialogue lobby-dialogue">
                             <div className="lobby-form">
-                                <h2 className="mainPageh1">{t(game ? "lobby.yourLobby" : "lobby.createTitle")}</h2>
+                                <h2 className="mainPageh1">Create a lobby</h2>
 
                                 <label htmlFor="invite-code">
-                                    {t("lobby.yourCode")}
+                                    Your lobby code
                                 </label>
 
-                                <button
-                                    type="button"
+                                <input  style={{ textTransform: "uppercase",
+                                             alignContent: "center",
+                                             width: "100%",
+                                             height: "2rem"}}
                                     id="invite-code"
                                     className="lobby-generated-code"
-                                    disabled={!game}
-                                    aria-label={t("lobby.copyCode")}
-                                    title={t("lobby.copyCodeHint")}
-                                    onClick={() => handleCopy(game.id)}
-                                >
-                                    {game?.id ?? ""}
-                                </button>
+                                    value={game.id}
+                                    readOnly
+                                />
                                 
-                                {game ? (
-                                    <>
-                                        <Button
-                                            variant="light"
-                                            style={{ alignSelf: "center" }}
-                                            onClick={() => handleCopy(`${window.location.origin}/lobby/join?code=${game.id}`)}>
-                                            {t("lobby.copyLink")}
-                                        </Button>
+                                <p className="lobby-hint">
+                                    Share this code with a friend to invite them.
+                                </p>
 
-                                        <p className="lobby-hint">
-                                            {t("lobby.shareHint")}
-                                        </p>
-                                        {message && <p role="status" className="lobby-message">{t(message)}</p>}
-                                        <p role="status" className="lobby-waiting">{t("lobby.waiting")}</p>
-                                    </>
-                                ) : (
-                                    <Button variant="dark" onClick={handleCreate} disabled={pending}>
-                                        {t(pending ? "lobby.connecting" : "lobby.createButton")}
-                                    </Button>
+                                <Button variant="dark" onClick={handleCopy} style={{ width: "100%", padding: "0.5rem 1rem" }}>
+                                    Copy code
+                                </Button>
+
+                                {message && (
+                                <p role="status" className="lobby-message">
+                                    {message}
+                                </p>
                                 )}
+                                <p className="lobby-waiting">
+                                    {t("lobby.waiting")}
+                                </p>
                             </div>
                         </div>
                     </>
                 )}
 
                 {/* BACK BUTTON */}
-                {lobbyView !== "home" && (
-                    <Button style={{ width: "40%", padding: "0.5rem 1rem" }}
+                {lobbyView != "home" && (
+                    <button style={{ width: "40%", padding: "0.5rem 1rem" }}
+                        type="button"
                         className="lobby-back"
-                        to={lobbyView === "lobby" ? "/" : "/lobby"}
-                        onClick={() => setMessage("")}
+                        onClick={() => {
+                            if (lobbyView == "lobby") {
+                                navigate("/");
+                            } else {
+                                handleBack();
+                            }
+                        }}
                     >
-                        {t("nav.back")}
-                    </Button>
+                        Back
+                    </button>
                 )}
                 </div>
             </div>

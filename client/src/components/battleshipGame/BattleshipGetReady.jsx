@@ -363,7 +363,7 @@ class GetReady extends React.Component {
     }
 
     const payload = {
-      board: boardData.map((row) => row.map((cell) => (cell.hasShip ? cell.shipId : null))),
+      board: boardData.map((row) => row.map((cell) => (cell.hasShip ? String(cell.shipId) : null))),
     };
 
     try {
@@ -383,7 +383,7 @@ class GetReady extends React.Component {
         return;
       }
 
-      this.props.onStartBattle?.(boardData, ships, payload.board);
+      this.props.onStartBattle?.(boardData, ships, await response.json());
     } catch (err) {
       console.error("Network error on ready up", err);
       alert(err.message);

@@ -29,6 +29,8 @@ export function useLobby(userId, onGameChange) {
     const requestPending = useRef(false)
     const gameId = game?.id
 
+    const [chatConnection, setChatConnection] = useState(null);
+
     if (previousPathname !== pathname)
     {
         setPreviousPathname(pathname)
@@ -36,50 +38,51 @@ export function useLobby(userId, onGameChange) {
     }
 
     useEffect(() => {
+        setChatConnection(null);
         if (!userId || !gameId) return;
         let disposed = false
         const socket = io({
             auth: {userId},
             autoConnect: false,
-            reconnection: false,
-        })
+            reconnection: true,
+        });
 
         socket.on('game:state', view => {
-            if (view.id === gameId) setGame(view)
-        })
+            if (!disposed && view.id === gameId) {setGame(view); }
+        });
 
         socket.on(
             'connect',
             () => {socket.timeout(5000).emit(
                 'game:subscribe', {gameId}, (error, result) => {
-                    if (disposed) return;
-                    if (error)
-                    {
-                        setConnectionError('lobby.subscribeFailed')
+                    if (disposed || !socket.connected) return;
+                    if (error || !result?.ok) {
+                        setChatConnection(null);
+                        setConnectionError(error ? 'lobby.subscribeFailed' : lobbyErrors[result.error.code] ?? 'lobby.subscribeFailed');
+                        return;
                     }
-                    else
-                    {
-                        setConnectionError(
-                            result.ok ? '' :
-                                        lobbyErrors[result.error.code] ??
-                                    'lobby.subscribeFailed')
-                    }
-                })})
-
-        socket.on(
-            'connect_error', () => {setConnectionError('lobby.connectFailed')})
-
-        socket.on(
-            'disconnect', () => {setConnectionError('lobby.connectionLost')})
-
-        socket.connect()
-
-        return () => {
-            disposed = true
-            socket.removeAllListeners()
-            socket.disconnect()
-        }
-    }, [userId, gameId])
+                    setConnectionError('');
+                    setChatConnection({socket, gameId, userId});    } );
+                });
+                socket.on(
+                    'connect_error', () => {
+                        if (disposed) return;
+                        setChatConnection(null);
+                        setConnectionError('lobby.connectFailed');
+                    });
+                    socket.on(
+                        'disconnect', () => {
+                            if (disposed) return;
+                            setChatConnection(null);
+                            setConnectionError('lobby.connectionLost');
+                        });
+                        socket.connect();
+                        return () => {
+                            disposed = true;
+                            socket.removeAllListeners();
+                            socket.disconnect();
+                        };
+                    }, [userId, gameId]);
 
     async function openLobby(code)
     {
@@ -114,5 +117,5 @@ export function useLobby(userId, onGameChange) {
             }
     }
 
-    return ({game, pending, error, connectionError, openLobby})
+    return ({game, pending, error, connectionError, openLobby, chatConnection, setGame,   socket: chatConnection?.socket ?? null})
 }

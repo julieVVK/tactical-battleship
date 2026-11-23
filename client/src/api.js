@@ -88,3 +88,50 @@ export function unreadyGame(gameId, userId) {
         userId,
     })
 }
+
+
+
+// Read the conversation for one game.
+export function getChatMessages(gameId, userId) {
+  const code = getGameCode(gameId);
+  return request(`/games/${code}/messages`, { userId }); // array of messages
+}
+
+
+// Send a new message.
+export function sendChatMessage(gameId, userId, text) {
+  const code = getGameCode(gameId);
+
+  return request(`/games/${code}/messages`, {      
+    method: "POST",
+    userId,
+    body: { text } });    // newly created message
+}
+
+// encodeURIComponent safely inserts the message ID into the URL
+
+export function editChatMessage(gameId, userId, messageId, text) {
+  const code = getGameCode(gameId);
+
+  return request(
+    `/games/${code}/messages/${encodeURIComponent(messageId)}`,
+    {
+      method: "PATCH",
+      userId,
+      body: { text }
+    }
+  );
+}
+
+
+export function deleteChatMessage(gameId, userId, messageId) {
+  const code = getGameCode(gameId);
+
+  return request(
+    `/games/${code}/messages/${encodeURIComponent(messageId)}`,
+    {
+      method: "DELETE",
+      userId
+    }
+  );
+}

@@ -15,6 +15,9 @@ import { initializeUser } from "./user.js";
 import { Navigate, Routes, Route, useNavigate } from "react-router";
 import { useLobby } from "./useLobby.js";
 import { useLanguage } from "./i18n/useLanguage.js";
+import { useChat } from "./useChat.js";
+import ChatPanel from "./components/chat/chatPanel.jsx";
+
 
 function App() {
   const { t } = useLanguage();
@@ -60,6 +63,12 @@ function App() {
     setPlayerBoardData(null);
     setPlayerShips(null);
   });
+
+  const chat = useChat(
+  lobby.game?.id,
+  user.id,
+  lobby.chatConnection
+);
 
   const handleStartBattle = (boardData, ships) => {
     setPlayerBoardData(boardData);
@@ -175,16 +184,25 @@ function App() {
         path="/game"
         element={
           lobby.game?.players?.you?.ready ? (
-            <BattleshipGame
-              initialBoardData={playerBoardData}
-              myShips={playerShips}
-              gameId={lobby.game?.id}
-              userId={user.id}
-              socket={lobby.socket}
-              turnPlayerId={lobby.game?.turnPlayerId}
-              gameState={lobby.game}
-              onGoHome={() => navigate("/")}
-            />
+            <>
+              <BattleshipGame
+                initialBoardData={playerBoardData}
+                myShips={playerShips}
+                gameId={lobby.game?.id}
+                userId={user.id}
+                socket={lobby.socket}
+                turnPlayerId={lobby.game?.turnPlayerId}
+                gameState={lobby.game}
+                chatPanel={
+                  <ChatPanel
+                    key={`${lobby.game.id}:${user.id}`}
+                    chat={chat}
+                    userId={user.id}
+                  />  }
+                onGoHome={() => navigate("/")}
+              />
+
+            </>
           ) : (
             <Navigate to="/ready" replace />
           )

@@ -10,6 +10,7 @@ import errorHandler from "./errorHandler.js"
 import socketHandlers from "./socketHandlers.js"
 import createUserRouter from "./routes/userRoutes.js"
 import createGameRouter from "./routes/gameRoutes.js"
+import createChatRouter from "./routes/chatRoutes.js";
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -23,6 +24,7 @@ socketHandlers(io)
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
 
 
 /* DEBUG ROUTE*/
@@ -42,9 +44,10 @@ app.post("/api/dev/fleet", (req, res) => {
     });
 });
 
-app.use("/api", createUserRouter())
-app.use("/api", createGameRouter(io))
 
+app.use("/api", createUserRouter());
+app.use("/api", createGameRouter(io));
+app.use("/api", createChatRouter(io));
 
 app.get('/api/ping', (req, res) => {
     res.json({message: "pong"} )
