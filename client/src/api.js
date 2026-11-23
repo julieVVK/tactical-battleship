@@ -91,6 +91,7 @@ export function unreadyGame(gameId, userId) {
 
 
 
+
 // Read the conversation for one game.
 export function getChatMessages(gameId, userId) {
   const code = getGameCode(gameId);
@@ -135,3 +136,16 @@ export function deleteChatMessage(gameId, userId, messageId) {
     }
   );
 }
+
+// author: Vladyslav Doroshenko
+// Added this after the 1st consultation on week 8. Reimplementing translation to meet project requirements
+// brief: returns a list of supported languages for the settings page
+export function getLanguages() {
+    return request("/languages")
+}
+
+// returns a dictionary of translated strings for the chosen language
+export function getDictionary(language) {
+    return request(`/languages/${language}`)
+}
+

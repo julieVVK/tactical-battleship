@@ -2,7 +2,7 @@
 
 // Later modified by Vladyslav Doroshenko
 
-import { LANGUAGES, COUNTRIES } from '../../i18n/translation.js';
+import { COUNTRIES } from '../../i18n/translation.js';
 import { useLanguage } from '../../i18n/useLanguage.js';
 import { useState } from 'react';
 import Button from '../button/Button';
@@ -10,7 +10,7 @@ import './settings.css';
 
 export default function Settings() {
   // importing context from LanguageProvider.jsx using "custom" useLanguage hook
-  const { language, setLanguage, t } = useLanguage();
+  const { language, languages, setLanguage, t } = useLanguage();
 
   const [muteMusic,        setMuteMusic] =        useState(true);
   const [muteSoundEffects, setMuteSoundEffects] = useState(false);
@@ -131,7 +131,7 @@ export default function Settings() {
               onChange={(event) => setLanguage(event.target.value)}
               className="language-select"
             >
-              {LANGUAGES.map( ({code, name}) => (
+              {languages.map( ({code, name}) => (
                 <option key={code} value={code} lang={code}> {name} </option>
               ))}
             </select>

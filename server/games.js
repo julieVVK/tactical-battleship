@@ -36,6 +36,11 @@ const makePlayer =
             usedGadgets: [],
             scannedZones: [],
             mine: null,
+            matchHistory: {
+                favorite: false,
+                note: '',
+                deleted: false,
+            },
         })
     }
 /* ==========- PLAYER OBJECT -========== */
@@ -279,6 +284,7 @@ const hitCell =
                 game.phase = 'finished'
                 game.winnerPlayerId = player.id
                 game.turnPlayerId = null
+                game.finishedAt = new Date().toISOString()
             }
         }
 
@@ -419,6 +425,61 @@ export const getGames =
     () => {
         return structuredClone(Array.from(games.values()))
     }
+
+// author: Marie Pindorová
+/**
+ * MODEL: check the game and the player before changing history
+ * @param {string} gameId 
+ * @param {string} userId 
+ * @returns the player's actual stored record
+ */
+const getCompletedMatchPlayer = (gameId, userId) => {
+    const game = games.get(normalizeGameId(gameId))
+    if (!game) fail('GAME_NOT_FOUND', 'Game was not found.')
+    if (game.phase !== 'finished') fail('MATCH_NOT_FINISHED', 'Match history can only be changed after a game ends.')
+
+    const player = game.players.find(player => player.id === userId)
+    if (!player) fail('PLAYER_NOT_IN_GAME', 'This user is not in the game.')
+
+    return player
+}
+
+// author: Marie Pindorová
+/**
+ * MODEL: update 'favourite' record state and note
+ * @param {string} gameId 
+ * @param {string} userId 
+ * @param {} changes 
+ * @returns a copy of the updated values
+ */
+export const updateMatchHistory = (gameId, userId, changes) => {
+    // get player's match record
+    const player = getCompletedMatchPlayer(gameId, userId)
+
+    // if the request contains a 'favourite' value, update it, else leave the existing value
+    if (Object.hasOwn(changes, 'favorite')) {
+        player.matchHistory.favorite = changes.favorite
+    }
+
+    // if the request contains a 'note' value, update it, else leave the existing value
+    if (Object.hasOwn(changes, 'note')) {
+        player.matchHistory.note = changes.note
+    }
+
+    // return a copy of the updated values
+    return structuredClone(player.matchHistory)
+}
+
+// author: Marie Pindorová
+/**
+ * delete from history without deleting the actual game
+ * @param {string} gameId 
+ * @param {string} userId 
+ */
+export const deleteMatchFromHistory = (gameId, userId) => {
+    const player = getCompletedMatchPlayer(gameId, userId)
+    player.matchHistory.deleted = true
+}
 
 
 export const getGameForPlayer = (gameId, userId) => {

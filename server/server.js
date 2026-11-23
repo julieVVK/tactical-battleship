@@ -11,6 +11,7 @@ import socketHandlers from "./socketHandlers.js"
 import createUserRouter from "./routes/userRoutes.js"
 import createGameRouter from "./routes/gameRoutes.js"
 import createChatRouter from "./routes/chatRoutes.js";
+import createLanguageRouter from "./routes/languageRoutes.js";
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -44,10 +45,11 @@ app.post("/api/dev/fleet", (req, res) => {
     });
 });
 
-
 app.use("/api", createUserRouter());
 app.use("/api", createGameRouter(io));
+app.use("/api", createLanguageRouter());
 app.use("/api", createChatRouter(io));
+
 
 app.get('/api/ping', (req, res) => {
     res.json({message: "pong"} )

@@ -7,6 +7,7 @@ import {useLocation} from 'react-router';
 import {useLanguage} from '../../i18n/useLanguage.js';
 import ProfileMenu from '../profileMenu/ProfileMenu.jsx';
 import Button from '../button/Button.jsx';
+import {DEMO_MATCH} from './demoMatch.js';
 import './statistics.css';
 
 // Convert an ISO date string from the backend
@@ -30,10 +31,11 @@ function formatDateTime(isoString, language) {
   return `${datePart} · ${timePart}`;
 }
 
-async function requestStats(offset = 0, limit = 10) {
-  // Request a portion of match history and the overall statistics.
+async function requestStats(userId, offset = 0, limit = 10) {
+  // request a portion of match history and the overall statistics
   const response = await fetch(
-    `/api/statistics?offset=${offset}&limit=${limit}`
+    `/api/statistics?offset=${offset}&limit=${limit}`,
+    {headers: {userId}}
   );
 
   if (!response.ok) {
@@ -44,7 +46,44 @@ async function requestStats(offset = 0, limit = 10) {
   return data;
 }
 
-export default function StatisticsPage() {
+/**
+ * VIEW: send requests and reflect successful changes
+ * @param {string} userId 
+ * @param {string} gameId 
+ * @param {json} changes the server's updated values
+ * @returns 
+ */
+async function updateMatchHistory(userId, gameId, changes) {
+  const response = await fetch(`/api/statistics/${gameId}`, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json', userId},
+    body: JSON.stringify(changes),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update match history.');
+  }
+
+  return response.json();
+}
+
+/**
+ * send a DELETE request to the same URL with the player ID
+ * @param {string} userId 
+ * @param {string} gameId 
+ */
+async function deleteMatchFromHistory(userId, gameId) {
+  const response = await fetch(`/api/statistics/${gameId}`, {
+    method: 'DELETE',
+    headers: {userId},
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete match from history.');
+  }
+}
+
+export default function StatisticsPage({userId}) {
   const {t, language} = useLanguage();
   const {hash} = useLocation();
   // stats will contain the data returned by the backend.
@@ -52,6 +91,9 @@ export default function StatisticsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingMatchAction, setPendingMatchAction] = useState(null);
+  const [noteDrafts, setNoteDrafts] = useState({});
+  const [demoMatch, setDemoMatch] = useState(() => ({...DEMO_MATCH}));
 
   // Match history lives on this page and becomes available after loading.
   useEffect(() => {
@@ -72,7 +114,7 @@ export default function StatisticsPage() {
         setLoading(true);
         setError(null);
 
-        const data = await requestStats(0, 10);
+        const data = await requestStats(userId, 0, 10);
 
         // Update React state only if the component is still mounted.
         if (!cancelled) {
@@ -94,7 +136,7 @@ export default function StatisticsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   async function loadMoreMatches() {
     setLoadingMore(true);
@@ -102,7 +144,7 @@ export default function StatisticsPage() {
 
     try {
       const offset = stats.recentMatches.length;
-      const data = await requestStats(offset, 10);
+      const data = await requestStats(userId, offset, 10);
 
       setStats(previouslyFetchedStats => ({
         ...data,
@@ -115,6 +157,128 @@ export default function StatisticsPage() {
       setError('stats.loadFailed');
     } finally {
       setLoadingMore(false);
+    }
+  }
+
+  
+  // ask the server to save the opposite if the current favourite value
+  async function toggleFavorite(match) {
+    setPendingMatchAction(match.gameId);
+    setError(null);
+
+    try {
+      if (match.isDemo) {
+        setDemoMatch(previousMatch => previousMatch
+          ? {...previousMatch, favorite: !previousMatch.favorite}
+          : previousMatch);
+        return;
+      }
+
+      const updatedMatch = await updateMatchHistory(userId, match.gameId, {
+        favorite: !match.favorite,
+      });
+
+      // find the matching gameId and replace that row with a copy containing the returned favourite value
+      setStats(previousStats => ({
+        ...previousStats,
+        recentMatches: previousStats.recentMatches.map(previousMatch =>
+          previousMatch.gameId === match.gameId
+            ? {...previousMatch, favorite: updatedMatch.favorite}
+            : previousMatch
+        ),
+      }));
+    } catch {
+      setError('stats.updateFailed');
+    } finally {
+      // clear the pending-action state
+      setPendingMatchAction(null);
+    }
+  }
+
+  // note form
+  async function saveMatchNote(event, match) {
+    // stop the browser's normal form submission, which would reload the page
+    event.preventDefault();
+    setPendingMatchAction(match.gameId);
+    setError(null);
+
+    const note = noteDrafts[match.gameId] ?? match.note ?? '';
+
+    try {
+      if (match.isDemo) {
+        setDemoMatch(previousMatch => previousMatch
+          ? {...previousMatch, note: note.trim()}
+          : previousMatch);
+        setNoteDrafts(previousDrafts => ({
+          ...previousDrafts,
+          [match.gameId]: note.trim(),
+        }));
+        return;
+      }
+
+      // update the matching row in stats and synchronize the note draft with the server's returned value
+      const updatedMatch = await updateMatchHistory(userId, match.gameId, {note});
+
+      setStats(previousStats => ({
+        ...previousStats,
+        recentMatches: previousStats.recentMatches.map(previousMatch =>
+          previousMatch.gameId === match.gameId
+            ? {...previousMatch, note: updatedMatch.note}
+            : previousMatch
+        ),
+      }));
+      setNoteDrafts(previousDrafts => ({
+        ...previousDrafts,
+        [match.gameId]: updatedMatch.note,
+      }));
+    } catch {
+      setError('stats.updateFailed');
+    } finally {
+      setPendingMatchAction(null);
+    }
+  }
+
+  // delete button
+  async function deleteMatch(match) {
+    // ask for confirmation
+    if (!window.confirm(t('stats.deleteConfirm'))) return;
+
+    if (match.isDemo) {
+      setDemoMatch(null);
+      return;
+    }
+
+    setPendingMatchAction(match.gameId);
+    setError(null);
+
+    try {
+      // remove the matching row from its recentMatches state
+      await deleteMatchFromHistory(userId, match.gameId);
+
+      // recalculate the visible summary - this makes the change visible immediately
+      setStats(previousStats => {
+        const battlesPlayed = previousStats.battlesPlayed - 1;
+        const battlesWon = previousStats.battlesWon -
+          (match.result === 'victory' ? 1 : 0);
+
+        return {
+          ...previousStats,
+          battlesPlayed,
+          battlesWon,
+          battlesLost: previousStats.battlesLost -
+            (match.result === 'defeat' ? 1 : 0),
+          winRate: battlesPlayed > 0
+            ? Math.round((battlesWon / battlesPlayed) * 100)
+            : 0,
+          recentMatches: previousStats.recentMatches.filter(
+            previousMatch => previousMatch.gameId !== match.gameId
+          ),
+        };
+      });
+    } catch {
+      setError('stats.deleteFailed');
+    } finally {
+      setPendingMatchAction(null);
     }
   }
 
@@ -173,6 +337,9 @@ export default function StatisticsPage() {
   const ratioOutOf5 = totalGames > 0
     ? Math.round((battlesWon / totalGames) * 5)
     : 0;
+  const displayedMatches = demoMatch
+    ? [...recentMatches, demoMatch]
+    : recentMatches;
 
   return (
     <div className="statistic-page">
@@ -303,19 +470,25 @@ export default function StatisticsPage() {
           </div>
 
           {/* Create one row for every match returned by the backend */}
-          {recentMatches.map((match, index) => {
+          {displayedMatches.map(match => {
             const isVictory =
               match.result.toLowerCase() === 'victory';
+            const isPending = pendingMatchAction === match.gameId;
 
             return (
               <div
                 className="statistic-match-row"
-                key={`${match.date}-${index}`}
+                key={match.gameId}
               >
 
                 {/* Match date and time */}
                 <div className="statistic-match-date">
                   {formatDateTime(match.date, language)}
+                  {match.isDemo && (
+                    <span className="statistic-demo-badge">
+                      {t('stats.demoMatch')}
+                    </span>
+                  )}
                 </div>
 
                 {/* Result badge: green for victory, red for defeat */}
@@ -332,6 +505,54 @@ export default function StatisticsPage() {
                 {/* Number of moves in the match */}
                 <div className="statistic-match-moves">
                   {match.moves}
+                </div>
+
+                <div className="statistic-match-actions">
+                  <button
+                    type="button"
+                    className="statistic-match-action"
+                    aria-pressed={match.favorite}
+                    disabled={isPending || pendingMatchAction !== null}
+                    onClick={() => toggleFavorite(match)}
+                  >
+                    {match.favorite ? '★' : '☆'}{' '}
+                    {t(match.favorite ? 'stats.unfavorite' : 'stats.favorite')}
+                  </button>
+
+                  <form
+                    className="statistic-match-note"
+                    onSubmit={event => saveMatchNote(event, match)}
+                  >
+                    <label htmlFor={`match-note-${match.gameId}`}>
+                      {t('stats.noteLabel')}
+                    </label>
+                    <textarea
+                      id={`match-note-${match.gameId}`}
+                      value={noteDrafts[match.gameId] ?? match.note ?? ''}
+                      maxLength={500}
+                      placeholder={t('stats.notePlaceholder')}
+                      onChange={event => setNoteDrafts(previousDrafts => ({
+                        ...previousDrafts,
+                        [match.gameId]: event.target.value,
+                      }))}
+                    />
+                    <button
+                      type="submit"
+                      className="statistic-match-action"
+                      disabled={isPending || pendingMatchAction !== null}
+                    >
+                      {t('stats.saveNote')}
+                    </button>
+                  </form>
+
+                  <button
+                    type="button"
+                    className="statistic-match-action statistic-match-action--delete"
+                    disabled={isPending || pendingMatchAction !== null}
+                    onClick={() => deleteMatch(match)}
+                  >
+                    {t('stats.deleteMatch')}
+                  </button>
                 </div>
 
               </div>
@@ -351,7 +572,7 @@ export default function StatisticsPage() {
         <Button
           className="statistic-load-more-button"
           onClick={loadMoreMatches}
-          disabled={loadingMore || recentMatches.length >= battlesPlayed}
+          disabled={loadingMore || pendingMatchAction !== null || recentMatches.length >= battlesPlayed}
         >
           {t(loadingMore ? 'stats.loadingMore' : 'stats.loadMore')}
         </Button>
